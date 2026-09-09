@@ -3,7 +3,7 @@
 // @name:zh-CN   知乎增强优化
 // @name:zh-TW   知乎增強優化
 // @name:en      Zhihu Enhancement Plus
-// @version      1.7.25
+// @version      1.7.26
 // @author       local (based on X.I.U / 知乎增强 2.2.15)
 // @description  用于知乎网页。可开关：低饱和配色、隐藏右侧栏、清空或锁定标签标题与图标、净化搜索热门、默认/一键/点空白收起回答与评论、右键回顶、展开问题描述、置顶发布时间、信息流类型标签、直达问题、按用户与噪音评分（可显示得分、可过滤）及关键词、按类别屏蔽视频/文章/想法/话题/盐选/相关搜索/热榜杂项。设置可 JSON 导入导出。始终生效：关登录弹窗、原图、站外直链、点浮层关评论、去掉搜索高亮链接。基于 XIU2「知乎增强」2.2.15（GPL-3.0），无远程外部脚本。
 // @description:zh-CN 用于知乎网页。可开关：低饱和配色、隐藏右侧栏、清空或锁定标签标题与图标、净化搜索热门、默认/一键/点空白收起回答与评论、右键回顶、展开问题描述、置顶发布时间、信息流类型标签、直达问题、按用户与噪音评分（可显示得分、可过滤）及关键词、按类别屏蔽视频/文章/想法/话题/盐选/相关搜索/热榜杂项。设置可 JSON 导入导出。始终生效：关登录弹窗、原图、站外直链、点浮层关评论、去掉搜索高亮链接。基于 XIU2「知乎增强」2.2.15（GPL-3.0），无远程外部脚本。
@@ -2380,7 +2380,7 @@ function injectNoiseStyles() {
         .zhihu-plus-noise-hide {display: none !important;}
         .zhihu-plus-noise-demote {opacity: .42; transition: opacity .2s;}
         .zhihu-plus-noise-demote:hover {opacity: .88;}
-        .zhihu-plus-noise-tag {position:absolute;top:8px;right:8px;z-index:6;padding:2px 8px !important;border-radius:999px;font:inherit;font-size:11px !important;font-weight:650;font-variant-numeric:tabular-nums;line-height:1.5;pointer-events:auto;cursor:pointer;width:auto !important;min-width:0 !important;height:auto !important;appearance:none;-webkit-appearance:none;--t:0;background:hsla(calc(145 - 145 * var(--t)), calc(42% + 53% * var(--t)), calc(94% - 42% * var(--t)), calc(0.78 + 0.22 * var(--t)));color:hsl(calc(145 - 145 * var(--t)), calc(48% + 40% * var(--t)), calc(26% + 56% * var(--t)));border:1px solid hsla(calc(145 - 145 * var(--t)), 72%, 38%, calc(0.1 + 0.42 * var(--t)));box-shadow:0 0 calc(2px + 12px * var(--t)) hsla(calc(145 - 145 * var(--t)), 90%, 48%, calc(0.04 + 0.42 * var(--t)));text-shadow:0 1px 2px rgba(0,0,0,calc(0.08 + 0.28 * var(--t)));}
+        .zhihu-plus-noise-tag {display:inline-flex !important;align-items:center;vertical-align:middle;position:static !important;top:auto !important;right:auto !important;z-index:6;margin:0 0 0 8px !important;padding:1px 7px !important;border-radius:999px;font:inherit;font-size:11px !important;font-weight:650;font-variant-numeric:tabular-nums;line-height:1.45;white-space:nowrap;pointer-events:auto;cursor:pointer;width:auto !important;min-width:0 !important;height:auto !important;float:none !important;appearance:none;-webkit-appearance:none;--t:0;background:hsla(calc(145 - 145 * var(--t)), calc(42% + 53% * var(--t)), calc(94% - 42% * var(--t)), calc(0.78 + 0.22 * var(--t)));color:hsl(calc(145 - 145 * var(--t)), calc(48% + 40% * var(--t)), calc(26% + 56% * var(--t)));border:1px solid hsla(calc(145 - 145 * var(--t)), 72%, 38%, calc(0.1 + 0.42 * var(--t)));box-shadow:0 0 calc(2px + 12px * var(--t)) hsla(calc(145 - 145 * var(--t)), 90%, 48%, calc(0.04 + 0.42 * var(--t)));text-shadow:0 1px 2px rgba(0,0,0,calc(0.08 + 0.28 * var(--t)));}
         [data-theme="dark"] .zhihu-plus-noise-tag {background:hsla(calc(145 - 145 * var(--t)), calc(48% + 42% * var(--t)), calc(20% + 10% * var(--t)), calc(0.62 + 0.32 * var(--t)));color:hsl(calc(145 - 145 * var(--t)), 86%, calc(86% - 6% * var(--t)));}
     `);
     bindNoiseExplain();
@@ -2390,19 +2390,33 @@ function ensureCardPosition(card) {
     if (getComputedStyle(card).position === 'static') card.style.position = 'relative';
 }
 
+function noiseBadgeAnchor(card) {
+    const titleA = card.querySelector('h2.ContentItem-title a:not(.zhihu_e_toQuestion)');
+    if (titleA) return titleA;
+    const hotTitle = card.querySelector('h2.HotItem-title');
+    if (hotTitle) return hotTitle;
+    const searchA = card.querySelector('a[data-za-detail-view-id]');
+    if (searchA) return searchA;
+    return card.querySelector('h2, .ContentItem-title');
+}
+
 function paintNoiseBadge(card, score, titleCss) {
     if (score <= 0) {
         const old = card.querySelector('.zhihu-plus-noise-tag');
         if (old) old.remove();
         return;
     }
-    ensureCardPosition(card);
+    const anchor = noiseBadgeAnchor(card);
     let tag = card.querySelector('.zhihu-plus-noise-tag');
     if (!tag) {
         tag = document.createElement('button');
         tag.type = 'button';
         tag.className = 'zhihu-plus-noise-tag';
         tag.setAttribute('aria-label', '查看噪音评分过程');
+    }
+    if (anchor) anchor.insertAdjacentElement('afterend', tag);
+    else {
+        ensureCardPosition(card);
         card.insertAdjacentElement('afterbegin', tag);
     }
     tag.style.setProperty('--t', noiseTint(score).toFixed(3));
