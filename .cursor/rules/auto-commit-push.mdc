@@ -1,0 +1,29 @@
+---
+description: 改完代码后自动提交并推送到 origin，不必等用户再说一次「提交推送」
+alwaysApply: true
+---
+
+# 改完即提交推送
+
+本仓库覆盖「未明确要求就不 commit」的默认习惯。完成用户要求的代码修改后，**立刻** commit 并 `git push` 到当前分支的远程，不要再问。
+
+## 何时做
+
+- 用户脚本、规则、README、LICENSE 等应入库的文件有实际改动
+- 一次任务收尾时：改完、自检完，就提交推送
+
+## 何时不做
+
+- 只有 `todolist.md`、`.env`、密钥、本地笔记（已在 `.gitignore`）
+- 工作区没有可提交改动
+- 用户明确说不要提交、只要本地改、或只要说明
+
+## 怎么做
+
+1. 并行看 `git status`、`git diff`、`git log` 近期说明
+2. 脚本有行为变化时，先 bump `zhihu-enhancement-plus.user.js` 的 `@version`
+3. `git add` 相关文件；commit 用 HEREDOC，英文 1–2 句写清 **why**，风格对齐近期 log
+4. `git push -u origin HEAD`（已跟踪则普通 push）
+5. 用 `git status` 确认干净，并回报提交哈希
+
+不要 `--force` 推 `main`，不要 `--no-verify`，不要改 git config。

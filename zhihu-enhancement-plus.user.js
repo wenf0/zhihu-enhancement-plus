@@ -3,7 +3,7 @@
 // @name:zh-CN   知乎增强优化
 // @name:zh-TW   知乎增強優化
 // @name:en      Zhihu Enhancement Plus
-// @version      1.7.1
+// @version      1.7.2
 // @author       local (based on X.I.U / 知乎增强 2.2.15)
 // @description  用于知乎网页。可开关：低饱和配色、隐藏右侧栏、清空或锁定标签标题与图标、净化搜索热门、默认/一键/点空白收起回答与评论、右键回顶、展开问题描述、置顶发布时间、信息流类型标签、直达问题、按用户与噪音档位及关键词过滤、按类别屏蔽视频/文章/想法/话题/盐选/相关搜索/热榜杂项。始终生效：关登录弹窗、原图、站外直链、点浮层关评论、去掉搜索高亮链接。基于 XIU2「知乎增强」2.2.15（GPL-3.0），无远程外部脚本。
 // @description:zh-CN 用于知乎网页。可开关：低饱和配色、隐藏右侧栏、清空或锁定标签标题与图标、净化搜索热门、默认/一键/点空白收起回答与评论、右键回顶、展开问题描述、置顶发布时间、信息流类型标签、直达问题、按用户与噪音档位及关键词过滤、按类别屏蔽视频/文章/想法/话题/盐选/相关搜索/热榜杂项。始终生效：关登录弹窗、原图、站外直链、点浮层关评论、去掉搜索高亮链接。基于 XIU2「知乎增强」2.2.15（GPL-3.0），无远程外部脚本。
@@ -1290,77 +1290,41 @@ function setCollapsedCornerStyle(css) {
     if (el.textContent !== css) el.textContent = css;
 }
 
-/* 右下角知乎 AI 等悬浮球不在 .CornerButtons 里，旧的 bottom:45px 会压上去 */
-function isCornerStack(el) {
-    return el.closest && el.closest('.CornerButtons, .CornerButtonsGroup, .CornerAnimayedFlex');
-}
-
-function collapsedCornerLiftPx() {
-    const gap = 16;
-    const minLift = 120;
-    let occupied = 0;
-    if (!document.body) return minLift;
-
-    const named = document.querySelectorAll(
-        '[class*="zhihuai" i], [class*="ZhihuAI"], [class*="zhida-entry" i], [class*="ZhidaEntry"], [aria-label*="直答"], iframe[src*="zhida"]'
-    );
-    named.forEach(el => {
-        if (isCornerStack(el)) return;
-        const r = el.getBoundingClientRect();
-        if (r.width < 8 || r.height < 8) return;
-        occupied = Math.max(occupied, window.innerHeight - r.top);
-    });
-
-    const stack = [];
-    for (const el of document.body.children) stack.push([el, 0]);
-    while (stack.length) {
-        const item = stack.pop();
-        const el = item[0];
-        const depth = item[1];
-        if (!el || el.nodeType !== 1 || depth > 10) continue;
-        if (isCornerStack(el)) continue;
-        const st = getComputedStyle(el);
-        if (st.position === 'fixed' && st.display !== 'none' && st.visibility !== 'hidden' && st.opacity !== '0') {
-            const r = el.getBoundingClientRect();
-            if (r.width >= 28 && r.width <= 160 && r.height >= 28 && r.height <= 180
-                && window.innerWidth - r.right <= 48
-                && window.innerHeight - r.bottom <= 64) {
-                occupied = Math.max(occupied, window.innerHeight - r.top);
-            }
-            continue;
+/* 看山就在角标组里。改 bottom 会把外壳撑高，回到顶部仍按原高度排，叠在看山上。 */
+function watchCollapsedCornerStyle() {
+    if (window._zhihuPlusCornerStyleWatch) return;
+    window._zhihuPlusCornerStyleWatch = true;
+    setCollapsedCornerStyle(`
+        .CornerButtons.CornerButtons--kanshan {
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: flex-end !important;
+            gap: 8px !important;
         }
-        if (depth < 10) {
-            for (const child of el.children) stack.push([child, depth + 1]);
+        .CornerAnimayedFlex--kanshanEntry {
+            position: relative !important;
+            top: auto !important;
+            bottom: auto !important;
+            height: auto !important;
         }
-    }
-    return Math.max(minLift, occupied ? occupied + gap : 0);
-}
-
-function syncCollapsedCornerStyle() {
-    const lift = collapsedCornerLiftPx();
-    setCollapsedCornerStyle(
-        `.CornerButton{margin-bottom:8px !important;}` +
-        `.CornerButtons,.CornerButtonsGroup{bottom:${lift}px !important;}`
-    );
-}
-
-function watchCollapsedCornerLift() {
-    if (window._zhihuPlusCornerLiftWatch) return;
-    window._zhihuPlusCornerLiftWatch = true;
-    syncCollapsedCornerStyle();
-    window.addEventListener('resize', syncCollapsedCornerStyle);
-    window.addEventListener('urlchange', syncCollapsedCornerStyle);
-    let n = 0;
-    const id = setInterval(() => {
-        syncCollapsedCornerStyle();
-        if (++n >= 20) clearInterval(id);
-    }, 400);
+        .CornerAnimayedFlex--kanshan:not(.CornerAnimayedFlex--kanshanEntry):not(.CornerAnimayedFlex--hidden) {
+            height: auto !important;
+            overflow: hidden !important;
+        }
+        .CornerAnimayedFlex--hidden {
+            height: 0 !important;
+            overflow: hidden !important;
+        }
+        #collapsed-button {
+            margin-bottom: 8px !important;
+        }
+    `);
 }
 
 function collapsedAnswer() {
     if (!menuValue('menu_collapsedAnswer')) return;
-    watchCollapsedCornerLift();
-    const corner = document.querySelector('.CornerAnimayedFlex');
+    watchCollapsedCornerStyle();
+    const corner = document.querySelector('.CornerAnimayedFlex:not(.CornerAnimayedFlex--kanshanEntry)');
     if (!corner || document.getElementById('collapsed-button')) return;
 
     const cls = corner.querySelector('button') ? corner.querySelector('button').className : 'CornerButton';
