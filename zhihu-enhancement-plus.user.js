@@ -3,7 +3,7 @@
 // @name:zh-CN   知乎增强优化
 // @name:zh-TW   知乎增強優化
 // @name:en      Zhihu Enhancement Plus
-// @version      1.7.7
+// @version      1.7.8
 // @author       local (based on X.I.U / 知乎增强 2.2.15)
 // @description  用于知乎网页。可开关：低饱和配色、隐藏右侧栏、清空或锁定标签标题与图标、净化搜索热门、默认/一键/点空白收起回答与评论、右键回顶、展开问题描述、置顶发布时间、信息流类型标签、直达问题、按用户与噪音档位及关键词过滤、按类别屏蔽视频/文章/想法/话题/盐选/相关搜索/热榜杂项。设置可 JSON 导入导出。始终生效：关登录弹窗、原图、站外直链、点浮层关评论、去掉搜索高亮链接。基于 XIU2「知乎增强」2.2.15（GPL-3.0），无远程外部脚本。
 // @description:zh-CN 用于知乎网页。可开关：低饱和配色、隐藏右侧栏、清空或锁定标签标题与图标、净化搜索热门、默认/一键/点空白收起回答与评论、右键回顶、展开问题描述、置顶发布时间、信息流类型标签、直达问题、按用户与噪音档位及关键词过滤、按类别屏蔽视频/文章/想法/话题/盐选/相关搜索/热榜杂项。设置可 JSON 导入导出。始终生效：关登录弹窗、原图、站外直链、点浮层关评论、去掉搜索高亮链接。基于 XIU2「知乎增强」2.2.15（GPL-3.0），无远程外部脚本。
@@ -521,6 +521,24 @@ function settingsTypeCards() {
     ];
 }
 
+function settingsNoiseFormulaHtml() {
+    const w = NOISE_WEIGHTS;
+    const n = x => x.toFixed(2);
+    return `<div class="zhihuE_Fx">
+        <div class="zhihuE_FxKicker">评分公式</div>
+        <div class="zhihuE_FxMain">分数 = clamp(${n(w.k)}K + ${n(w.c)}C + ${n(w.e)}E + ${n(w.s)}S + ${n(w.b)}B − ${n(w.v)}V, 0, 100)</div>
+        <div class="zhihuE_FxGrid">
+            <div class="zhihuE_FxItem"><b>K</b>关键词饱和<span>K = 100(1 − e<sup>−k/20</sup>)。k 为命中词权重和；自定义词每条 +8；单字仅在已有长词命中时计 0.35。</span></div>
+            <div class="zhihuE_FxItem"><b>C</b>分类系数<span>取命中档位的最大 c。该分类有排除词则 ×0.35。无关键词但 E+B ≥ 16 时，C 至少为 42。</span></div>
+            <div class="zhihuE_FxItem"><b>E</b>情绪<span>命中情绪词的权重和，上限 25。</span></div>
+            <div class="zhihuE_FxItem"><b>S</b>争议<span>6 × 争议词命中数，上限 30。</span></div>
+            <div class="zhihuE_FxItem"><b>B</b>标题党<span>5 × 标题党词命中数，上限 25。</span></div>
+            <div class="zhihuE_FxItem"><b>V</b>价值<span>白名单权重和，上限 50，从总分里减去。</span></div>
+        </div>
+        <p class="zhihuE_FxNote">信息流卡片取 max(标题分, 0.72×标题 + 0.28×摘要)。${NOISE_DEMOTE} 以下保留，${NOISE_DEMOTE}–${NOISE_HIDE} 降权，${NOISE_HIDE} 及以上隐藏。</p>
+    </div>`;
+}
+
 function mountListEditor(container, { storageKey, placeholder, tips }) {
     let list = [...(menuValue(storageKey) || [])];
     let filter = '';
@@ -1035,6 +1053,14 @@ function openSettingsPanel() {
 .zhihuE_StPane {flex:1;min-height:0;display:flex;flex-direction:column;gap:12px;overflow:auto;}
 .zhihuE_StPane.is-fill {overflow:hidden;}
 .zhihuE_StFootNote {margin-top:4px;font-size:12px;color:#aaa;flex:none;}
+.zhihuE_Fx {padding:20px 22px;border:1px solid #eee;border-radius:16px;background:#fafafa;flex:none;}
+.zhihuE_FxKicker {margin:0 0 8px;font-size:11px;letter-spacing:.16em;color:#aaa;text-transform:uppercase;}
+.zhihuE_FxMain {font-size:15px;font-weight:600;letter-spacing:.01em;line-height:1.55;font-variant-numeric:tabular-nums;}
+.zhihuE_FxGrid {display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:10px;margin-top:14px;}
+.zhihuE_FxItem {padding:12px 14px;border-radius:12px;background:#fff;border:1px solid #eee;}
+.zhihuE_FxItem b {display:inline-block;min-width:18px;margin-right:6px;font-size:14px;}
+.zhihuE_FxItem span {display:block;margin-top:6px;font-size:12px;line-height:1.55;color:#8a8a8a;font-weight:400;}
+.zhihuE_FxNote {margin:12px 0 0;font-size:12px;line-height:1.65;color:#8a8a8a;}
 .zhihuE_LvCard {display:flex;align-items:flex-start;justify-content:space-between;gap:20px;padding:18px 20px;border:1px solid #eee;border-radius:16px;background:#fafafa;flex:none;}
 .zhihuE_LvCard.is-on {background:#fff;border-color:#dcdcdc;box-shadow:0 8px 24px rgba(0,0,0,.04);}
 .zhihuE_LvCardMain {min-width:0;}
@@ -1113,7 +1139,9 @@ function openSettingsPanel() {
 [data-theme="dark"] .zhihuE_StLink:hover {color:#fff;}
 [data-theme="dark"] .zhihuE_StTab {background:#343a44;border-color:#3c434d;color:#c5ced8;}
 [data-theme="dark"] .zhihuE_LvTag {background:#e8edf2;color:#1d1d1f;}
-[data-theme="dark"] .zhihuE_LvChip {background:#2b2f36;color:#c5ced8;}
+[data-theme="dark"] .zhihuE_Fx {background:#343a44;border-color:#3c434d;}
+[data-theme="dark"] .zhihuE_FxItem {background:#3a414c;border-color:#3c434d;}
+[data-theme="dark"] .zhihuE_FxKicker,[data-theme="dark"] .zhihuE_FxItem span,[data-theme="dark"] .zhihuE_FxNote {color:#9aa4b2;}
 [data-theme="dark"] .zhihuE_DlgCopy,[data-theme="dark"] .zhihuE_IoBtn,[data-theme="dark"] .zhihuE_LxBtn.ghost {background:#343a44;border-color:#3c434d;color:#e8edf2;}
 [data-theme="dark"] .zhihuE_DlgCopy.is-ok,[data-theme="dark"] .zhihuE_IoBtn.is-ok,[data-theme="dark"] .zhihuE_IoPrimary {background:#e8edf2;border-color:#e8edf2;color:#1d1d1f;}
 [data-theme="dark"] .zhihuE_DlgImportArea,[data-theme="dark"] .zhihuE_IoArea {background:#343a44;border-color:#3c434d;color:#e8edf2;}
@@ -1191,8 +1219,7 @@ function openSettingsPanel() {
                 <div class="zhihuE_StPane${wordTab === 'levels' ? '' : ' is-fill'}"></div>`;
             const pane = bodyEl.querySelector('.zhihuE_StPane');
             if (wordTab === 'levels') {
-                pane.innerHTML = settingsNoiseCards().map(settingsToggleCard).join('') +
-                    '<div class="zhihuE_StFootNote">0–30 保留 · 30–60 降权 · 60–100 隐藏</div>';
+                pane.innerHTML = settingsNoiseFormulaHtml() + settingsNoiseCards().map(settingsToggleCard).join('');
             } else if (wordTab === 'custom') {
                 mountListEditor(pane, {
                     storageKey: 'menu_customBlockKeywords',
