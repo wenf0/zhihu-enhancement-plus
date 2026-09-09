@@ -1788,8 +1788,7 @@ function blockUsersButtonPeople() {
     if (!item || !nameEl) return;
     const name = nameEl.firstChild && nameEl.firstChild.textContent;
     const userid = location.href.split('/')[4];
-    const users = menuValue('menu_customBlockUsers') || [];
-    if (users.includes(name)) {
+    if (userBlocked(name)) {
         document.querySelectorAll('.Button.Button--primary.Button--red').forEach(btn => { btn.style.display = 'none'; });
         item.insertAdjacentHTML('beforeend', blockUserButtonHtml(name, userid, 'margin: 0 0 0 12px;', '取消屏蔽'));
         item.lastElementChild.onclick = function () {
