@@ -3,12 +3,12 @@
 // @name:zh-CN   知乎增强优化
 // @name:zh-TW   知乎增強優化
 // @name:en      Zhihu Enhancement Plus
-// @version      1.7.2
+// @version      1.7.3
 // @author       local (based on X.I.U / 知乎增强 2.2.15)
-// @description  用于知乎网页。可开关：低饱和配色、隐藏右侧栏、清空或锁定标签标题与图标、净化搜索热门、默认/一键/点空白收起回答与评论、右键回顶、展开问题描述、置顶发布时间、信息流类型标签、直达问题、按用户与噪音档位及关键词过滤、按类别屏蔽视频/文章/想法/话题/盐选/相关搜索/热榜杂项。始终生效：关登录弹窗、原图、站外直链、点浮层关评论、去掉搜索高亮链接。基于 XIU2「知乎增强」2.2.15（GPL-3.0），无远程外部脚本。
-// @description:zh-CN 用于知乎网页。可开关：低饱和配色、隐藏右侧栏、清空或锁定标签标题与图标、净化搜索热门、默认/一键/点空白收起回答与评论、右键回顶、展开问题描述、置顶发布时间、信息流类型标签、直达问题、按用户与噪音档位及关键词过滤、按类别屏蔽视频/文章/想法/话题/盐选/相关搜索/热榜杂项。始终生效：关登录弹窗、原图、站外直链、点浮层关评论、去掉搜索高亮链接。基于 XIU2「知乎增强」2.2.15（GPL-3.0），无远程外部脚本。
-// @description:zh-TW 用於知乎網頁。可開關：低飽和配色、隱藏右側欄、清空或鎖定分頁標題與圖示、淨化搜尋熱門、預設/一鍵/點空白收起回答與評論、右鍵回頂、展開問題描述、置頂發布時間、資訊流類型標籤、直達問題、按使用者與噪音檔位及關鍵詞過濾、按類別屏蔽影片/文章/想法/話題/鹽選/相關搜尋/熱榜雜項。始終生效：關登入彈窗、原圖、站外直連、點浮層關評論、去掉搜尋高亮連結。基於 XIU2「知乎增強」2.2.15（GPL-3.0），無遠端外部腳本。
-// @description:en For Zhihu. Toggles: desaturated UI, hide sidebar, blank/lock tab title, clean search hot terms, collapse answers (default/one-click/side), right-click to top, expand question, pin time, type labels, jump to question, filter by user/noise/keywords, hide video/article/pin/topic/Yanxuan/related search/hot extras. Always: close login modal, original images, unwrap outbound links, click overlay to close comments, strip search highlight links. From XIU2 Zhihu Enhancement (GPL-3.0); no remote scripts.
+// @description  用于知乎网页。可开关：低饱和配色、隐藏右侧栏、清空或锁定标签标题与图标、净化搜索热门、默认/一键/点空白收起回答与评论、右键回顶、展开问题描述、置顶发布时间、信息流类型标签、直达问题、按用户与噪音档位及关键词过滤、按类别屏蔽视频/文章/想法/话题/盐选/相关搜索/热榜杂项。设置可 JSON 导入导出。始终生效：关登录弹窗、原图、站外直链、点浮层关评论、去掉搜索高亮链接。基于 XIU2「知乎增强」2.2.15（GPL-3.0），无远程外部脚本。
+// @description:zh-CN 用于知乎网页。可开关：低饱和配色、隐藏右侧栏、清空或锁定标签标题与图标、净化搜索热门、默认/一键/点空白收起回答与评论、右键回顶、展开问题描述、置顶发布时间、信息流类型标签、直达问题、按用户与噪音档位及关键词过滤、按类别屏蔽视频/文章/想法/话题/盐选/相关搜索/热榜杂项。设置可 JSON 导入导出。始终生效：关登录弹窗、原图、站外直链、点浮层关评论、去掉搜索高亮链接。基于 XIU2「知乎增强」2.2.15（GPL-3.0），无远程外部脚本。
+// @description:zh-TW 用於知乎網頁。可開關：低飽和配色、隱藏右側欄、清空或鎖定分頁標題與圖示、淨化搜尋熱門、預設/一鍵/點空白收起回答與評論、右鍵回頂、展開問題描述、置頂發布時間、資訊流類型標籤、直達問題、按使用者與噪音檔位及關鍵詞過濾、按類別屏蔽影片/文章/想法/話題/鹽選/相關搜尋/熱榜雜項。設定可 JSON 匯入匯出。始終生效：關登入彈窗、原圖、站外直連、點浮層關評論、去掉搜尋高亮連結。基於 XIU2「知乎增強」2.2.15（GPL-3.0），無遠端外部腳本。
+// @description:en For Zhihu. Toggles: desaturated UI, hide sidebar, blank/lock tab title, clean search hot terms, collapse answers (default/one-click/side), right-click to top, expand question, pin time, type labels, jump to question, filter by user/noise/keywords, hide video/article/pin/topic/Yanxuan/related search/hot extras. JSON import/export. Always: close login modal, original images, unwrap outbound links, overlay closes comments, strip search highlight links. From XIU2 (GPL-3.0); no remote scripts.
 // @match        *://www.zhihu.com/*
 // @match        *://zhuanlan.zhihu.com/*
 // @exclude      https://www.zhihu.com/signin*
@@ -132,6 +132,7 @@ const menuCommandIds = [];
 /* GM_setValue 跟脚本安装 ID 绑定，卸载重装会丢。再备份到知乎域名 localStorage。 */
 const SETTINGS_BACKUP_KEY = 'zhihu-enhancement-plus:settings:v1';
 const SETTINGS_GM_FLAG = 'zhihu_plus_persist_v1';
+const SETTINGS_KIND = 'zhihu-enhancement-plus-settings';
 const SETTINGS_EXTRA_KEYS = ['menu_kw_pack_v1', 'noise_lexicon_v1'];
 
 function pageLocalStorage() {
@@ -153,18 +154,86 @@ function readSettingsBackup() {
     }
 }
 
+function settingsKnownKeys() {
+    const keys = new Set(SETTINGS_EXTRA_KEYS);
+    for (const item of MENU_ITEMS) keys.add(item.key);
+    return keys;
+}
+
+function snapshotSettings() {
+    const values = {};
+    for (const item of MENU_ITEMS) values[item.key] = GM_getValue(item.key);
+    for (const key of SETTINGS_EXTRA_KEYS) {
+        const value = GM_getValue(key);
+        if (value != null) values[key] = value;
+    }
+    const script = (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version) || '';
+    return { v: 1, kind: SETTINGS_KIND, script, t: Date.now(), values };
+}
+
 function writeSettingsBackup() {
     const ls = pageLocalStorage();
     if (!ls) return;
     try {
-        const values = {};
-        for (const item of MENU_ITEMS) values[item.key] = GM_getValue(item.key);
-        for (const key of SETTINGS_EXTRA_KEYS) {
-            const value = GM_getValue(key);
-            if (value != null) values[key] = value;
-        }
-        ls.setItem(SETTINGS_BACKUP_KEY, JSON.stringify({ v: 1, t: Date.now(), values }));
+        ls.setItem(SETTINGS_BACKUP_KEY, JSON.stringify(snapshotSettings()));
     } catch (err) { /* 隐私模式或配额 */ }
+}
+
+function isValidSettingValue(key, value) {
+    if (key === 'menu_kw_pack_v1') return typeof value === 'boolean';
+    if (key === 'noise_lexicon_v1') return !!(value && typeof value === 'object' && !Array.isArray(value));
+    const item = MENU_ITEMS.find(x => x.key === key);
+    if (!item) return false;
+    if (item.kind === 'users' || item.kind === 'keywords') {
+        return Array.isArray(value) && value.every(x => typeof x === 'string');
+    }
+    if (item.kind === 'group' || item.kind === 'lexicon') return typeof value === 'string';
+    return typeof value === 'boolean';
+}
+
+function parseSettingsJson(text) {
+    const data = JSON.parse(text);
+    if (!data || typeof data !== 'object' || Array.isArray(data)) throw new Error('format');
+    if (data.kind && data.kind !== SETTINGS_KIND) throw new Error('kind');
+    if (data.values && typeof data.values === 'object' && !Array.isArray(data.values)) return data.values;
+    const known = settingsKnownKeys();
+    const values = {};
+    for (const key of Object.keys(data)) {
+        if (known.has(key)) values[key] = data[key];
+    }
+    if (!Object.keys(values).length) throw new Error('empty');
+    return values;
+}
+
+function applyImportedSettings(values) {
+    const known = settingsKnownKeys();
+    let n = 0;
+    for (const [key, value] of Object.entries(values)) {
+        if (!known.has(key) || !isValidSettingValue(key, value)) continue;
+        cache[key] = value;
+        GM_setValue(key, value);
+        n++;
+    }
+    if (n) writeSettingsBackup();
+    return n;
+}
+
+function settingsExportFilename() {
+    const d = new Date();
+    const pad = n => String(n).padStart(2, '0');
+    return `zhihu-enhancement-plus-${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}.json`;
+}
+
+function downloadJsonFile(filename, text) {
+    const blob = new Blob([text], { type: 'application/json;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
 }
 
 function restoreSettingsIfNeeded() {
@@ -379,6 +448,15 @@ function openSettingsPanel() {
                     menuSetting(item.label, item.tip, children);
                 }}
             ]
+        },
+        {
+            id: 'data',
+            name: '配置',
+            hint: '导入导出',
+            keys: [],
+            actions: [
+                { id: 'io', name: '导入 / 导出 JSON', desc: '备份或覆盖全部开关、屏蔽名单和噪音词库。', run: openSettingsIoDialog }
+            ]
         }
     ];
     let current = 'look';
@@ -432,7 +510,7 @@ function openSettingsPanel() {
       <div>
         <p class="zhihuE_StKicker">Zhihu Enhancement Plus</p>
         <h3 class="zhihuE_StTitle">设置</h3>
-        <p class="zhihuE_StTips">开关即时保存，刷新后生效。配置会备份到本站，重装脚本后自动恢复。</p>
+        <p class="zhihuE_StTips">开关即时保存，刷新后生效。可在「配置」里用 JSON 导入导出；本站也会自动备份，重装后恢复。</p>
       </div>
       <button type="button" class="zhihuE_StClose" aria-label="关闭">×</button>
     </div>
@@ -455,7 +533,7 @@ function openSettingsPanel() {
         if (style) style.remove();
     };
     const onKey = event => {
-        if (event.key === 'Escape' && !document.querySelector('.zhihuE_LvMask, .zhihuE_LxMask, .zhihuE_DlgMask')) close();
+        if (event.key === 'Escape' && !document.querySelector('.zhihuE_LvMask, .zhihuE_LxMask, .zhihuE_DlgMask, .zhihuE_IoMask')) close();
     };
 
     const render = () => {
@@ -511,6 +589,156 @@ function openSettingsPanel() {
     });
     document.addEventListener('keydown', onKey);
     render();
+}
+
+function openSettingsIoDialog() {
+    if (document.querySelector('.zhihuE_IoMask')) return;
+    const pretty = () => JSON.stringify(snapshotSettings(), null, 2);
+    const html = `<style class="zhihuE_IoStyle">
+.zhihuE_IoMask {position:fixed;inset:0;z-index:10050;display:flex;align-items:center;justify-content:center;padding:32px 20px;background:rgba(18,18,18,.48);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);}
+.zhihuE_IoRoot {width:min(720px,96vw);height:min(640px,86vh);display:flex;flex-direction:column;background:#fff;color:#1d1d1f;border-radius:20px;box-shadow:0 24px 80px rgba(0,0,0,.22);overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Noto Sans SC","Microsoft YaHei",sans-serif;}
+.zhihuE_IoHead {padding:28px 32px 18px;border-bottom:1px solid #eee;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;}
+.zhihuE_IoTitle {margin:0;font-size:22px;font-weight:600;}
+.zhihuE_IoTips {margin:8px 0 0;font-size:13px;line-height:1.65;color:#8a8a8a;}
+.zhihuE_IoClose {flex:none;width:36px;height:36px;border:0;border-radius:50%;background:#f4f4f5;color:#666;cursor:pointer;font-size:18px;line-height:1;}
+.zhihuE_IoClose:hover {background:#1d1d1f;color:#fff;}
+.zhihuE_IoBody {flex:1;min-height:0;padding:18px 32px 12px;display:flex;flex-direction:column;gap:12px;}
+.zhihuE_IoArea {flex:1;min-height:180px;width:100%;padding:14px 16px;border:1px solid #e8e8e8;border-radius:12px;background:#fafafa;font:12px/1.55 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;resize:none;outline:none;box-sizing:border-box;}
+.zhihuE_IoArea:focus {border-color:#1d1d1f;background:#fff;box-shadow:0 0 0 4px rgba(29,29,31,.06);}
+.zhihuE_IoMsg {min-height:18px;font-size:12px;color:#c45c26;}
+.zhihuE_IoFoot {display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px;padding:16px 32px 22px;border-top:1px solid #eee;}
+.zhihuE_IoBtns {display:flex;flex-wrap:wrap;gap:8px;}
+.zhihuE_IoBtn {height:36px;padding:0 14px;border:1px solid #e4e4e4;border-radius:10px;background:#fff;color:#1d1d1f;font-size:13px;cursor:pointer;}
+.zhihuE_IoBtn:hover {background:#f7f7f7;border-color:#ccc;}
+.zhihuE_IoBtn.is-ok {background:#1d1d1f;border-color:#1d1d1f;color:#fff;}
+.zhihuE_IoPrimary {background:#1d1d1f;border-color:#1d1d1f;color:#fff;}
+.zhihuE_IoPrimary:hover {opacity:.88;background:#1d1d1f;}
+.zhihuE_IoFile {display:none;}
+[data-theme="dark"] .zhihuE_IoRoot {background:#2b2f36;color:#e8edf2;}
+[data-theme="dark"] .zhihuE_IoHead,[data-theme="dark"] .zhihuE_IoFoot {border-color:#3c434d;}
+[data-theme="dark"] .zhihuE_IoTips,[data-theme="dark"] .zhihuE_IoMsg {color:#9aa4b2;}
+[data-theme="dark"] .zhihuE_IoClose,[data-theme="dark"] .zhihuE_IoBtn {background:#343a44;border-color:#3c434d;color:#e8edf2;}
+[data-theme="dark"] .zhihuE_IoClose:hover,[data-theme="dark"] .zhihuE_IoBtn.is-ok,[data-theme="dark"] .zhihuE_IoPrimary {background:#e8edf2;border-color:#e8edf2;color:#1d1d1f;}
+[data-theme="dark"] .zhihuE_IoArea {background:#343a44;border-color:#3c434d;color:#e8edf2;}
+[data-theme="dark"] .zhihuE_IoArea:focus {background:#2b2f36;border-color:#c8d0da;}
+</style>
+<div class="zhihuE_IoMask">
+  <div class="zhihuE_IoRoot">
+    <div class="zhihuE_IoHead">
+      <div>
+        <h3 class="zhihuE_IoTitle">导入 / 导出 JSON</h3>
+        <p class="zhihuE_IoTips">包含全部开关、屏蔽用户/关键词和噪音词库。导入会覆盖当前配置并刷新页面。</p>
+      </div>
+      <button type="button" class="zhihuE_IoClose" aria-label="关闭">×</button>
+    </div>
+    <div class="zhihuE_IoBody">
+      <textarea class="zhihuE_IoArea" spellcheck="false"></textarea>
+      <div class="zhihuE_IoMsg"></div>
+    </div>
+    <div class="zhihuE_IoFoot">
+      <div class="zhihuE_IoBtns">
+        <button type="button" class="zhihuE_IoBtn" data-act="download">下载 JSON</button>
+        <button type="button" class="zhihuE_IoBtn" data-act="copy">复制</button>
+        <button type="button" class="zhihuE_IoBtn" data-act="file">从文件导入</button>
+      </div>
+      <div class="zhihuE_IoBtns">
+        <button type="button" class="zhihuE_IoBtn zhihuE_IoPrimary" data-act="apply">导入并刷新</button>
+      </div>
+    </div>
+    <input class="zhihuE_IoFile" type="file" accept="application/json,.json">
+  </div>
+</div>`;
+
+    document.body.insertAdjacentHTML('beforeend', html);
+    const mask = document.querySelector('.zhihuE_IoMask');
+    const area = mask.querySelector('.zhihuE_IoArea');
+    const msg = mask.querySelector('.zhihuE_IoMsg');
+    const fileInput = mask.querySelector('.zhihuE_IoFile');
+    area.value = pretty();
+
+    const close = () => {
+        document.removeEventListener('keydown', onKey);
+        mask.remove();
+        const style = document.querySelector('.zhihuE_IoStyle');
+        if (style) style.remove();
+    };
+    const onKey = event => {
+        if (event.key === 'Escape') close();
+    };
+    const flash = (btn, text) => {
+        const raw = btn.textContent;
+        btn.textContent = text;
+        btn.classList.add('is-ok');
+        setTimeout(() => {
+            btn.textContent = raw;
+            btn.classList.remove('is-ok');
+        }, 1200);
+    };
+    const showError = text => {
+        msg.textContent = text;
+    };
+    const applyText = text => {
+        showError('');
+        let values;
+        try {
+            values = parseSettingsJson(text);
+        } catch (err) {
+            showError(err.message === 'kind' ? '不是本脚本的配置文件。' : 'JSON 无效，请检查后再导入。');
+            return;
+        }
+        const n = applyImportedSettings(values);
+        if (!n) {
+            showError('没有可导入的设置项。');
+            return;
+        }
+        notify('已导入 ' + n + ' 项，即将刷新');
+        location.reload();
+    };
+
+    mask.querySelector('.zhihuE_IoClose').onclick = close;
+    mask.addEventListener('click', event => {
+        if (event.target === mask) close();
+    });
+    mask.querySelector('.zhihuE_IoFoot').addEventListener('click', async event => {
+        const btn = event.target.closest('[data-act]');
+        if (!btn) return;
+        const act = btn.dataset.act;
+        if (act === 'download') {
+            downloadJsonFile(settingsExportFilename(), area.value.trim() || pretty());
+            flash(btn, '已下载');
+            notify('已导出 JSON');
+            return;
+        }
+        if (act === 'copy') {
+            const text = area.value.trim() || pretty();
+            try {
+                if (navigator.clipboard && navigator.clipboard.writeText) await navigator.clipboard.writeText(text);
+            } catch (e) { /* ignore */ }
+            flash(btn, '已复制');
+            return;
+        }
+        if (act === 'file') {
+            fileInput.click();
+            return;
+        }
+        if (act === 'apply') {
+            if (!confirm('导入将覆盖当前全部设置，确定？')) return;
+            applyText(area.value);
+        }
+    });
+    fileInput.addEventListener('change', () => {
+        const file = fileInput.files && fileInput.files[0];
+        fileInput.value = '';
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+            area.value = String(reader.result || '');
+            showError('');
+        };
+        reader.onerror = () => showError('无法读取该文件。');
+        reader.readAsText(file, 'utf-8');
+    });
+    document.addEventListener('keydown', onKey);
 }
 
 function toggleCardDialog({ title, tips, footer, items }) {
