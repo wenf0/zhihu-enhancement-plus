@@ -3,7 +3,7 @@
 // @name:zh-CN   知乎增强优化
 // @name:zh-TW   知乎增強優化
 // @name:en      Zhihu Enhancement Plus
-// @version      1.7.0
+// @version      1.7.1
 // @author       local (based on X.I.U / 知乎增强 2.2.15)
 // @description  用于知乎网页。可开关：低饱和配色、隐藏右侧栏、清空或锁定标签标题与图标、净化搜索热门、默认/一键/点空白收起回答与评论、右键回顶、展开问题描述、置顶发布时间、信息流类型标签、直达问题、按用户与噪音档位及关键词过滤、按类别屏蔽视频/文章/想法/话题/盐选/相关搜索/热榜杂项。始终生效：关登录弹窗、原图、站外直链、点浮层关评论、去掉搜索高亮链接。基于 XIU2「知乎增强」2.2.15（GPL-3.0），无远程外部脚本。
 // @description:zh-CN 用于知乎网页。可开关：低饱和配色、隐藏右侧栏、清空或锁定标签标题与图标、净化搜索热门、默认/一键/点空白收起回答与评论、右键回顶、展开问题描述、置顶发布时间、信息流类型标签、直达问题、按用户与噪音档位及关键词过滤、按类别屏蔽视频/文章/想法/话题/盐选/相关搜索/热榜杂项。始终生效：关登录弹窗、原图、站外直链、点浮层关评论、去掉搜索高亮链接。基于 XIU2「知乎增强」2.2.15（GPL-3.0），无远程外部脚本。
@@ -129,6 +129,58 @@ const MENU_ITEMS = [
 const cache = Object.create(null);
 const menuCommandIds = [];
 
+/* GM_setValue 跟脚本安装 ID 绑定，卸载重装会丢。再备份到知乎域名 localStorage。 */
+const SETTINGS_BACKUP_KEY = 'zhihu-enhancement-plus:settings:v1';
+const SETTINGS_GM_FLAG = 'zhihu_plus_persist_v1';
+const SETTINGS_EXTRA_KEYS = ['menu_kw_pack_v1', 'noise_lexicon_v1'];
+
+function pageLocalStorage() {
+    try {
+        return window.localStorage;
+    } catch (err) {
+        return null;
+    }
+}
+
+function readSettingsBackup() {
+    const ls = pageLocalStorage();
+    if (!ls) return null;
+    try {
+        const data = JSON.parse(ls.getItem(SETTINGS_BACKUP_KEY) || '');
+        return data && data.values && typeof data.values === 'object' ? data.values : null;
+    } catch (err) {
+        return null;
+    }
+}
+
+function writeSettingsBackup() {
+    const ls = pageLocalStorage();
+    if (!ls) return;
+    try {
+        const values = {};
+        for (const item of MENU_ITEMS) values[item.key] = GM_getValue(item.key);
+        for (const key of SETTINGS_EXTRA_KEYS) {
+            const value = GM_getValue(key);
+            if (value != null) values[key] = value;
+        }
+        ls.setItem(SETTINGS_BACKUP_KEY, JSON.stringify({ v: 1, t: Date.now(), values }));
+    } catch (err) { /* 隐私模式或配额 */ }
+}
+
+function restoreSettingsIfNeeded() {
+    if (GM_getValue(SETTINGS_GM_FLAG)) return;
+    const backup = readSettingsBackup();
+    if (backup) {
+        for (const [key, value] of Object.entries(backup)) {
+            if (value === undefined) continue;
+            GM_setValue(key, value);
+        }
+    }
+    GM_setValue(SETTINGS_GM_FLAG, true);
+}
+
+restoreSettingsIfNeeded();
+
 for (const item of MENU_ITEMS) {
     if (item.key === 'menu_customBlockKeywords' && !GM_getValue('menu_kw_pack_v1')) {
         const current = GM_getValue(item.key);
@@ -141,6 +193,7 @@ for (const item of MENU_ITEMS) {
     }
     cache[item.key] = GM_getValue(item.key);
 }
+writeSettingsBackup();
 
 function menuValue(key) {
     return cache[key];
@@ -149,6 +202,7 @@ function menuValue(key) {
 function menuSet(key, value) {
     cache[key] = value;
     GM_setValue(key, value);
+    writeSettingsBackup();
 }
 
 /* -------------------------------------------------------------------------- */
@@ -378,7 +432,7 @@ function openSettingsPanel() {
       <div>
         <p class="zhihuE_StKicker">Zhihu Enhancement Plus</p>
         <h3 class="zhihuE_StTitle">设置</h3>
-        <p class="zhihuE_StTips">开关即时保存，刷新页面后生效</p>
+        <p class="zhihuE_StTips">开关即时保存，刷新后生效。配置会备份到本站，重装脚本后自动恢复。</p>
       </div>
       <button type="button" class="zhihuE_StClose" aria-label="关闭">×</button>
     </div>
@@ -1226,12 +1280,89 @@ function defaultCollapsedAnswer() {
     if (!location.href.includes('/answer/')) observer.start();
 }
 
+function setCollapsedCornerStyle(css) {
+    let el = document.getElementById('zhihu-plus-collapsed-btn');
+    if (!el) {
+        el = document.createElement('style');
+        el.id = 'zhihu-plus-collapsed-btn';
+        (document.head || document.documentElement).appendChild(el);
+    }
+    if (el.textContent !== css) el.textContent = css;
+}
+
+/* 右下角知乎 AI 等悬浮球不在 .CornerButtons 里，旧的 bottom:45px 会压上去 */
+function isCornerStack(el) {
+    return el.closest && el.closest('.CornerButtons, .CornerButtonsGroup, .CornerAnimayedFlex');
+}
+
+function collapsedCornerLiftPx() {
+    const gap = 16;
+    const minLift = 120;
+    let occupied = 0;
+    if (!document.body) return minLift;
+
+    const named = document.querySelectorAll(
+        '[class*="zhihuai" i], [class*="ZhihuAI"], [class*="zhida-entry" i], [class*="ZhidaEntry"], [aria-label*="直答"], iframe[src*="zhida"]'
+    );
+    named.forEach(el => {
+        if (isCornerStack(el)) return;
+        const r = el.getBoundingClientRect();
+        if (r.width < 8 || r.height < 8) return;
+        occupied = Math.max(occupied, window.innerHeight - r.top);
+    });
+
+    const stack = [];
+    for (const el of document.body.children) stack.push([el, 0]);
+    while (stack.length) {
+        const item = stack.pop();
+        const el = item[0];
+        const depth = item[1];
+        if (!el || el.nodeType !== 1 || depth > 10) continue;
+        if (isCornerStack(el)) continue;
+        const st = getComputedStyle(el);
+        if (st.position === 'fixed' && st.display !== 'none' && st.visibility !== 'hidden' && st.opacity !== '0') {
+            const r = el.getBoundingClientRect();
+            if (r.width >= 28 && r.width <= 160 && r.height >= 28 && r.height <= 180
+                && window.innerWidth - r.right <= 48
+                && window.innerHeight - r.bottom <= 64) {
+                occupied = Math.max(occupied, window.innerHeight - r.top);
+            }
+            continue;
+        }
+        if (depth < 10) {
+            for (const child of el.children) stack.push([child, depth + 1]);
+        }
+    }
+    return Math.max(minLift, occupied ? occupied + gap : 0);
+}
+
+function syncCollapsedCornerStyle() {
+    const lift = collapsedCornerLiftPx();
+    setCollapsedCornerStyle(
+        `.CornerButton{margin-bottom:8px !important;}` +
+        `.CornerButtons,.CornerButtonsGroup{bottom:${lift}px !important;}`
+    );
+}
+
+function watchCollapsedCornerLift() {
+    if (window._zhihuPlusCornerLiftWatch) return;
+    window._zhihuPlusCornerLiftWatch = true;
+    syncCollapsedCornerStyle();
+    window.addEventListener('resize', syncCollapsedCornerStyle);
+    window.addEventListener('urlchange', syncCollapsedCornerStyle);
+    let n = 0;
+    const id = setInterval(() => {
+        syncCollapsedCornerStyle();
+        if (++n >= 20) clearInterval(id);
+    }, 400);
+}
+
 function collapsedAnswer() {
     if (!menuValue('menu_collapsedAnswer')) return;
+    watchCollapsedCornerLift();
     const corner = document.querySelector('.CornerAnimayedFlex');
     if (!corner || document.getElementById('collapsed-button')) return;
 
-    injectStyle('zhihu-plus-collapsed-btn', '.CornerButton{margin-bottom:8px !important;}.CornerButtons{bottom:45px !important;}');
     const cls = corner.querySelector('button') ? corner.querySelector('button').className : 'CornerButton';
     corner.insertAdjacentHTML('afterBegin', `<button id="collapsed-button" data-tooltip="收起全部回答/评论" data-tooltip-position="left" data-tooltip-will-hide-on-click="false" aria-label="收起全部回答/评论" type="button" class="${cls}"><svg class="ContentItem-arrowIcon is-active" aria-label="收起全部回答/评论" fill="currentColor" viewBox="0 0 24 24" width="24" height="24"><path d="M16.036 19.59a1 1 0 0 1-.997.995H9.032a.996.996 0 0 1-.997-.996v-7.005H5.03c-1.1 0-1.36-.633-.578-1.416L11.33 4.29a1.003 1.003 0 0 1 1.412 0l6.878 6.88c.782.78.523 1.415-.58 1.415h-3.004v7.005z"></path></svg></button>`);
 
@@ -1743,6 +1874,7 @@ function getActiveLexicon() {
 function saveLexicon(data) {
     GM_setValue(LEXICON_KEY, data);
     noiseIndex = null;
+    writeSettingsBackup();
 }
 
 function touchLexicon(data, token) {
@@ -2165,8 +2297,19 @@ function fullWidthLayout() {
         .RightSideBar,
         .Question-sideColumn,
         .SearchSideBar,
-        .ContentLayout-sideColumn {
+        .ContentLayout-sideColumn,
+        [data-za-detail-view-path-module="RightSideBar"],
+        [data-za-detail-view-path-module="QuestionSideBar"],
+        .HotSearchCard,
+        .GlobalSideBar {
             display: none !important;
+            width: 0 !important;
+            min-width: 0 !important;
+            max-width: 0 !important;
+            overflow: hidden !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            border: 0 !important;
         }
 
         :root {
