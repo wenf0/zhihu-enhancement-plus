@@ -3,7 +3,7 @@
 // @name:zh-CN   知乎增强优化
 // @name:zh-TW   知乎增強優化
 // @name:en      Zhihu Enhancement Plus
-// @version      1.7.20
+// @version      1.7.21
 // @author       local (based on X.I.U / 知乎增强 2.2.15)
 // @description  用于知乎网页。可开关：低饱和配色、隐藏右侧栏、清空或锁定标签标题与图标、净化搜索热门、默认/一键/点空白收起回答与评论、右键回顶、展开问题描述、置顶发布时间、信息流类型标签、直达问题、按用户与噪音评分（可显示得分、可过滤）及关键词、按类别屏蔽视频/文章/想法/话题/盐选/相关搜索/热榜杂项。设置可 JSON 导入导出。始终生效：关登录弹窗、原图、站外直链、点浮层关评论、去掉搜索高亮链接。基于 XIU2「知乎增强」2.2.15（GPL-3.0），无远程外部脚本。
 // @description:zh-CN 用于知乎网页。可开关：低饱和配色、隐藏右侧栏、清空或锁定标签标题与图标、净化搜索热门、默认/一键/点空白收起回答与评论、右键回顶、展开问题描述、置顶发布时间、信息流类型标签、直达问题、按用户与噪音评分（可显示得分、可过滤）及关键词、按类别屏蔽视频/文章/想法/话题/盐选/相关搜索/热榜杂项。设置可 JSON 导入导出。始终生效：关登录弹窗、原图、站外直链、点浮层关评论、去掉搜索高亮链接。基于 XIU2「知乎增强」2.2.15（GPL-3.0），无远程外部脚本。
@@ -2225,6 +2225,8 @@ function compileNoiseIndex() {
         })).sort((a, b) => b.len - a.len);
         for (const item of words) seen.add(item.k);
         cats.push({
+            name: cat.name,
+            level: cat.level,
             c: cat.c,
             excludes: (cat.excludes || []).map(x => x.toLowerCase()),
             words
@@ -2251,69 +2253,106 @@ function compileNoiseIndex() {
 }
 
 function scoreText(raw) {
-    if (!raw) return { final: 0, K: 0, C: 0, E: 0, S: 0, B: 0, V: 0 };
+    if (!raw) {
+        return {
+            final: 0, K: 0, C: 0, E: 0, S: 0, B: 0, V: 0, kRaw: 0,
+            hits: { words: [], emotion: [], controversy: [], clickbait: [], value: [] },
+            winningCat: '', exclude: '', cFallback: false
+        };
+    }
     const text = String(raw).toLowerCase();
     const idx = compileNoiseIndex();
     let kRaw = 0;
     let bestC = 0;
+    let winningCat = '';
+    let exclude = '';
+    const wordHits = [];
 
     for (const cat of idx.cats) {
         let longHits = 0;
         let catW = 0;
+        const local = [];
         for (const item of cat.words) {
             if (item.len < 2) continue;
             if (text.includes(item.k)) {
                 longHits += 1;
                 catW += item.w;
+                local.push({ word: item.k, w: item.w, cat: cat.name, source: 'cat' });
             }
         }
         if (longHits) {
             for (const item of cat.words) {
                 if (item.len >= 2) continue;
-                if (text.includes(item.k)) catW += item.w * 0.35;
+                if (text.includes(item.k)) {
+                    const w = item.w * 0.35;
+                    catW += w;
+                    local.push({ word: item.k, w, cat: cat.name, source: 'char' });
+                }
             }
             let c = cat.c;
-            if (cat.excludes.some(ex => text.includes(ex))) c *= 0.35;
-            if (c > bestC) bestC = c;
+            const hitEx = cat.excludes.find(ex => text.includes(ex)) || '';
+            if (hitEx) c *= 0.35;
+            if (c > bestC) {
+                bestC = c;
+                winningCat = cat.name;
+                exclude = hitEx;
+            }
             kRaw += catW;
+            wordHits.push(...local);
         }
     }
 
     for (const word of idx.custom) {
-        if (text.includes(word)) kRaw += 8;
+        if (text.includes(word)) {
+            kRaw += 8;
+            wordHits.push({ word, w: 8, cat: '自定义', source: 'custom' });
+        }
     }
 
     const K = 100 * (1 - Math.exp(-kRaw / 20));
 
+    const emotion = [];
     let eSum = 0;
     for (const item of idx.emotion) {
-        if (text.includes(item.k)) eSum += item.w;
+        if (text.includes(item.k)) {
+            eSum += item.w;
+            emotion.push({ word: item.k, w: item.w });
+        }
     }
     const E = Math.min(25, eSum);
 
-    let sCount = 0;
+    const controversy = [];
     for (const word of idx.controversy) {
-        if (text.includes(word)) sCount += 1;
+        if (text.includes(word)) controversy.push(word);
     }
-    const S = Math.min(30, 6 * sCount);
+    const S = Math.min(30, 6 * controversy.length);
 
-    let bCount = 0;
+    const clickbait = [];
     for (const word of idx.clickbait) {
-        if (text.includes(word)) bCount += 1;
+        if (text.includes(word)) clickbait.push(word);
     }
-    const B = Math.min(25, bCount * 5);
+    const B = Math.min(25, clickbait.length * 5);
 
+    const value = [];
     let V = 0;
     for (const item of idx.value) {
-        if (text.includes(item.k)) V += item.w;
+        if (text.includes(item.k)) {
+            V += item.w;
+            value.push({ word: item.k, w: item.w });
+        }
     }
     V = Math.min(50, V);
 
-    if (kRaw === 0 && E + B >= 16) bestC = Math.max(bestC, 42);
+    const cFallback = kRaw === 0 && E + B >= 16;
+    if (cFallback) bestC = Math.max(bestC, 42);
 
     const noise = NOISE_WEIGHTS.k * K + NOISE_WEIGHTS.c * bestC + NOISE_WEIGHTS.e * E + NOISE_WEIGHTS.s * S + NOISE_WEIGHTS.b * B;
     const final = Math.max(0, Math.min(100, noise - NOISE_WEIGHTS.v * V));
-    return { final, K, C: bestC, E, S, B, V };
+    return {
+        final, K, C: bestC, E, S, B, V, kRaw,
+        hits: { words: wordHits, emotion, controversy, clickbait, value },
+        winningCat, exclude, cFallback
+    };
 }
 
 function scoreFeedNoise(title, body) {
@@ -2341,25 +2380,197 @@ function injectNoiseStyles() {
         .zhihu-plus-noise-hide {display: none !important;}
         .zhihu-plus-noise-demote {opacity: .42; transition: opacity .2s;}
         .zhihu-plus-noise-demote:hover {opacity: .88;}
-        .zhihu-plus-noise-tag {position:absolute;top:8px;right:8px;z-index:6;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:650;font-variant-numeric:tabular-nums;line-height:1.5;pointer-events:none;--t:0;background:hsla(calc(145 - 145 * var(--t)), calc(42% + 53% * var(--t)), calc(94% - 42% * var(--t)), calc(0.78 + 0.22 * var(--t)));color:hsl(calc(145 - 145 * var(--t)), calc(48% + 40% * var(--t)), calc(26% + 56% * var(--t)));border:1px solid hsla(calc(145 - 145 * var(--t)), 72%, 38%, calc(0.1 + 0.42 * var(--t)));box-shadow:0 0 calc(2px + 12px * var(--t)) hsla(calc(145 - 145 * var(--t)), 90%, 48%, calc(0.04 + 0.42 * var(--t)));text-shadow:0 1px 2px rgba(0,0,0,calc(0.08 + 0.28 * var(--t)));}
+        .zhihu-plus-noise-tag {position:absolute;top:8px;right:8px;z-index:6;padding:2px 8px !important;border-radius:999px;font:inherit;font-size:11px !important;font-weight:650;font-variant-numeric:tabular-nums;line-height:1.5;pointer-events:auto;cursor:pointer;width:auto !important;min-width:0 !important;height:auto !important;appearance:none;-webkit-appearance:none;--t:0;background:hsla(calc(145 - 145 * var(--t)), calc(42% + 53% * var(--t)), calc(94% - 42% * var(--t)), calc(0.78 + 0.22 * var(--t)));color:hsl(calc(145 - 145 * var(--t)), calc(48% + 40% * var(--t)), calc(26% + 56% * var(--t)));border:1px solid hsla(calc(145 - 145 * var(--t)), 72%, 38%, calc(0.1 + 0.42 * var(--t)));box-shadow:0 0 calc(2px + 12px * var(--t)) hsla(calc(145 - 145 * var(--t)), 90%, 48%, calc(0.04 + 0.42 * var(--t)));text-shadow:0 1px 2px rgba(0,0,0,calc(0.08 + 0.28 * var(--t)));}
         [data-theme="dark"] .zhihu-plus-noise-tag {background:hsla(calc(145 - 145 * var(--t)), calc(48% + 42% * var(--t)), calc(20% + 10% * var(--t)), calc(0.62 + 0.32 * var(--t)));color:hsl(calc(145 - 145 * var(--t)), 86%, calc(86% - 6% * var(--t)));}
     `);
+    bindNoiseExplain();
 }
 
 function ensureCardPosition(card) {
     if (getComputedStyle(card).position === 'static') card.style.position = 'relative';
 }
 
-function paintNoiseBadge(card, score) {
+function paintNoiseBadge(card, score, titleCss) {
     ensureCardPosition(card);
     let tag = card.querySelector('.zhihu-plus-noise-tag');
     if (!tag) {
-        tag = document.createElement('div');
+        tag = document.createElement('button');
+        tag.type = 'button';
         tag.className = 'zhihu-plus-noise-tag';
+        tag.setAttribute('aria-label', '查看噪音评分过程');
         card.insertAdjacentElement('afterbegin', tag);
     }
     tag.style.setProperty('--t', noiseTint(score).toFixed(3));
     tag.textContent = String(score);
+    if (titleCss) tag.dataset.titleCss = titleCss;
+}
+
+function noisePartRows(parts) {
+    const w = NOISE_WEIGHTS;
+    return [
+        ['K', '关键词', parts.K, w.k, 1],
+        ['C', '分类', parts.C, w.c, 1],
+        ['E', '情绪', parts.E, w.e, 1],
+        ['S', '争议', parts.S, w.s, 1],
+        ['B', '标题党', parts.B, w.b, 1],
+        ['V', '价值', parts.V, w.v, -1]
+    ].map(([k, name, v, weight, sign]) => {
+        const n = Number(v) || 0;
+        const contrib = sign * weight * n;
+        return { k, name, v: n, weight, sign, contrib };
+    });
+}
+
+function noiseHitChips(list, fmt) {
+    if (!list || !list.length) return '<span class="zhihuE_NxEmpty">无</span>';
+    const max = 18;
+    const shown = list.slice(0, max);
+    const extra = list.length - shown.length;
+    return shown.map(fmt).join('') + (extra > 0 ? `<span class="zhihuE_NxMore">+${extra}</span>` : '');
+}
+
+function noiseExplainHtml(title, body, result) {
+    const { final, titleScore, bodyScore } = result;
+    const verdict = noiseVerdict(final);
+    const mixed = titleScore.final * 0.72 + bodyScore.final * 0.28;
+    const used = final === titleScore.final ? 'title' : 'mix';
+    const filterOn = !!menuValue('menu_blockKeywords');
+    const rows = noisePartRows(titleScore);
+    const w = NOISE_WEIGHTS;
+    const n = x => (Math.round(x * 10) / 10).toFixed(1);
+    const hits = titleScore.hits || { words: [], emotion: [], controversy: [], clickbait: [], value: [] };
+    const notes = [];
+    if (titleScore.winningCat) notes.push(`分类取「${titleScore.winningCat}」`);
+    if (titleScore.exclude) notes.push(`排除词「${titleScore.exclude}」使 C ×0.35`);
+    if (titleScore.cFallback) notes.push('无关键词但情绪和标题党偏高，C 保底 42');
+    if (!filterOn) notes.push('过滤已关闭，信息流只打分不处理');
+    const bar = row => {
+        const pct = Math.max(0, Math.min(100, row.v));
+        return `<div class="zhihuE_NxRow">
+            <div class="zhihuE_NxKey">${row.k}</div>
+            <div class="zhihuE_NxMid">
+                <div class="zhihuE_NxName">${row.name}</div>
+                <div class="zhihuE_NxTrack"><i style="width:${pct}%"></i></div>
+            </div>
+            <div class="zhihuE_NxMath">${n(row.weight)} × ${n(row.v)} <b>${row.sign < 0 ? '−' : '+'}${n(Math.abs(row.contrib))}</b></div>
+        </div>`;
+    };
+    const chip = item => `<span class="zhihuE_NxChip"><em>${escapeHtml(item.word)}</em>${item.w != null ? `<b>${item.w % 1 ? item.w.toFixed(1) : item.w}</b>` : ''}</span>`;
+    return `<div class="zhihuE_NxHead">
+        <div>
+            <p class="zhihuE_NxKicker">Noise Score</p>
+            <h3>评分过程</h3>
+        </div>
+        <button type="button" class="zhihuE_NxClose" aria-label="关闭">×</button>
+    </div>
+    <div class="zhihuE_NxHero is-${verdict.id}">
+        <div class="zhihuE_NxScore">${Math.round(final)}</div>
+        <div>
+            <div class="zhihuE_NxVerdict">${escapeHtml(verdict.name)}</div>
+            <p class="zhihuE_NxMix">max(标题 ${Math.round(titleScore.final)}${body ? `，0.72×标题 + 0.28×摘要 = ${Math.round(mixed)}` : ''})</p>
+            <p class="zhihuE_NxMix">${used === 'title' ? '本条取标题分' : '本条取标题与摘要加权'}</p>
+        </div>
+    </div>
+    <p class="zhihuE_NxFormula">clamp(${n(w.k)}K + ${n(w.c)}C + ${n(w.e)}E + ${n(w.s)}S + ${n(w.b)}B − ${n(w.v)}V)</p>
+    <div class="zhihuE_NxRows">${rows.map(bar).join('')}</div>
+    <div class="zhihuE_NxHits">
+        <div class="zhihuE_NxBlock"><span>关键词</span><div>${noiseHitChips(hits.words, chip)}</div></div>
+        <div class="zhihuE_NxBlock"><span>情绪</span><div>${noiseHitChips(hits.emotion, chip)}</div></div>
+        <div class="zhihuE_NxBlock"><span>争议</span><div>${noiseHitChips(hits.controversy.map(word => ({ word })), chip)}</div></div>
+        <div class="zhihuE_NxBlock"><span>标题党</span><div>${noiseHitChips(hits.clickbait.map(word => ({ word })), chip)}</div></div>
+        <div class="zhihuE_NxBlock"><span>价值</span><div>${noiseHitChips(hits.value, chip)}</div></div>
+    </div>
+    ${title ? `<p class="zhihuE_NxQuote">${escapeHtml(title.slice(0, 120))}</p>` : ''}
+    ${notes.length ? `<p class="zhihuE_NxNote">${notes.map(escapeHtml).join(' · ')}</p>` : ''}`;
+}
+
+function showNoiseExplain(card, titleCss) {
+    const existing = document.querySelector('.zhihuE_NxHost');
+    if (existing) existing.remove();
+    const { title, body } = cardNoiseText(card, titleCss);
+    if (!title && !body) return;
+    const result = scoreFeedNoise(title, body);
+    const host = document.createElement('div');
+    host.className = 'zhihuE_NxHost';
+    const shadow = host.attachShadow({ mode: 'open' });
+    shadow.innerHTML = `<style>
+:host {all:initial;display:block;position:fixed;inset:0;z-index:2147483646;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Noto Sans SC","Microsoft YaHei",sans-serif;color:#1d1d1f;line-height:1.5;}
+*,*::before,*::after {box-sizing:border-box;}
+button {font:inherit;color:inherit;}
+.zhihuE_NxMask {position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(18,18,18,.42);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);}
+.zhihuE_NxCard {width:min(520px,96vw);max-height:min(820px,92vh);overflow:auto;padding:28px 30px 24px;border-radius:28px;background:#fff;box-shadow:0 32px 90px rgba(0,0,0,.28);}
+.zhihuE_NxHead {display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:18px;}
+.zhihuE_NxKicker {margin:0 0 4px;font-size:11px;letter-spacing:.18em;color:#aaa;text-transform:uppercase;}
+.zhihuE_NxHead h3 {margin:0;font-size:22px;font-weight:650;}
+.zhihuE_NxClose {flex:none;width:34px;height:34px;border:0;border-radius:50%;background:#f4f4f5;color:#666;cursor:pointer;font-size:18px;line-height:1;}
+.zhihuE_NxClose:hover {background:#1d1d1f;color:#fff;}
+.zhihuE_NxHero {display:flex;align-items:center;gap:18px;padding:18px 20px;border-radius:20px;margin-bottom:16px;border:1px solid #eee;}
+.zhihuE_NxHero.is-keep {background:#f6faf6;border-color:#dbe8db;}
+.zhihuE_NxHero.is-demote {background:#faf7f1;border-color:#eadfc8;}
+.zhihuE_NxHero.is-hide {background:#faf5f5;border-color:#ead4d4;}
+.zhihuE_NxScore {font-size:56px;font-weight:650;letter-spacing:-.04em;line-height:1;font-variant-numeric:tabular-nums;}
+.zhihuE_NxVerdict {font-size:16px;font-weight:650;}
+.zhihuE_NxMix {margin:4px 0 0;font-size:12px;line-height:1.55;color:#8a8a8a;}
+.zhihuE_NxFormula {margin:0 0 14px;font-size:13px;color:#666;font-variant-numeric:tabular-nums;}
+.zhihuE_NxRows {display:flex;flex-direction:column;gap:10px;}
+.zhihuE_NxRow {display:grid;grid-template-columns:28px 1fr auto;gap:10px;align-items:center;}
+.zhihuE_NxKey {font-size:13px;font-weight:700;}
+.zhihuE_NxName {font-size:12px;color:#8a8a8a;margin-bottom:4px;}
+.zhihuE_NxTrack {height:6px;border-radius:999px;background:#f0f0f0;overflow:hidden;}
+.zhihuE_NxTrack i {display:block;height:100%;border-radius:inherit;background:#1d1d1f;}
+.zhihuE_NxMath {font-size:12px;color:#8a8a8a;font-variant-numeric:tabular-nums;white-space:nowrap;}
+.zhihuE_NxMath b {color:#1d1d1f;font-weight:650;margin-left:6px;}
+.zhihuE_NxHits {margin-top:18px;display:flex;flex-direction:column;gap:12px;}
+.zhihuE_NxBlock span {display:block;font-size:11px;letter-spacing:.12em;color:#aaa;margin-bottom:6px;text-transform:uppercase;}
+.zhihuE_NxBlock div {display:flex;flex-wrap:wrap;gap:6px;}
+.zhihuE_NxChip {display:inline-flex;align-items:center;gap:6px;padding:4px 8px 4px 10px;border-radius:999px;background:#f6f6f6;font-size:12px;}
+.zhihuE_NxChip b {font-weight:650;color:#888;}
+.zhihuE_NxEmpty,.zhihuE_NxMore {font-size:12px;color:#bbb;}
+.zhihuE_NxQuote {margin:16px 0 0;font-size:13px;line-height:1.65;color:#666;}
+.zhihuE_NxNote {margin:12px 0 0;font-size:12px;line-height:1.65;color:#8a8a8a;}
+[data-theme="dark"] .zhihuE_NxCard {background:#2b2f36;color:#e8edf2;}
+[data-theme="dark"] .zhihuE_NxClose,[data-theme="dark"] .zhihuE_NxChip,[data-theme="dark"] .zhihuE_NxTrack {background:#343a44;color:#c5ced8;}
+[data-theme="dark"] .zhihuE_NxClose:hover {background:#e8edf2;color:#1d1d1f;}
+[data-theme="dark"] .zhihuE_NxHero {border-color:#3c434d;}
+[data-theme="dark"] .zhihuE_NxHero.is-keep {background:#2f3a34;border-color:#3d5244;}
+[data-theme="dark"] .zhihuE_NxHero.is-demote {background:#3a372f;border-color:#534832;}
+[data-theme="dark"] .zhihuE_NxHero.is-hide {background:#3a3232;border-color:#534040;}
+[data-theme="dark"] .zhihuE_NxKicker,[data-theme="dark"] .zhihuE_NxMix,[data-theme="dark"] .zhihuE_NxName,[data-theme="dark"] .zhihuE_NxMath,[data-theme="dark"] .zhihuE_NxNote,[data-theme="dark"] .zhihuE_NxBlock span {color:#9aa4b2;}
+[data-theme="dark"] .zhihuE_NxTrack i,[data-theme="dark"] .zhihuE_NxMath b {background:#e8edf2;color:#e8edf2;}
+</style>
+<div class="zhihuE_NxMask"><div class="zhihuE_NxCard"></div></div>`;
+    const mask = shadow.querySelector('.zhihuE_NxMask');
+    const pane = shadow.querySelector('.zhihuE_NxCard');
+    const theme = document.documentElement.getAttribute('data-theme') || '';
+    if (theme === 'dark') mask.setAttribute('data-theme', 'dark');
+    pane.innerHTML = noiseExplainHtml(title, body, result);
+    const close = () => {
+        document.removeEventListener('keydown', onKey, true);
+        host.remove();
+    };
+    const onKey = event => {
+        if (event.key === 'Escape') close();
+    };
+    mask.addEventListener('click', event => {
+        if (event.target === mask) close();
+    });
+    pane.querySelector('.zhihuE_NxClose').onclick = close;
+    document.addEventListener('keydown', onKey, true);
+    document.body.appendChild(host);
+}
+
+let noiseExplainBound = false;
+function bindNoiseExplain() {
+    if (noiseExplainBound) return;
+    noiseExplainBound = true;
+    document.addEventListener('click', event => {
+        const tag = event.target.closest('.zhihu-plus-noise-tag');
+        if (!tag) return;
+        event.preventDefault();
+        event.stopPropagation();
+        const card = tag.closest('[data-zhihu-plus-noise]') || tag.parentElement;
+        showNoiseExplain(card, tag.dataset.titleCss || '');
+    }, true);
 }
 
 function cardNoiseText(card, titleCss) {
@@ -2395,7 +2606,7 @@ function applyNoiseToCard(card, titleCss) {
         card.classList.add('zhihu-plus-noise-demote');
         ensureCardPosition(card);
     }
-    if (menuValue('menu_noiseBadge')) paintNoiseBadge(card, rounded);
+    if (menuValue('menu_noiseBadge')) paintNoiseBadge(card, rounded, titleCss);
 }
 
 function blockKeywords(type) {
