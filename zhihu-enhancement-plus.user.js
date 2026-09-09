@@ -3,7 +3,7 @@
 // @name:zh-CN   知乎增强优化
 // @name:zh-TW   知乎增強優化
 // @name:en      Zhihu Enhancement Plus
-// @version      1.7.17
+// @version      1.7.18
 // @author       local (based on X.I.U / 知乎增强 2.2.15)
 // @description  用于知乎网页。可开关：低饱和配色、隐藏右侧栏、清空或锁定标签标题与图标、净化搜索热门、默认/一键/点空白收起回答与评论、右键回顶、展开问题描述、置顶发布时间、信息流类型标签、直达问题、按用户与噪音评分（可显示得分、可过滤）及关键词、按类别屏蔽视频/文章/想法/话题/盐选/相关搜索/热榜杂项。设置可 JSON 导入导出。始终生效：关登录弹窗、原图、站外直链、点浮层关评论、去掉搜索高亮链接。基于 XIU2「知乎增强」2.2.15（GPL-3.0），无远程外部脚本。
 // @description:zh-CN 用于知乎网页。可开关：低饱和配色、隐藏右侧栏、清空或锁定标签标题与图标、净化搜索热门、默认/一键/点空白收起回答与评论、右键回顶、展开问题描述、置顶发布时间、信息流类型标签、直达问题、按用户与噪音评分（可显示得分、可过滤）及关键词、按类别屏蔽视频/文章/想法/话题/盐选/相关搜索/热榜杂项。设置可 JSON 导入导出。始终生效：关登录弹窗、原图、站外直链、点浮层关评论、去掉搜索高亮链接。基于 XIU2「知乎增强」2.2.15（GPL-3.0），无远程外部脚本。
@@ -1189,7 +1189,7 @@ function mountIoPane(container) {
 }
 
 function openSettingsPanel() {
-    if (document.querySelector('.zhihuE_StMask')) return;
+    if (document.querySelector('.zhihuE_StHost')) return;
 
     const lookKeys = ['menu_lowProfile', 'menu_fullWidth', 'menu_blankTitleFavicon', 'menu_cleanTitles', 'menu_cleanSearch'];
     const readKeys = ['menu_defaultCollapsedAnswer', 'menu_collapsedAnswer', 'menu_collapsedNowAnswer', 'menu_backToTop', 'menu_questionRichTextMore', 'menu_publishTop', 'menu_typeTips', 'menu_toQuestion'];
@@ -1207,7 +1207,10 @@ function openSettingsPanel() {
     let wordTab = 'levels';
 
     const html = `<style class="zhihuE_StStyle">
-.zhihuE_StMask {position:fixed;inset:0;z-index:10040;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(18,18,18,.48);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);}
+:host {all:initial;display:block;position:fixed;inset:0;z-index:2147483646;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Noto Sans SC","Microsoft YaHei",sans-serif;color:#1d1d1f;line-height:1.5;}
+*,*::before,*::after {box-sizing:border-box;}
+button,input,textarea {font:inherit;color:inherit;}
+.zhihuE_StMask {position:fixed;inset:0;z-index:1;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(18,18,18,.48);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);}
 .zhihuE_StRoot {width:min(1240px,98vw);height:min(900px,94vh);display:flex;flex-direction:column;background:#fff;color:#1d1d1f;border-radius:24px;box-shadow:0 32px 100px rgba(0,0,0,.26);overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Noto Sans SC","Microsoft YaHei",sans-serif;}
 .zhihuE_StHead {padding:28px 36px 20px;display:flex;justify-content:space-between;align-items:flex-start;gap:16px;}
 .zhihuE_StKicker {margin:0 0 6px;font-size:12px;letter-spacing:.16em;color:#aaa;text-transform:uppercase;}
@@ -1232,20 +1235,18 @@ function openSettingsPanel() {
 .zhihuE_StLink:hover {color:#1d1d1f;}
 .zhihuE_StBody {flex:1;min-width:0;overflow:auto;padding:24px 32px 32px;display:flex;flex-direction:column;gap:12px;}
 .zhihuE_StBody.is-fill {overflow:hidden;}
-.zhihuE_StMask .zhihuE_StBody {display:flex !important;flex-direction:column !important;gap:12px !important;}
-.zhihuE_StMask .zhihuE_StRow,.zhihuE_StMask .zhihuE_LvCard {display:flex !important;flex-direction:row !important;align-items:center !important;justify-content:space-between !important;gap:20px !important;box-sizing:border-box !important;width:auto !important;max-width:none !important;margin:0 !important;padding:18px 22px !important;border:1px solid #ececec !important;border-radius:16px !important;background:#fff !important;box-shadow:0 8px 24px rgba(0,0,0,.04) !important;flex:none !important;float:none !important;min-height:0 !important;}
-.zhihuE_StMask .zhihuE_LvCard {align-items:flex-start !important;padding:18px 20px !important;}
-.zhihuE_StMask .zhihuE_StRow > div,.zhihuE_StMask .zhihuE_LvCardMain {flex:1 1 auto !important;min-width:0 !important;width:auto !important;max-width:none !important;float:none !important;display:block !important;}
-.zhihuE_StMask .zhihuE_StRow.zhihuE_isOn,.zhihuE_StMask .zhihuE_LvCard.zhihuE_isOn {border-color:#e5e5e5 !important;}
-.zhihuE_StMask .zhihuE_StRow:not(.zhihuE_isOn) .zhihuE_StName,.zhihuE_StMask .zhihuE_LvCard:not(.zhihuE_isOn) .zhihuE_LvName {color:#6e6e73;}
-.zhihuE_StMask .zhihuE_StRow.is-sub {padding:14px 20px 14px 26px !important;border-radius:14px !important;}
+.zhihuE_StRow,.zhihuE_LvCard {display:flex;flex-direction:row;align-items:center;justify-content:space-between;gap:20px;padding:18px 22px;border:1px solid #ececec;border-radius:16px;background:#fff;box-shadow:0 8px 24px rgba(0,0,0,.04);flex:none;}
+.zhihuE_LvCard {align-items:flex-start;padding:18px 20px;}
+.zhihuE_StRow > div,.zhihuE_LvCardMain {flex:1;min-width:0;}
+.zhihuE_StRow:not(.zhihuE_isOn) .zhihuE_StName,.zhihuE_LvCard:not(.zhihuE_isOn) .zhihuE_LvName {color:#6e6e73;}
+.zhihuE_StRow.is-sub {padding:14px 20px 14px 26px;border-radius:14px;}
 .zhihuE_StName {font-size:15px;font-weight:600;}
-.zhihuE_StMask .zhihuE_StRow.is-sub .zhihuE_StName {font-size:14px;}
+.zhihuE_StRow.is-sub .zhihuE_StName {font-size:14px;}
 .zhihuE_StDesc {margin:4px 0 0;font-size:12px;line-height:1.6;color:#8a8a8a;}
-.zhihuE_StMask button.zhihuE_StSwitch {all:unset;box-sizing:border-box !important;display:block !important;flex:0 0 48px !important;width:48px !important;height:28px !important;min-width:48px !important;min-height:28px !important;max-width:48px !important;margin:0 !important;padding:0 !important;border:0 !important;border-radius:999px !important;background:#ddd !important;position:relative !important;cursor:pointer !important;align-self:center !important;appearance:none !important;-webkit-appearance:none !important;}
-.zhihuE_StMask button.zhihuE_StSwitch.zhihuE_isOn {background:#1d1d1f !important;}
-.zhihuE_StMask button.zhihuE_StSwitch::after {content:"" !important;position:absolute !important;top:3px !important;left:3px !important;width:22px !important;height:22px !important;border-radius:50% !important;background:#fff !important;box-shadow:0 1px 4px rgba(0,0,0,.15) !important;transition:transform .2s !important;display:block !important;pointer-events:none !important;}
-.zhihuE_StMask button.zhihuE_StSwitch.zhihuE_isOn::after {transform:translateX(20px) !important;}
+.zhihuE_StSwitch {flex:none;width:48px;height:28px;min-width:48px;padding:0;border:0;border-radius:999px;background:#ddd;position:relative;cursor:pointer;align-self:center;}
+.zhihuE_StSwitch.zhihuE_isOn {background:#1d1d1f;}
+.zhihuE_StSwitch::after {content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.15);transition:transform .2s;}
+.zhihuE_StSwitch.zhihuE_isOn::after {transform:translateX(20px);}
 .zhihuE_StPaneTips {margin:0;font-size:13px;line-height:1.65;color:#8a8a8a;flex:none;}
 .zhihuE_StTabs {display:flex;flex-wrap:wrap;gap:8px;flex:none;}
 .zhihuE_StTab {height:34px;padding:0 14px;border:1px solid #eee;border-radius:999px;background:#fff;color:#666;cursor:pointer;font:inherit;font-size:13px;}
@@ -1369,10 +1370,6 @@ function openSettingsPanel() {
 [data-theme="dark"] .zhihuE_DlgCopy,[data-theme="dark"] .zhihuE_IoBtn,[data-theme="dark"] .zhihuE_LxBtn.ghost {background:#343a44;border-color:#3c434d;color:#e8edf2;}
 [data-theme="dark"] .zhihuE_DlgCopy.is-ok,[data-theme="dark"] .zhihuE_IoBtn.is-ok,[data-theme="dark"] .zhihuE_IoPrimary {background:#e8edf2;border-color:#e8edf2;color:#1d1d1f;}
 [data-theme="dark"] .zhihuE_DlgImportArea,[data-theme="dark"] .zhihuE_IoArea {background:#343a44;border-color:#3c434d;color:#e8edf2;}
-[data-theme="dark"] .zhihuE_StMask .zhihuE_StRow,[data-theme="dark"] .zhihuE_StMask .zhihuE_LvCard {background:#343a44 !important;border-color:#3c434d !important;color:#e8edf2 !important;}
-[data-theme="dark"] .zhihuE_StMask .zhihuE_StRow.zhihuE_isOn,[data-theme="dark"] .zhihuE_StMask .zhihuE_LvCard.zhihuE_isOn {background:#3a414c !important;}
-[data-theme="dark"] .zhihuE_StMask button.zhihuE_StSwitch {background:#4a5260 !important;}
-[data-theme="dark"] .zhihuE_StMask button.zhihuE_StSwitch.zhihuE_isOn {background:#e8edf2 !important;}
 [data-theme="dark"] .zhihuE_DlgCount b {color:#fff;}
 </style>
 <div class="zhihuE_StMask">
@@ -1393,11 +1390,20 @@ function openSettingsPanel() {
   </div>
 </div>`;
 
-    document.body.insertAdjacentHTML('beforeend', html);
-    const mask = document.querySelector('.zhihuE_StMask');
+    const host = document.createElement('div');
+    host.className = 'zhihuE_StHost';
+    const shadow = host.attachShadow({ mode: 'open' });
+    shadow.innerHTML = html;
+    document.body.appendChild(host);
+    const mask = shadow.querySelector('.zhihuE_StMask');
     const navEl = mask.querySelector('.zhihuE_StNav');
     const bodyEl = mask.querySelector('.zhihuE_StBody');
     const metaEl = mask.querySelector('.zhihuE_StMeta');
+    const pageTheme = document.documentElement.getAttribute('data-theme')
+        || document.documentElement.getAttribute('data-theme-type')
+        || document.body.getAttribute('data-theme')
+        || '';
+    if (pageTheme === 'dark') mask.setAttribute('data-theme', 'dark');
 
     const refreshMeta = () => {
         metaEl.textContent = settingsMetaText();
@@ -1405,9 +1411,7 @@ function openSettingsPanel() {
 
     const close = () => {
         document.removeEventListener('keydown', onKey);
-        mask.remove();
-        const style = document.querySelector('.zhihuE_StStyle');
-        if (style) style.remove();
+        host.remove();
     };
     const onKey = event => {
         if (event.key === 'Escape') close();
