@@ -25,8 +25,8 @@
 // @namespace    https://github.com/wenf0/zhihu-enhancement-plus
 // @homepageURL  https://github.com/wenf0/zhihu-enhancement-plus
 // @supportURL   https://github.com/wenf0/zhihu-enhancement-plus/issues
-// @downloadURL  https://raw.githubusercontent.com/wenf0/zhihu-enhancement-plus/main/%E7%9F%A5%E4%B9%8E%E5%A2%9E%E5%BC%BA%E4%BC%98%E5%8C%96.user.js
-// @updateURL    https://raw.githubusercontent.com/wenf0/zhihu-enhancement-plus/main/%E7%9F%A5%E4%B9%8E%E5%A2%9E%E5%BC%BA%E4%BC%98%E5%8C%96.user.js
+// @downloadURL  https://raw.githubusercontent.com/wenf0/zhihu-enhancement-plus/main/zhihu-enhancement-plus.user.js
+// @updateURL    https://raw.githubusercontent.com/wenf0/zhihu-enhancement-plus/main/zhihu-enhancement-plus.user.js
 // ==/UserScript==
 
 'use strict';
