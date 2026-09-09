@@ -3,7 +3,7 @@
 // @name:zh-CN   知乎增强优化
 // @name:zh-TW   知乎增強優化
 // @name:en      Zhihu Enhancement Plus
-// @version      1.7.19
+// @version      1.7.20
 // @author       local (based on X.I.U / 知乎增强 2.2.15)
 // @description  用于知乎网页。可开关：低饱和配色、隐藏右侧栏、清空或锁定标签标题与图标、净化搜索热门、默认/一键/点空白收起回答与评论、右键回顶、展开问题描述、置顶发布时间、信息流类型标签、直达问题、按用户与噪音评分（可显示得分、可过滤）及关键词、按类别屏蔽视频/文章/想法/话题/盐选/相关搜索/热榜杂项。设置可 JSON 导入导出。始终生效：关登录弹窗、原图、站外直链、点浮层关评论、去掉搜索高亮链接。基于 XIU2「知乎增强」2.2.15（GPL-3.0），无远程外部脚本。
 // @description:zh-CN 用于知乎网页。可开关：低饱和配色、隐藏右侧栏、清空或锁定标签标题与图标、净化搜索热门、默认/一键/点空白收起回答与评论、右键回顶、展开问题描述、置顶发布时间、信息流类型标签、直达问题、按用户与噪音评分（可显示得分、可过滤）及关键词、按类别屏蔽视频/文章/想法/话题/盐选/相关搜索/热榜杂项。设置可 JSON 导入导出。始终生效：关登录弹窗、原图、站外直链、点浮层关评论、去掉搜索高亮链接。基于 XIU2「知乎增强」2.2.15（GPL-3.0），无远程外部脚本。
@@ -554,8 +554,8 @@ function registerMenuCommand() {
 function settingsSwitchRow(key, extra = '') {
     const item = MENU_ITEMS.find(x => x.key === key);
     const on = !!menuValue(key);
-    const sub = extra.includes('is-sub') ? ' data-sub="1"' : '';
-    return `<div data-zplus-row${on ? ' data-on="1"' : ''}${sub} data-key="${key}">
+    const sub = typeof extra === 'string' && extra.includes('is-sub');
+    return `<div data-zplus-row${on ? ' data-on="1"' : ''}${sub ? ' data-sub="1"' : ''} data-key="${key}">
         <div><div class="zhihuE_StName">${escapeHtml(item.label)}</div><div class="zhihuE_StDesc">${escapeHtml(item.tip || '')}</div></div>
         <button type="button" data-zplus-switch${on ? ' data-on="1"' : ''} data-key="${key}" aria-label="${escapeHtml(item.label)}"></button>
     </div>`;
@@ -1433,11 +1433,11 @@ button,input,textarea {font:inherit;color:inherit;}
         const fill = current === 'block-users' || (current === 'block-words' && scoreOn) || current === 'data';
         bodyEl.classList.toggle('is-fill', fill);
         if (current === 'look') {
-            bodyEl.innerHTML = lookKeys.map(settingsSwitchRow).join('');
+            bodyEl.innerHTML = lookKeys.map(key => settingsSwitchRow(key)).join('');
             return;
         }
         if (current === 'read') {
-            bodyEl.innerHTML = readKeys.map(settingsSwitchRow).join('');
+            bodyEl.innerHTML = readKeys.map(key => settingsSwitchRow(key)).join('');
             return;
         }
         if (current === 'block-users') {
