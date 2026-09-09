@@ -3,7 +3,7 @@
 // @name:zh-CN   知乎增强优化
 // @name:zh-TW   知乎增強優化
 // @name:en      Zhihu Enhancement Plus
-// @version      1.7.18
+// @version      1.7.19
 // @author       local (based on X.I.U / 知乎增强 2.2.15)
 // @description  用于知乎网页。可开关：低饱和配色、隐藏右侧栏、清空或锁定标签标题与图标、净化搜索热门、默认/一键/点空白收起回答与评论、右键回顶、展开问题描述、置顶发布时间、信息流类型标签、直达问题、按用户与噪音评分（可显示得分、可过滤）及关键词、按类别屏蔽视频/文章/想法/话题/盐选/相关搜索/热榜杂项。设置可 JSON 导入导出。始终生效：关登录弹窗、原图、站外直链、点浮层关评论、去掉搜索高亮链接。基于 XIU2「知乎增强」2.2.15（GPL-3.0），无远程外部脚本。
 // @description:zh-CN 用于知乎网页。可开关：低饱和配色、隐藏右侧栏、清空或锁定标签标题与图标、净化搜索热门、默认/一键/点空白收起回答与评论、右键回顶、展开问题描述、置顶发布时间、信息流类型标签、直达问题、按用户与噪音评分（可显示得分、可过滤）及关键词、按类别屏蔽视频/文章/想法/话题/盐选/相关搜索/热榜杂项。设置可 JSON 导入导出。始终生效：关登录弹窗、原图、站外直链、点浮层关评论、去掉搜索高亮链接。基于 XIU2「知乎增强」2.2.15（GPL-3.0），无远程外部脚本。
@@ -554,16 +554,17 @@ function registerMenuCommand() {
 function settingsSwitchRow(key, extra = '') {
     const item = MENU_ITEMS.find(x => x.key === key);
     const on = !!menuValue(key);
-    return `<div class="zhihuE_StRow${on ? ' zhihuE_isOn' : ''}${extra}" data-key="${key}">
+    const sub = extra.includes('is-sub') ? ' data-sub="1"' : '';
+    return `<div data-zplus-row${on ? ' data-on="1"' : ''}${sub} data-key="${key}">
         <div><div class="zhihuE_StName">${escapeHtml(item.label)}</div><div class="zhihuE_StDesc">${escapeHtml(item.tip || '')}</div></div>
-        <button type="button" class="zhihuE_StSwitch${on ? ' zhihuE_isOn' : ''}" data-key="${key}" aria-label="${escapeHtml(item.label)}"></button>
+        <button type="button" data-zplus-switch${on ? ' data-on="1"' : ''} data-key="${key}" aria-label="${escapeHtml(item.label)}"></button>
     </div>`;
 }
 
 function settingsToggleCard(item) {
     const on = !!menuValue(item.key);
     const chips = (item.tags || []).map(t => `<span class="zhihuE_LvChip">${escapeHtml(t)}</span>`).join('');
-    return `<div class="zhihuE_LvCard${on ? ' zhihuE_isOn' : ''}" data-key="${item.key}">
+    return `<div data-zplus-card${on ? ' data-on="1"' : ''} data-key="${item.key}">
         <div class="zhihuE_LvCardMain">
             <div class="zhihuE_LvCardTop">
                 ${item.tag ? `<span class="zhihuE_LvTag">${escapeHtml(item.tag)}</span>` : ''}
@@ -573,7 +574,7 @@ function settingsToggleCard(item) {
             ${item.desc ? `<p class="zhihuE_LvDesc">${escapeHtml(item.desc)}</p>` : ''}
             ${chips ? `<div class="zhihuE_LvChips">${chips}</div>` : ''}
         </div>
-        <button type="button" class="zhihuE_StSwitch${on ? ' zhihuE_isOn' : ''}" data-key="${item.key}" aria-label="${escapeHtml(item.name)}"></button>
+        <button type="button" data-zplus-switch${on ? ' data-on="1"' : ''} data-key="${item.key}" aria-label="${escapeHtml(item.name)}"></button>
     </div>`;
 }
 
@@ -1235,18 +1236,18 @@ button,input,textarea {font:inherit;color:inherit;}
 .zhihuE_StLink:hover {color:#1d1d1f;}
 .zhihuE_StBody {flex:1;min-width:0;overflow:auto;padding:24px 32px 32px;display:flex;flex-direction:column;gap:12px;}
 .zhihuE_StBody.is-fill {overflow:hidden;}
-.zhihuE_StRow,.zhihuE_LvCard {display:flex;flex-direction:row;align-items:center;justify-content:space-between;gap:20px;padding:18px 22px;border:1px solid #ececec;border-radius:16px;background:#fff;box-shadow:0 8px 24px rgba(0,0,0,.04);flex:none;}
-.zhihuE_LvCard {align-items:flex-start;padding:18px 20px;}
-.zhihuE_StRow > div,.zhihuE_LvCardMain {flex:1;min-width:0;}
-.zhihuE_StRow:not(.zhihuE_isOn) .zhihuE_StName,.zhihuE_LvCard:not(.zhihuE_isOn) .zhihuE_LvName {color:#6e6e73;}
-.zhihuE_StRow.is-sub {padding:14px 20px 14px 26px;border-radius:14px;}
+[data-zplus-row],[data-zplus-card] {display:flex;flex-direction:row;align-items:center;justify-content:space-between;gap:20px;padding:18px 22px;border:1px solid #ececec;border-radius:16px;background:#fff;box-shadow:0 8px 24px rgba(0,0,0,.04);flex:none;}
+[data-zplus-card] {align-items:flex-start;padding:18px 20px;}
+[data-zplus-row] > div,.zhihuE_LvCardMain {flex:1;min-width:0;}
+[data-zplus-row]:not([data-on]) .zhihuE_StName,[data-zplus-card]:not([data-on]) .zhihuE_LvName {color:#6e6e73;}
+[data-zplus-row][data-sub="1"] {padding:14px 20px 14px 26px;border-radius:14px;}
 .zhihuE_StName {font-size:15px;font-weight:600;}
-.zhihuE_StRow.is-sub .zhihuE_StName {font-size:14px;}
+[data-zplus-row][data-sub="1"] .zhihuE_StName {font-size:14px;}
 .zhihuE_StDesc {margin:4px 0 0;font-size:12px;line-height:1.6;color:#8a8a8a;}
-.zhihuE_StSwitch {flex:none;width:48px;height:28px;min-width:48px;padding:0;border:0;border-radius:999px;background:#ddd;position:relative;cursor:pointer;align-self:center;appearance:none;-webkit-appearance:none;}
-.zhihuE_StSwitch.zhihuE_isOn {background:#1d1d1f;}
-.zhihuE_StSwitch::after {content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.15);transition:transform .2s;}
-.zhihuE_StSwitch.zhihuE_isOn::after {transform:translateX(20px);}
+[data-zplus-switch] {flex:none;width:48px;height:28px;min-width:48px;padding:0;border:0;border-radius:999px;background:#ddd;position:relative;cursor:pointer;align-self:center;appearance:none;-webkit-appearance:none;}
+[data-zplus-switch][data-on] {background:#1d1d1f;}
+[data-zplus-switch]::after {content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.15);transition:transform .2s;}
+[data-zplus-switch][data-on="1"]::after {transform:translateX(20px);}
 .zhihuE_StPaneTips {margin:0;font-size:13px;line-height:1.65;color:#8a8a8a;flex:none;}
 .zhihuE_StTabs {display:flex;flex-wrap:wrap;gap:8px;flex:none;}
 .zhihuE_StTab {height:34px;padding:0 14px;border:1px solid #eee;border-radius:999px;background:#fff;color:#666;cursor:pointer;font:inherit;font-size:13px;}
@@ -1349,12 +1350,12 @@ button,input,textarea {font:inherit;color:inherit;}
 [data-theme="dark"] .zhihuE_StRoot {background:#2b2f36;color:#e8edf2;}
 [data-theme="dark"] .zhihuE_StMain,[data-theme="dark"] .zhihuE_StNav,[data-theme="dark"] .zhihuE_LxMain {border-color:#3c434d;}
 [data-theme="dark"] .zhihuE_StKicker,[data-theme="dark"] .zhihuE_StTips,[data-theme="dark"] .zhihuE_StMeta,[data-theme="dark"] .zhihuE_IoStat,[data-theme="dark"] .zhihuE_StDesc,[data-theme="dark"] .zhihuE_StLink,[data-theme="dark"] .zhihuE_StNavBtn span,[data-theme="dark"] .zhihuE_StGroupLabel,[data-theme="dark"] .zhihuE_StPaneTips,[data-theme="dark"] .zhihuE_LvHint,[data-theme="dark"] .zhihuE_LvDesc,[data-theme="dark"] .zhihuE_DlgFoot,[data-theme="dark"] .zhihuE_LxFoot {color:#9aa4b2;}
-[data-theme="dark"] .zhihuE_StClose,[data-theme="dark"] .zhihuE_StRow,[data-theme="dark"] .zhihuE_LvCard,[data-theme="dark"] .zhihuE_DlgInput,[data-theme="dark"] .zhihuE_DlgFilter,[data-theme="dark"] .zhihuE_DlgChip,[data-theme="dark"] .zhihuE_LxNav,[data-theme="dark"] .zhihuE_LxInput,[data-theme="dark"] .zhihuE_LxChip {background:#343a44;border-color:#3c434d;color:#e8edf2;}
-[data-theme="dark"] .zhihuE_StRow.zhihuE_isOn,[data-theme="dark"] .zhihuE_LvCard.zhihuE_isOn {background:#3a414c;}
-[data-theme="dark"] .zhihuE_StClose:hover,[data-theme="dark"] .zhihuE_StNavBtn.zhihuE_isOn,[data-theme="dark"] .zhihuE_StSwitch.zhihuE_isOn,[data-theme="dark"] .zhihuE_StTab.zhihuE_isOn,[data-theme="dark"] .zhihuE_DlgAddBtn,[data-theme="dark"] .zhihuE_DlgChipDel:hover,[data-theme="dark"] .zhihuE_LxNavBtn.zhihuE_isOn,[data-theme="dark"] .zhihuE_LxTab.zhihuE_isOn,[data-theme="dark"] .zhihuE_LxBtn,[data-theme="dark"] .zhihuE_LxDel:hover {background:#e8edf2;color:#1d1d1f;}
+[data-theme="dark"] .zhihuE_StClose,[data-theme="dark"] [data-zplus-row],[data-theme="dark"] [data-zplus-card],[data-theme="dark"] .zhihuE_DlgInput,[data-theme="dark"] .zhihuE_DlgFilter,[data-theme="dark"] .zhihuE_DlgChip,[data-theme="dark"] .zhihuE_LxNav,[data-theme="dark"] .zhihuE_LxInput,[data-theme="dark"] .zhihuE_LxChip {background:#343a44;border-color:#3c434d;color:#e8edf2;}
+[data-theme="dark"] [data-zplus-row][data-on="1"],[data-theme="dark"] [data-zplus-card][data-on="1"] {background:#3a414c;}
+[data-theme="dark"] .zhihuE_StClose:hover,[data-theme="dark"] .zhihuE_StNavBtn.zhihuE_isOn,[data-theme="dark"] [data-zplus-switch][data-on="1"],[data-theme="dark"] .zhihuE_StTab.zhihuE_isOn,[data-theme="dark"] .zhihuE_DlgAddBtn,[data-theme="dark"] .zhihuE_DlgChipDel:hover,[data-theme="dark"] .zhihuE_LxNavBtn.zhihuE_isOn,[data-theme="dark"] .zhihuE_LxTab.zhihuE_isOn,[data-theme="dark"] .zhihuE_LxBtn,[data-theme="dark"] .zhihuE_LxDel:hover {background:#e8edf2;color:#1d1d1f;}
 [data-theme="dark"] .zhihuE_StNavBtn,[data-theme="dark"] .zhihuE_LxNavBtn {color:#c5ced8;}
 [data-theme="dark"] .zhihuE_StNavBtn.zhihuE_isOn span {color:rgba(29,29,31,.55);}
-[data-theme="dark"] .zhihuE_StSwitch {background:#4a5260;}
+[data-theme="dark"] [data-zplus-switch] {background:#4a5260;}
 [data-theme="dark"] .zhihuE_StLink:hover {color:#fff;}
 [data-theme="dark"] .zhihuE_StTab {background:#343a44;border-color:#3c434d;color:#c5ced8;}
 [data-theme="dark"] .zhihuE_LvTag {background:#e8edf2;color:#1d1d1f;}
@@ -1513,7 +1514,7 @@ button,input,textarea {font:inherit;color:inherit;}
             renderBody();
             return;
         }
-        const sw = event.target.closest('.zhihuE_StSwitch');
+        const sw = event.target.closest('[data-zplus-switch]');
         if (!sw) return;
         const key = sw.dataset.key;
         const next = !menuValue(key);
@@ -1522,9 +1523,9 @@ button,input,textarea {font:inherit;color:inherit;}
             renderBody();
             return;
         }
-        sw.classList.toggle('zhihuE_isOn', next);
-        const row = sw.closest('.zhihuE_StRow, .zhihuE_LvCard');
-        if (row) row.classList.toggle('zhihuE_isOn', next);
+        sw.toggleAttribute('data-on', next);
+        const row = sw.closest('[data-zplus-row], [data-zplus-card]');
+        if (row) row.toggleAttribute('data-on', next);
     });
     document.addEventListener('keydown', onKey);
     render();
