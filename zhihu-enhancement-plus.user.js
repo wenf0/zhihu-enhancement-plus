@@ -3,7 +3,7 @@
 // @name:zh-CN   知乎增强优化
 // @name:zh-TW   知乎增強優化
 // @name:en      Zhihu Enhancement Plus
-// @version      1.7.6
+// @version      1.7.7
 // @author       local (based on X.I.U / 知乎增强 2.2.15)
 // @description  用于知乎网页。可开关：低饱和配色、隐藏右侧栏、清空或锁定标签标题与图标、净化搜索热门、默认/一键/点空白收起回答与评论、右键回顶、展开问题描述、置顶发布时间、信息流类型标签、直达问题、按用户与噪音档位及关键词过滤、按类别屏蔽视频/文章/想法/话题/盐选/相关搜索/热榜杂项。设置可 JSON 导入导出。始终生效：关登录弹窗、原图、站外直链、点浮层关评论、去掉搜索高亮链接。基于 XIU2「知乎增强」2.2.15（GPL-3.0），无远程外部脚本。
 // @description:zh-CN 用于知乎网页。可开关：低饱和配色、隐藏右侧栏、清空或锁定标签标题与图标、净化搜索热门、默认/一键/点空白收起回答与评论、右键回顶、展开问题描述、置顶发布时间、信息流类型标签、直达问题、按用户与噪音档位及关键词过滤、按类别屏蔽视频/文章/想法/话题/盐选/相关搜索/热榜杂项。设置可 JSON 导入导出。始终生效：关登录弹窗、原图、站外直链、点浮层关评论、去掉搜索高亮链接。基于 XIU2「知乎增强」2.2.15（GPL-3.0），无远程外部脚本。
@@ -475,255 +475,439 @@ function registerMenuCommand() {
     menuCommandIds.push(GM_registerMenuCommand('setting', openSettingsPanel));
 }
 
-function openSettingsPanel() {
-    if (document.querySelector('.zhihuE_StMask')) return;
+function settingsSwitchRow(key) {
+    const item = MENU_ITEMS.find(x => x.key === key);
+    const on = !!menuValue(key);
+    return `<div class="zhihuE_StRow${on ? ' is-on' : ''}" data-key="${key}">
+        <div><div class="zhihuE_StName">${escapeHtml(item.label)}</div><div class="zhihuE_StDesc">${escapeHtml(item.tip || '')}</div></div>
+        <button type="button" class="zhihuE_StSwitch${on ? ' is-on' : ''}" data-key="${key}" aria-label="${escapeHtml(item.label)}"></button>
+    </div>`;
+}
 
-    const sections = [
-        {
-            id: 'look',
-            name: '外观',
-            hint: '页面气质',
-            keys: ['menu_lowProfile', 'menu_fullWidth', 'menu_blankTitleFavicon', 'menu_cleanTitles', 'menu_cleanSearch']
-        },
-        {
-            id: 'read',
-            name: '阅读',
-            hint: '浏览节奏',
-            keys: ['menu_defaultCollapsedAnswer', 'menu_collapsedAnswer', 'menu_collapsedNowAnswer', 'menu_backToTop', 'menu_questionRichTextMore', 'menu_publishTop', 'menu_typeTips', 'menu_toQuestion']
-        },
-        {
-            id: 'block',
-            name: '屏蔽',
-            hint: '信息流过滤',
-            keys: ['menu_blockUsers', 'menu_blockKeywords'],
-            actions: [
-                { id: 'users', name: '编辑屏蔽用户', desc: '维护用户黑名单，支持复制导入。', need: 'menu_blockUsers', run: customBlockUsers },
-                { id: 'keywords', name: '编辑屏蔽关键词', desc: '自定义词会加权到噪音分。', need: 'menu_blockKeywords', run: customBlockKeywords },
-                { id: 'levels', name: '噪音过滤档位', desc: 'L1 / L2 / L3 语义分类强度。', need: 'menu_blockKeywords', run: noiseLevelDialog },
-                { id: 'lexicon', name: '编辑噪音词库', desc: '分类词、排除词和权重。', need: 'menu_blockKeywords', run: noiseLexiconDialog },
-                { id: 'types', name: '屏蔽指定类别', desc: '视频、文章、想法、盐选、热榜等。', run: () => {
-                    const item = MENU_ITEMS.find(x => x.key === 'menu_blockType');
-                    const children = (item.children || []).map(key => MENU_ITEMS.find(x => x.key === key)).filter(Boolean);
-                    menuSetting(item.label, item.tip, children);
-                }}
-            ]
-        },
-        {
-            id: 'data',
-            name: '配置',
-            hint: '导入导出',
-            keys: [],
-            actions: [
-                { id: 'io', name: '导入 / 导出 JSON', desc: '备份或覆盖全部开关、屏蔽名单和噪音词库。', run: openSettingsIoDialog }
-            ]
-        }
+function settingsToggleCard(item) {
+    const on = !!menuValue(item.key);
+    const chips = (item.tags || []).map(t => `<span class="zhihuE_LvChip">${escapeHtml(t)}</span>`).join('');
+    return `<div class="zhihuE_LvCard${on ? ' is-on' : ''}" data-key="${item.key}">
+        <div class="zhihuE_LvCardMain">
+            <div class="zhihuE_LvCardTop">
+                ${item.tag ? `<span class="zhihuE_LvTag">${escapeHtml(item.tag)}</span>` : ''}
+                <span class="zhihuE_LvName">${escapeHtml(item.name)}</span>
+                ${item.hint ? `<span class="zhihuE_LvHint">${escapeHtml(item.hint)}</span>` : ''}
+            </div>
+            ${item.desc ? `<p class="zhihuE_LvDesc">${escapeHtml(item.desc)}</p>` : ''}
+            ${chips ? `<div class="zhihuE_LvChips">${chips}</div>` : ''}
+        </div>
+        <button type="button" class="zhihuE_StSwitch${on ? ' is-on' : ''}" data-key="${item.key}" aria-label="${escapeHtml(item.name)}"></button>
+    </div>`;
+}
+
+function settingsNoiseCards() {
+    return [
+        { key: 'menu_noiseL1', tag: 'L1', name: '强过滤', hint: '默认开启', desc: '明星八卦、饭圈、男女对立、婚恋生育、吃瓜爆料。命中后更容易直接隐藏。', tags: ['塌房', '热搜', '饭圈', '男女对立', '催婚'] },
+        { key: 'menu_noiseL2', tag: 'L2', name: '中强过滤', hint: '默认开启', desc: '二次元抽卡、消费种草、汽车热点、体育赛事、网红生活。多数会降权，而不是一刀切。', tags: ['抽卡', '种草', '理想汽车', '世界杯', '探店'] },
+        { key: 'menu_noiseL3', tag: 'L3', name: '低强过滤', hint: '默认关闭', desc: '国际政治情绪、A股短线、社会比较。信息量往往更高，建议按需打开。', tags: ['俄乌', 'A股', '985', '年薪', '特朗普'] }
     ];
-    let current = 'look';
+}
 
-    const html = `<style class="zhihuE_StStyle">
-.zhihuE_StMask {position:fixed;inset:0;z-index:10040;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(18,18,18,.48);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);}
-.zhihuE_StRoot {width:min(1240px,98vw);height:min(900px,94vh);display:flex;flex-direction:column;background:#fff;color:#1d1d1f;border-radius:24px;box-shadow:0 32px 100px rgba(0,0,0,.26);overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Noto Sans SC","Microsoft YaHei",sans-serif;}
-.zhihuE_StHead {padding:28px 36px 20px;display:flex;justify-content:space-between;align-items:flex-start;gap:16px;}
-.zhihuE_StKicker {margin:0 0 6px;font-size:12px;letter-spacing:.16em;color:#aaa;text-transform:uppercase;}
-.zhihuE_StTitle {margin:0;font-size:26px;font-weight:650;letter-spacing:.02em;}
-.zhihuE_StTips {margin:8px 0 0;font-size:13px;line-height:1.65;color:#8a8a8a;}
-.zhihuE_StClose {flex:none;width:36px;height:36px;border:0;border-radius:50%;background:#f4f4f5;color:#666;cursor:pointer;font-size:18px;line-height:1;}
-.zhihuE_StClose:hover {background:#1d1d1f;color:#fff;}
-.zhihuE_StMain {flex:1;min-height:0;display:flex;border-top:1px solid #eee;}
-.zhihuE_StNav {width:220px;flex:none;padding:22px 16px;border-right:1px solid #eee;display:flex;flex-direction:column;gap:6px;}
-.zhihuE_StNavBtn {display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;padding:12px 14px;border:0;border-radius:14px;background:transparent;color:#666;cursor:pointer;text-align:left;font:inherit;}
-.zhihuE_StNavBtn strong {font-size:15px;font-weight:600;}
-.zhihuE_StNavBtn span {font-size:12px;color:#aaa;}
-.zhihuE_StNavBtn.is-on {background:#1d1d1f;color:#fff;}
-.zhihuE_StNavBtn.is-on span {color:rgba(255,255,255,.62);}
-.zhihuE_StNavFoot {margin-top:auto;padding:8px 6px 4px;}
-.zhihuE_StLink {border:0;background:transparent;color:#8a8a8a;cursor:pointer;font-size:12px;padding:0;}
-.zhihuE_StLink:hover {color:#1d1d1f;}
-.zhihuE_StBody {flex:1;min-width:0;overflow:auto;padding:24px 32px 32px;display:flex;flex-direction:column;gap:12px;}
-.zhihuE_StRow,.zhihuE_StAction {display:flex;align-items:center;justify-content:space-between;gap:20px;padding:18px 22px;border:1px solid #eee;border-radius:16px;background:#fafafa;}
-.zhihuE_StRow.is-on {background:#fff;border-color:#e5e5e5;box-shadow:0 8px 24px rgba(0,0,0,.04);}
-.zhihuE_StName {font-size:15px;font-weight:600;}
-.zhihuE_StDesc {margin:4px 0 0;font-size:12px;line-height:1.6;color:#8a8a8a;}
-.zhihuE_StSwitch {flex:none;width:48px;height:28px;border:0;border-radius:999px;background:#ddd;position:relative;cursor:pointer;}
-.zhihuE_StSwitch::after {content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.15);transition:transform .2s;}
-.zhihuE_StSwitch.is-on {background:#1d1d1f;}
-.zhihuE_StSwitch.is-on::after {transform:translateX(20px);}
-.zhihuE_StAction {width:100%;cursor:pointer;text-align:left;font:inherit;color:inherit;background:#fff;}
-.zhihuE_StAction:hover {border-color:#ccc;box-shadow:0 8px 24px rgba(0,0,0,.05);}
-.zhihuE_StAction[disabled] {opacity:.4;cursor:not-allowed;box-shadow:none;}
-.zhihuE_StGo {flex:none;color:#bbb;font-size:22px;line-height:1;}
-[data-theme="dark"] .zhihuE_StRoot {background:#2b2f36;color:#e8edf2;}
-[data-theme="dark"] .zhihuE_StMain,[data-theme="dark"] .zhihuE_StNav {border-color:#3c434d;}
-[data-theme="dark"] .zhihuE_StKicker,[data-theme="dark"] .zhihuE_StTips,[data-theme="dark"] .zhihuE_StDesc,[data-theme="dark"] .zhihuE_StLink,[data-theme="dark"] .zhihuE_StNavBtn span {color:#9aa4b2;}
-[data-theme="dark"] .zhihuE_StClose,[data-theme="dark"] .zhihuE_StRow {background:#343a44;border-color:#3c434d;}
-[data-theme="dark"] .zhihuE_StRow.is-on,[data-theme="dark"] .zhihuE_StAction {background:#3a414c;border-color:#3c434d;color:#e8edf2;}
-[data-theme="dark"] .zhihuE_StClose:hover,[data-theme="dark"] .zhihuE_StNavBtn.is-on,[data-theme="dark"] .zhihuE_StSwitch.is-on {background:#e8edf2;color:#1d1d1f;}
-[data-theme="dark"] .zhihuE_StNavBtn {color:#c5ced8;}
-[data-theme="dark"] .zhihuE_StNavBtn.is-on span {color:rgba(29,29,31,.55);}
-[data-theme="dark"] .zhihuE_StSwitch {background:#4a5260;}
-[data-theme="dark"] .zhihuE_StLink:hover {color:#fff;}
-</style>
-<div class="zhihuE_StMask">
-  <div class="zhihuE_StRoot">
-    <div class="zhihuE_StHead">
-      <div>
-        <p class="zhihuE_StKicker">Zhihu Enhancement Plus</p>
-        <h3 class="zhihuE_StTitle">设置</h3>
-        <p class="zhihuE_StTips">开关即时保存，刷新后生效。可在「配置」里用 JSON 导入导出；本站也会自动备份，重装后恢复。</p>
-      </div>
-      <button type="button" class="zhihuE_StClose" aria-label="关闭">×</button>
-    </div>
-    <div class="zhihuE_StMain">
-      <div class="zhihuE_StNav"></div>
-      <div class="zhihuE_StBody"></div>
-    </div>
-  </div>
-</div>`;
+function settingsTypeCards() {
+    return [
+        { key: 'menu_blockTypeVideo', tag: '视频', name: '视频', desc: '首页、搜索页和问题页里的视频卡片、视频回答。', tags: ['首页', '搜索', '问题页'] },
+        { key: 'menu_blockTypeArticle', tag: '文章', name: '文章', desc: '信息流里的专栏文章，不影响问题回答。', tags: ['首页', '搜索'] },
+        { key: 'menu_blockTypePin', tag: '想法', name: '想法', desc: '首页信息流中的想法/动态。', tags: ['首页'] },
+        { key: 'menu_blockTypeTopic', tag: '话题', name: '话题', desc: '搜索结果里的话题卡片。', tags: ['搜索'] },
+        { key: 'menu_blockTypeSearch', tag: '盐选', name: '杂志 / 盐选 / 相关搜索', desc: '搜索页里的杂志、盐选专栏和相关搜索。', tags: ['搜索'] },
+        { key: 'menu_blockYanXuan', tag: '付费', name: '盐选内容', desc: '问题页里带购买入口的盐选回答。', tags: ['问题页'] },
+        { key: 'menu_blockTypeLiveHot', tag: '热榜', name: '热榜杂项', desc: '热榜中的直播、广告和非问题条目，并重排序号。', tags: ['热榜'] }
+    ];
+}
 
-    document.body.insertAdjacentHTML('beforeend', html);
-    const mask = document.querySelector('.zhihuE_StMask');
-    const navEl = mask.querySelector('.zhihuE_StNav');
-    const bodyEl = mask.querySelector('.zhihuE_StBody');
+function mountListEditor(container, { storageKey, placeholder, tips }) {
+    let list = [...(menuValue(storageKey) || [])];
+    let filter = '';
+    container.insertAdjacentHTML('beforeend', `<div class="zhihuE_ListMount">
+        ${tips ? `<p class="zhihuE_StPaneTips">${escapeHtml(tips)}</p>` : ''}
+        <div class="zhihuE_DlgAdd">
+            <input class="zhihuE_DlgInput" type="text" placeholder="${escapeHtml(placeholder)}" />
+            <button type="button" class="zhihuE_DlgAddBtn">添加</button>
+        </div>
+        <div class="zhihuE_DlgFilterWrap"><input class="zhihuE_DlgFilter" type="search" placeholder="在已有词条中筛选…" /></div>
+        <div class="zhihuE_DlgCloud"></div>
+        <div class="zhihuE_DlgFoot">
+            <div class="zhihuE_DlgCount">共 <b class="zhihuE_DlgCountNum">0</b> 条</div>
+            <div class="zhihuE_DlgFootRight">
+                <button type="button" class="zhihuE_DlgCopy zhihuE_DlgImportBtn">粘贴导入</button>
+                <button type="button" class="zhihuE_DlgCopy zhihuE_DlgCopyAll">复制全部</button>
+            </div>
+        </div>
+        <div class="zhihuE_DlgImport">
+            <textarea class="zhihuE_DlgImportArea" placeholder="粘贴词表，用逗号、换行或 | 分隔。确认后覆盖当前列表并自动去重。"></textarea>
+            <div class="zhihuE_DlgImportActions">
+                <button type="button" class="zhihuE_DlgCopy zhihuE_DlgImportCancel">取消</button>
+                <button type="button" class="zhihuE_DlgCopy is-ok zhihuE_DlgImportOk">确认覆盖导入</button>
+            </div>
+        </div>
+    </div>`);
+    const root = container.querySelector('.zhihuE_ListMount:last-child');
+    const cloud = root.querySelector('.zhihuE_DlgCloud');
+    const countEl = root.querySelector('.zhihuE_DlgCountNum');
+    const input = root.querySelector('.zhihuE_DlgInput');
 
-    const close = () => {
-        document.removeEventListener('keydown', onKey);
-        mask.remove();
-        const style = document.querySelector('.zhihuE_StStyle');
-        if (style) style.remove();
-    };
-    const onKey = event => {
-        if (event.key === 'Escape' && !document.querySelector('.zhihuE_LvMask, .zhihuE_LxMask, .zhihuE_DlgMask, .zhihuE_IoMask')) close();
+    const visibleList = () => {
+        if (!filter) return list.map((word, index) => ({ word, index }));
+        const q = filter.toLowerCase();
+        return list.map((word, index) => ({ word, index })).filter(item => item.word.toLowerCase().includes(q));
     };
 
-    const render = () => {
-        navEl.innerHTML = sections.map(sec =>
-            `<button type="button" class="zhihuE_StNavBtn${sec.id === current ? ' is-on' : ''}" data-id="${sec.id}"><strong>${sec.name}</strong><span>${sec.hint}</span></button>`
-        ).join('') + '<div class="zhihuE_StNavFoot"><button type="button" class="zhihuE_StLink">反馈与建议</button></div>';
-        const sec = sections.find(x => x.id === current);
-        const rows = sec.keys.map(key => {
-            const item = MENU_ITEMS.find(x => x.key === key);
-            const on = !!menuValue(key);
-            return `<div class="zhihuE_StRow${on ? ' is-on' : ''}" data-key="${key}">
-                <div><div class="zhihuE_StName">${escapeHtml(item.label)}</div><div class="zhihuE_StDesc">${escapeHtml(item.tip || '')}</div></div>
-                <button type="button" class="zhihuE_StSwitch${on ? ' is-on' : ''}" data-key="${key}" aria-label="${escapeHtml(item.label)}"></button>
-            </div>`;
-        });
-        const actions = (sec.actions || []).map(act => {
-            const disabled = act.need && !menuValue(act.need);
-            return `<button type="button" class="zhihuE_StAction" data-act="${act.id}" ${disabled ? 'disabled' : ''}>
-                <div><div class="zhihuE_StName">${escapeHtml(act.name)}</div><div class="zhihuE_StDesc">${escapeHtml(act.desc)}</div></div>
-                <span class="zhihuE_StGo">›</span>
-            </button>`;
-        });
-        bodyEl.innerHTML = rows.concat(actions).join('');
-    };
-
-    mask.querySelector('.zhihuE_StClose').onclick = close;
-    mask.addEventListener('click', event => {
-        if (event.target === mask) close();
-    });
-    navEl.addEventListener('click', event => {
-        const link = event.target.closest('.zhihuE_StLink');
-        if (link) {
-            GM_openInTab('https://github.com/XIU2/UserScript#xiu2userscript', { active: true, insert: true, setParent: true });
-            GM_openInTab('https://greasyfork.org/zh-CN/scripts/419081/feedback', { active: true, insert: true, setParent: true });
+    const persist = () => {
+        menuSet(storageKey, list);
+        countEl.textContent = String(list.length);
+        const items = visibleList();
+        if (!list.length) {
+            cloud.innerHTML = '<div class="zhihuE_DlgEmpty">还没有词条，在上方添加</div>';
             return;
         }
-        const btn = event.target.closest('.zhihuE_StNavBtn');
+        if (!items.length) {
+            cloud.innerHTML = '<div class="zhihuE_DlgEmpty">没有匹配的词条</div>';
+            return;
+        }
+        cloud.innerHTML = items.map(({ word, index }) =>
+            `<span class="zhihuE_DlgChip" title="${escapeHtml(word)}"><span>${escapeHtml(word)}</span><button type="button" class="zhihuE_DlgChipDel" data-index="${index}" aria-label="删除">×</button></span>`
+        ).join('');
+    };
+
+    const addFromInput = () => {
+        const words = parseWords(input.value);
+        const added = words.filter(w => !list.includes(w));
+        if (!added.length) return;
+        list = added.concat(list);
+        input.value = '';
+        persist();
+        input.focus();
+    };
+
+    const flashBtn = (btn, text, ok = true) => {
+        const raw = btn.dataset.label || btn.textContent;
+        btn.dataset.label = raw;
+        btn.textContent = text;
+        btn.classList.toggle('is-ok', ok);
+        setTimeout(() => {
+            btn.textContent = btn.dataset.label;
+            btn.classList.remove('is-ok');
+        }, 1600);
+    };
+
+    const applyImport = text => {
+        const next = uniqueWords(parseWords(text));
+        const btn = root.querySelector('.zhihuE_DlgImportBtn');
+        if (!next.length) {
+            flashBtn(btn, '没有可用词条', false);
+            return false;
+        }
+        list = next;
+        persist();
+        flashBtn(btn, `已导入 ${next.length} 条`);
+        return true;
+    };
+
+    const openImportPanel = (preset = '') => {
+        const panel = root.querySelector('.zhihuE_DlgImport');
+        const area = root.querySelector('.zhihuE_DlgImportArea');
+        panel.classList.add('is-open');
+        area.value = preset;
+        area.focus();
+        area.select();
+    };
+
+    const closeImportPanel = () => {
+        root.querySelector('.zhihuE_DlgImport').classList.remove('is-open');
+    };
+
+    const importFromPaste = async () => {
+        try {
+            if (navigator.clipboard && navigator.clipboard.readText) {
+                const text = (await navigator.clipboard.readText() || '').trim();
+                if (text) {
+                    applyImport(text);
+                    closeImportPanel();
+                    return;
+                }
+            }
+        } catch (e) { /* 无剪贴板权限时改为手动粘贴 */ }
+        openImportPanel();
+    };
+
+    const copyAll = async () => {
+        const text = list.join(', ');
+        const btn = root.querySelector('.zhihuE_DlgCopyAll');
+        const done = ok => {
+            btn.textContent = ok ? '已复制' : '复制失败';
+            btn.classList.toggle('is-ok', ok);
+            setTimeout(() => {
+                btn.textContent = '复制全部';
+                btn.classList.remove('is-ok');
+            }, 1600);
+        };
+        try {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                await navigator.clipboard.writeText(text);
+            } else {
+                const ta = document.createElement('textarea');
+                ta.value = text;
+                ta.setAttribute('readonly', '');
+                ta.style.cssText = 'position:fixed;left:-9999px;top:0';
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand('copy');
+                ta.remove();
+            }
+            done(true);
+        } catch (e) {
+            done(false);
+        }
+    };
+
+    root.querySelector('.zhihuE_DlgAddBtn').onclick = addFromInput;
+    root.querySelector('.zhihuE_DlgCopyAll').onclick = copyAll;
+    root.querySelector('.zhihuE_DlgImportBtn').onclick = importFromPaste;
+    root.querySelector('.zhihuE_DlgImportCancel').onclick = closeImportPanel;
+    root.querySelector('.zhihuE_DlgImportOk').onclick = () => {
+        if (applyImport(root.querySelector('.zhihuE_DlgImportArea').value)) closeImportPanel();
+    };
+    input.addEventListener('keydown', event => {
+        if (event.key === 'Enter') addFromInput();
+    });
+    root.querySelector('.zhihuE_DlgFilter').addEventListener('input', event => {
+        filter = event.target.value.trim();
+        persist();
+    });
+    cloud.addEventListener('click', event => {
+        const btn = event.target.closest('.zhihuE_DlgChipDel');
+        if (!btn) return;
+        const index = Number(btn.dataset.index);
+        if (Number.isNaN(index)) return;
+        list.splice(index, 1);
+        persist();
+    });
+    persist();
+}
+
+function mountLexiconEditor(container) {
+    let lex = getActiveLexicon();
+    const buckets = NOISE_CATEGORIES.map(cat => ({
+        id: cat.id,
+        kind: 'cat',
+        token: 'cat:' + cat.id,
+        name: `L${cat.level} ${cat.name}`
+    })).concat([
+        { id: 'emotion', kind: 'map', token: 'emotion', name: '情绪词' },
+        { id: 'controversy', kind: 'list', token: 'controversy', name: '争议词' },
+        { id: 'clickbait', kind: 'list', token: 'clickbait', name: '标题党' },
+        { id: 'value', kind: 'map', token: 'value', name: '价值白名单' }
+    ]);
+    let current = buckets[0].id;
+    let tab = 'words';
+
+    container.insertAdjacentHTML('beforeend', `<div class="zhihuE_LxMount">
+        <p class="zhihuE_StPaneTips">按分类增删词条。加权词可用「词:8」导入。未改过的分类会跟随脚本默认更新；改过的只以你的版本为准。</p>
+        <div class="zhihuE_LxMain">
+            <div class="zhihuE_LxNav"></div>
+            <div class="zhihuE_LxPane">
+                <div class="zhihuE_LxTabs"></div>
+                <div class="zhihuE_LxAdd">
+                    <input class="zhihuE_LxInput zhihuE_LxWord" type="text" placeholder="添加词语，逗号分隔；可写 词:权重" />
+                    <input class="zhihuE_LxInput zhihuE_LxWeight" type="number" min="1" max="20" value="6" title="默认权重" />
+                    <button type="button" class="zhihuE_LxBtn zhihuE_LxAddBtn">添加</button>
+                </div>
+                <div class="zhihuE_LxCloud"></div>
+            </div>
+        </div>
+        <div class="zhihuE_LxFoot">
+            <span class="zhihuE_LxCount">0 条</span>
+            <div class="zhihuE_LxFootRight">
+                <button type="button" class="zhihuE_LxBtn ghost zhihuE_LxCopy">复制本类</button>
+                <button type="button" class="zhihuE_LxBtn ghost zhihuE_LxImport">粘贴覆盖</button>
+                <button type="button" class="zhihuE_LxBtn ghost zhihuE_LxReset">恢复本类默认</button>
+            </div>
+        </div>
+    </div>`);
+    const root = container.querySelector('.zhihuE_LxMount:last-child');
+    const nav = root.querySelector('.zhihuE_LxNav');
+    const tabs = root.querySelector('.zhihuE_LxTabs');
+    const cloud = root.querySelector('.zhihuE_LxCloud');
+    const countEl = root.querySelector('.zhihuE_LxCount');
+    const wordInput = root.querySelector('.zhihuE_LxWord');
+    const weightInput = root.querySelector('.zhihuE_LxWeight');
+
+    const persist = () => {
+        saveLexicon(lex);
+        render();
+    };
+    const currentBucket = () => buckets.find(b => b.id === current);
+    const currentMap = () => {
+        const bucket = currentBucket();
+        if (bucket.kind === 'cat') {
+            const cat = lex.cats[bucket.id];
+            return tab === 'excludes' ? null : cat.words;
+        }
+        if (bucket.kind === 'map') return lex[bucket.id];
+        return null;
+    };
+    const currentList = () => {
+        const bucket = currentBucket();
+        if (bucket.kind === 'cat' && tab === 'excludes') return lex.cats[bucket.id].excludes;
+        if (bucket.kind === 'list') return lex[bucket.id];
+        return null;
+    };
+    const mark = () => touchLexicon(lex, currentBucket().token);
+
+    const renderNav = () => {
+        nav.innerHTML = buckets.map(b =>
+            `<button type="button" class="zhihuE_LxNavBtn${b.id === current ? ' is-on' : ''}" data-id="${b.id}">${escapeHtml(b.name)}</button>`
+        ).join('');
+    };
+    const renderTabs = () => {
+        const bucket = currentBucket();
+        if (bucket.kind !== 'cat') {
+            tabs.innerHTML = '';
+            weightInput.style.display = bucket.kind === 'list' ? 'none' : '';
+            return;
+        }
+        tabs.innerHTML = `<button type="button" class="zhihuE_LxTab${tab === 'words' ? ' is-on' : ''}" data-tab="words">关键词</button>
+            <button type="button" class="zhihuE_LxTab${tab === 'excludes' ? ' is-on' : ''}" data-tab="excludes">排除词</button>`;
+        weightInput.style.display = tab === 'excludes' ? 'none' : '';
+    };
+    const renderCloud = () => {
+        const map = currentMap();
+        const list = currentList();
+        if (map) {
+            const keys = Object.keys(map);
+            countEl.textContent = `${keys.length} 条`;
+            cloud.innerHTML = keys.length
+                ? keys.map(word => `<span class="zhihuE_LxChip" data-word="${escapeHtml(word)}"><span>${escapeHtml(word)}</span><b>${map[word]}</b><button type="button" class="zhihuE_LxDel" data-word="${escapeHtml(word)}">×</button></span>`).join('')
+                : '<div class="zhihuE_LxEmpty">还没有词，在上方添加</div>';
+            return;
+        }
+        countEl.textContent = `${list.length} 条`;
+        cloud.innerHTML = list.length
+            ? list.map((word, i) => `<span class="zhihuE_LxChip"><span>${escapeHtml(word)}</span><button type="button" class="zhihuE_LxDel" data-index="${i}">×</button></span>`).join('')
+            : '<div class="zhihuE_LxEmpty">还没有词，在上方添加</div>';
+    };
+    const render = () => {
+        renderNav();
+        renderTabs();
+        renderCloud();
+    };
+    const addWords = text => {
+        const fallback = Number(weightInput.value) || 6;
+        mark();
+        if (currentMap()) Object.assign(currentMap(), parseWeightedWords(text, fallback));
+        else {
+            const list = currentList();
+            for (const word of uniqueWords(parseWords(text))) {
+                if (!list.some(x => x.toLowerCase() === word.toLowerCase())) list.push(word);
+            }
+        }
+        persist();
+    };
+    const exportText = () => {
+        const map = currentMap();
+        if (map) return Object.keys(map).map(k => `${k}:${map[k]}`).join(', ');
+        return (currentList() || []).join(', ');
+    };
+    const importText = text => {
+        if (!String(text || '').trim()) return;
+        const fallback = Number(weightInput.value) || 6;
+        const bucket = currentBucket();
+        mark();
+        if (bucket.kind === 'cat' && tab === 'excludes') lex.cats[bucket.id].excludes = uniqueWords(parseWords(text));
+        else if (bucket.kind === 'list') lex[bucket.id] = uniqueWords(parseWords(text));
+        else if (bucket.kind === 'cat') lex.cats[bucket.id].words = parseWeightedWords(text, fallback);
+        else lex[bucket.id] = parseWeightedWords(text, fallback);
+        persist();
+    };
+    const resetCurrent = () => {
+        const fresh = defaultLexicon();
+        const bucket = currentBucket();
+        lex.touched = (lex.touched || []).filter(x => x !== bucket.token);
+        if (bucket.kind === 'cat') lex.cats[bucket.id] = fresh.cats[bucket.id];
+        else lex[bucket.id] = fresh[bucket.id];
+        persist();
+    };
+
+    nav.addEventListener('click', event => {
+        const btn = event.target.closest('.zhihuE_LxNavBtn');
         if (!btn) return;
         current = btn.dataset.id;
+        tab = 'words';
         render();
     });
-    bodyEl.addEventListener('click', event => {
-        const sw = event.target.closest('.zhihuE_StSwitch');
-        if (sw) {
-            menuSet(sw.dataset.key, !menuValue(sw.dataset.key));
-            render();
-            return;
-        }
-        const act = event.target.closest('.zhihuE_StAction');
-        if (!act || act.disabled) return;
-        const spec = sections.flatMap(x => x.actions || []).find(x => x.id === act.dataset.act);
-        if (spec && spec.run) spec.run();
+    tabs.addEventListener('click', event => {
+        const btn = event.target.closest('.zhihuE_LxTab');
+        if (!btn) return;
+        tab = btn.dataset.tab;
+        render();
     });
-    document.addEventListener('keydown', onKey);
+    root.querySelector('.zhihuE_LxAddBtn').onclick = () => {
+        addWords(wordInput.value);
+        wordInput.value = '';
+        wordInput.focus();
+    };
+    wordInput.addEventListener('keydown', event => {
+        if (event.key === 'Enter') root.querySelector('.zhihuE_LxAddBtn').click();
+    });
+    cloud.addEventListener('click', event => {
+        const btn = event.target.closest('.zhihuE_LxDel');
+        if (!btn) return;
+        mark();
+        if (btn.dataset.word != null) delete currentMap()[btn.dataset.word];
+        else currentList().splice(Number(btn.dataset.index), 1);
+        persist();
+    });
+    root.querySelector('.zhihuE_LxCopy').onclick = async () => {
+        try {
+            if (navigator.clipboard && navigator.clipboard.writeText) await navigator.clipboard.writeText(exportText());
+        } catch (e) { /* ignore */ }
+        const btn = root.querySelector('.zhihuE_LxCopy');
+        const raw = btn.textContent;
+        btn.textContent = '已复制';
+        setTimeout(() => { btn.textContent = raw; }, 1200);
+    };
+    root.querySelector('.zhihuE_LxImport').onclick = async () => {
+        let text = '';
+        try {
+            if (navigator.clipboard && navigator.clipboard.readText) text = await navigator.clipboard.readText();
+        } catch (e) { /* ignore */ }
+        if (!text) text = prompt('粘贴词库，覆盖当前分类（词:权重 或纯词）', '') || '';
+        importText(text);
+    };
+    root.querySelector('.zhihuE_LxReset').onclick = resetCurrent;
     render();
 }
 
-function openSettingsIoDialog() {
-    if (document.querySelector('.zhihuE_IoMask')) return;
+function mountIoPane(container) {
     const pretty = () => JSON.stringify(snapshotSettings(), null, 2);
-    const html = `<style class="zhihuE_IoStyle">
-.zhihuE_IoMask {position:fixed;inset:0;z-index:10050;display:flex;align-items:center;justify-content:center;padding:32px 20px;background:rgba(18,18,18,.48);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);}
-.zhihuE_IoRoot {width:min(720px,96vw);height:min(640px,86vh);display:flex;flex-direction:column;background:#fff;color:#1d1d1f;border-radius:20px;box-shadow:0 24px 80px rgba(0,0,0,.22);overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Noto Sans SC","Microsoft YaHei",sans-serif;}
-.zhihuE_IoHead {padding:28px 32px 18px;border-bottom:1px solid #eee;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;}
-.zhihuE_IoTitle {margin:0;font-size:22px;font-weight:600;}
-.zhihuE_IoTips {margin:8px 0 0;font-size:13px;line-height:1.65;color:#8a8a8a;}
-.zhihuE_IoClose {flex:none;width:36px;height:36px;border:0;border-radius:50%;background:#f4f4f5;color:#666;cursor:pointer;font-size:18px;line-height:1;}
-.zhihuE_IoClose:hover {background:#1d1d1f;color:#fff;}
-.zhihuE_IoBody {flex:1;min-height:0;padding:18px 32px 12px;display:flex;flex-direction:column;gap:12px;}
-.zhihuE_IoArea {flex:1;min-height:180px;width:100%;padding:14px 16px;border:1px solid #e8e8e8;border-radius:12px;background:#fafafa;font:12px/1.55 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;resize:none;outline:none;box-sizing:border-box;}
-.zhihuE_IoArea:focus {border-color:#1d1d1f;background:#fff;box-shadow:0 0 0 4px rgba(29,29,31,.06);}
-.zhihuE_IoMsg {min-height:18px;font-size:12px;color:#c45c26;}
-.zhihuE_IoFoot {display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px;padding:16px 32px 22px;border-top:1px solid #eee;}
-.zhihuE_IoBtns {display:flex;flex-wrap:wrap;gap:8px;}
-.zhihuE_IoBtn {height:36px;padding:0 14px;border:1px solid #e4e4e4;border-radius:10px;background:#fff;color:#1d1d1f;font-size:13px;cursor:pointer;}
-.zhihuE_IoBtn:hover {background:#f7f7f7;border-color:#ccc;}
-.zhihuE_IoBtn.is-ok {background:#1d1d1f;border-color:#1d1d1f;color:#fff;}
-.zhihuE_IoPrimary {background:#1d1d1f;border-color:#1d1d1f;color:#fff;}
-.zhihuE_IoPrimary:hover {opacity:.88;background:#1d1d1f;}
-.zhihuE_IoFile {display:none;}
-[data-theme="dark"] .zhihuE_IoRoot {background:#2b2f36;color:#e8edf2;}
-[data-theme="dark"] .zhihuE_IoHead,[data-theme="dark"] .zhihuE_IoFoot {border-color:#3c434d;}
-[data-theme="dark"] .zhihuE_IoTips,[data-theme="dark"] .zhihuE_IoMsg {color:#9aa4b2;}
-[data-theme="dark"] .zhihuE_IoClose,[data-theme="dark"] .zhihuE_IoBtn {background:#343a44;border-color:#3c434d;color:#e8edf2;}
-[data-theme="dark"] .zhihuE_IoClose:hover,[data-theme="dark"] .zhihuE_IoBtn.is-ok,[data-theme="dark"] .zhihuE_IoPrimary {background:#e8edf2;border-color:#e8edf2;color:#1d1d1f;}
-[data-theme="dark"] .zhihuE_IoArea {background:#343a44;border-color:#3c434d;color:#e8edf2;}
-[data-theme="dark"] .zhihuE_IoArea:focus {background:#2b2f36;border-color:#c8d0da;}
-</style>
-<div class="zhihuE_IoMask">
-  <div class="zhihuE_IoRoot">
-    <div class="zhihuE_IoHead">
-      <div>
-        <h3 class="zhihuE_IoTitle">导入 / 导出 JSON</h3>
-        <p class="zhihuE_IoTips">包含全部开关、屏蔽用户/关键词，以及完整噪音词库（<code>noise_lexicon_v1</code>：分类词、排除词、权重）。导入会覆盖当前配置并刷新页面。</p>
-      </div>
-      <button type="button" class="zhihuE_IoClose" aria-label="关闭">×</button>
-    </div>
-    <div class="zhihuE_IoBody">
-      <textarea class="zhihuE_IoArea" spellcheck="false"></textarea>
-      <div class="zhihuE_IoMsg"></div>
-    </div>
-    <div class="zhihuE_IoFoot">
-      <div class="zhihuE_IoBtns">
-        <button type="button" class="zhihuE_IoBtn" data-act="download">下载 JSON</button>
-        <button type="button" class="zhihuE_IoBtn" data-act="copy">复制</button>
-        <button type="button" class="zhihuE_IoBtn" data-act="file">从文件导入</button>
-      </div>
-      <div class="zhihuE_IoBtns">
-        <button type="button" class="zhihuE_IoBtn zhihuE_IoPrimary" data-act="apply">导入并刷新</button>
-      </div>
-    </div>
-    <input class="zhihuE_IoFile" type="file" accept="application/json,.json">
-  </div>
-</div>`;
-
-    document.body.insertAdjacentHTML('beforeend', html);
-    const mask = document.querySelector('.zhihuE_IoMask');
-    const area = mask.querySelector('.zhihuE_IoArea');
-    const msg = mask.querySelector('.zhihuE_IoMsg');
-    const fileInput = mask.querySelector('.zhihuE_IoFile');
+    container.innerHTML = `<div class="zhihuE_IoMount">
+        <p class="zhihuE_StPaneTips">包含全部开关、屏蔽用户/关键词，以及完整噪音词库（<code>noise_lexicon_v1</code>）。导入会覆盖当前配置并刷新页面。</p>
+        <textarea class="zhihuE_IoArea" spellcheck="false"></textarea>
+        <div class="zhihuE_IoMsg"></div>
+        <div class="zhihuE_IoFoot">
+            <div class="zhihuE_IoBtns">
+                <button type="button" class="zhihuE_IoBtn" data-act="download">下载 JSON</button>
+                <button type="button" class="zhihuE_IoBtn" data-act="copy">复制</button>
+                <button type="button" class="zhihuE_IoBtn" data-act="file">从文件导入</button>
+            </div>
+            <div class="zhihuE_IoBtns">
+                <button type="button" class="zhihuE_IoBtn zhihuE_IoPrimary" data-act="apply">导入并刷新</button>
+            </div>
+        </div>
+        <input class="zhihuE_IoFile" type="file" accept="application/json,.json">
+    </div>`;
+    const root = container.querySelector('.zhihuE_IoMount');
+    const area = root.querySelector('.zhihuE_IoArea');
+    const msg = root.querySelector('.zhihuE_IoMsg');
+    const fileInput = root.querySelector('.zhihuE_IoFile');
     area.value = pretty();
 
-    const close = () => {
-        document.removeEventListener('keydown', onKey);
-        mask.remove();
-        const style = document.querySelector('.zhihuE_IoStyle');
-        if (style) style.remove();
-    };
-    const onKey = event => {
-        if (event.key === 'Escape') close();
-    };
     const flash = (btn, text) => {
         const raw = btn.textContent;
         btn.textContent = text;
@@ -733,9 +917,7 @@ function openSettingsIoDialog() {
             btn.classList.remove('is-ok');
         }, 1200);
     };
-    const showError = text => {
-        msg.textContent = text;
-    };
+    const showError = text => { msg.textContent = text; };
     const applyText = text => {
         showError('');
         let values;
@@ -754,11 +936,7 @@ function openSettingsIoDialog() {
         location.reload();
     };
 
-    mask.querySelector('.zhihuE_IoClose').onclick = close;
-    mask.addEventListener('click', event => {
-        if (event.target === mask) close();
-    });
-    mask.querySelector('.zhihuE_IoFoot').addEventListener('click', async event => {
+    root.querySelector('.zhihuE_IoFoot').addEventListener('click', async event => {
         const btn = event.target.closest('[data-act]');
         if (!btn) return;
         const act = btn.dataset.act;
@@ -797,22 +975,67 @@ function openSettingsIoDialog() {
         reader.onerror = () => showError('无法读取该文件。');
         reader.readAsText(file, 'utf-8');
     });
-    document.addEventListener('keydown', onKey);
 }
 
-function toggleCardDialog({ title, tips, footer, items }) {
-    if (document.querySelector('.zhihuE_LvMask')) return;
-    const html = `<style class="zhihuE_LvStyle">
-.zhihuE_LvMask {position:fixed;inset:0;z-index:10050;display:flex;align-items:center;justify-content:center;padding:32px 20px;background:rgba(18,18,18,.48);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);}
-.zhihuE_LvRoot {width:min(720px,96vw);max-height:86vh;display:flex;flex-direction:column;background:#fff;color:#1d1d1f;border-radius:20px;box-shadow:0 24px 80px rgba(0,0,0,.22);overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Noto Sans SC","Microsoft YaHei",sans-serif;}
-.zhihuE_LvHead {padding:28px 32px 18px;border-bottom:1px solid #eee;}
-.zhihuE_LvHeadTop {display:flex;align-items:flex-start;justify-content:space-between;gap:16px;}
-.zhihuE_LvTitle {margin:0;font-size:22px;font-weight:600;letter-spacing:.02em;}
-.zhihuE_LvTips {margin:8px 0 0;font-size:13px;line-height:1.65;color:#8a8a8a;}
-.zhihuE_LvClose {flex:none;width:36px;height:36px;border:0;border-radius:50%;background:#f4f4f5;color:#666;cursor:pointer;display:flex;align-items:center;justify-content:center;}
-.zhihuE_LvClose:hover {background:#1d1d1f;color:#fff;}
-.zhihuE_LvBody {padding:20px 32px;overflow:auto;display:flex;flex-direction:column;gap:12px;}
-.zhihuE_LvCard {display:flex;align-items:flex-start;justify-content:space-between;gap:20px;padding:18px 20px;border:1px solid #eee;border-radius:16px;background:#fafafa;transition:border-color .2s,background .2s,box-shadow .2s;}
+function openSettingsPanel() {
+    if (document.querySelector('.zhihuE_StMask')) return;
+
+    const lookKeys = ['menu_lowProfile', 'menu_fullWidth', 'menu_blankTitleFavicon', 'menu_cleanTitles', 'menu_cleanSearch'];
+    const readKeys = ['menu_defaultCollapsedAnswer', 'menu_collapsedAnswer', 'menu_collapsedNowAnswer', 'menu_backToTop', 'menu_questionRichTextMore', 'menu_publishTop', 'menu_typeTips', 'menu_toQuestion'];
+    const navItems = [
+        { id: 'look', name: '外观', hint: '页面气质' },
+        { id: 'read', name: '阅读', hint: '浏览节奏' }
+    ];
+    const blockItems = [
+        { id: 'block-users', name: '屏蔽用户', hint: '黑名单' },
+        { id: 'block-words', name: '关键词', hint: '噪音与词库' },
+        { id: 'block-types', name: '指定类别', hint: '内容类型' }
+    ];
+    const dataItem = { id: 'data', name: '配置', hint: '导入导出' };
+    let current = 'look';
+    let wordTab = 'levels';
+
+    const html = `<style class="zhihuE_StStyle">
+.zhihuE_StMask {position:fixed;inset:0;z-index:10040;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(18,18,18,.48);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);}
+.zhihuE_StRoot {width:min(1240px,98vw);height:min(900px,94vh);display:flex;flex-direction:column;background:#fff;color:#1d1d1f;border-radius:24px;box-shadow:0 32px 100px rgba(0,0,0,.26);overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Noto Sans SC","Microsoft YaHei",sans-serif;}
+.zhihuE_StHead {padding:28px 36px 20px;display:flex;justify-content:space-between;align-items:flex-start;gap:16px;}
+.zhihuE_StKicker {margin:0 0 6px;font-size:12px;letter-spacing:.16em;color:#aaa;text-transform:uppercase;}
+.zhihuE_StTitle {margin:0;font-size:26px;font-weight:650;letter-spacing:.02em;}
+.zhihuE_StTips {margin:8px 0 0;font-size:13px;line-height:1.65;color:#8a8a8a;}
+.zhihuE_StClose {flex:none;width:36px;height:36px;border:0;border-radius:50%;background:#f4f4f5;color:#666;cursor:pointer;font-size:18px;line-height:1;}
+.zhihuE_StClose:hover {background:#1d1d1f;color:#fff;}
+.zhihuE_StMain {flex:1;min-height:0;display:flex;border-top:1px solid #eee;}
+.zhihuE_StNav {width:236px;flex:none;padding:18px 14px;border-right:1px solid #eee;display:flex;flex-direction:column;gap:4px;overflow:auto;}
+.zhihuE_StNavBtn {display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;padding:12px 14px;border:0;border-radius:14px;background:transparent;color:#666;cursor:pointer;text-align:left;font:inherit;}
+.zhihuE_StNavBtn strong {font-size:15px;font-weight:600;}
+.zhihuE_StNavBtn span {font-size:12px;color:#aaa;}
+.zhihuE_StNavBtn.is-on {background:#1d1d1f;color:#fff;}
+.zhihuE_StNavBtn.is-on span {color:rgba(255,255,255,.62);}
+.zhihuE_StGroup {margin:8px 0 4px;}
+.zhihuE_StGroupLabel {padding:8px 14px 6px;font-size:11px;letter-spacing:.16em;color:#bbb;text-transform:uppercase;}
+.zhihuE_StNavSub {padding:10px 14px 10px 16px;border-radius:12px;}
+.zhihuE_StNavSub strong {font-size:14px;}
+.zhihuE_StNavFoot {margin-top:auto;padding:8px 6px 4px;}
+.zhihuE_StLink {border:0;background:transparent;color:#8a8a8a;cursor:pointer;font-size:12px;padding:0;}
+.zhihuE_StLink:hover {color:#1d1d1f;}
+.zhihuE_StBody {flex:1;min-width:0;overflow:auto;padding:24px 32px 32px;display:flex;flex-direction:column;gap:12px;}
+.zhihuE_StBody.is-fill {overflow:hidden;}
+.zhihuE_StRow {display:flex;align-items:center;justify-content:space-between;gap:20px;padding:18px 22px;border:1px solid #eee;border-radius:16px;background:#fafafa;flex:none;}
+.zhihuE_StRow.is-on {background:#fff;border-color:#e5e5e5;box-shadow:0 8px 24px rgba(0,0,0,.04);}
+.zhihuE_StName {font-size:15px;font-weight:600;}
+.zhihuE_StDesc {margin:4px 0 0;font-size:12px;line-height:1.6;color:#8a8a8a;}
+.zhihuE_StSwitch {flex:none;width:48px;height:28px;border:0;border-radius:999px;background:#ddd;position:relative;cursor:pointer;}
+.zhihuE_StSwitch::after {content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.15);transition:transform .2s;}
+.zhihuE_StSwitch.is-on {background:#1d1d1f;}
+.zhihuE_StSwitch.is-on::after {transform:translateX(20px);}
+.zhihuE_StPaneTips {margin:0;font-size:13px;line-height:1.65;color:#8a8a8a;flex:none;}
+.zhihuE_StTabs {display:flex;flex-wrap:wrap;gap:8px;flex:none;}
+.zhihuE_StTab {height:34px;padding:0 14px;border:1px solid #eee;border-radius:999px;background:#fff;color:#666;cursor:pointer;font:inherit;font-size:13px;}
+.zhihuE_StTab.is-on {background:#1d1d1f;border-color:#1d1d1f;color:#fff;}
+.zhihuE_StPane {flex:1;min-height:0;display:flex;flex-direction:column;gap:12px;overflow:auto;}
+.zhihuE_StPane.is-fill {overflow:hidden;}
+.zhihuE_StFootNote {margin-top:4px;font-size:12px;color:#aaa;flex:none;}
+.zhihuE_LvCard {display:flex;align-items:flex-start;justify-content:space-between;gap:20px;padding:18px 20px;border:1px solid #eee;border-radius:16px;background:#fafafa;flex:none;}
 .zhihuE_LvCard.is-on {background:#fff;border-color:#dcdcdc;box-shadow:0 8px 24px rgba(0,0,0,.04);}
 .zhihuE_LvCardMain {min-width:0;}
 .zhihuE_LvCardTop {display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap;}
@@ -822,111 +1045,212 @@ function toggleCardDialog({ title, tips, footer, items }) {
 .zhihuE_LvDesc {margin:0;font-size:13px;line-height:1.7;color:#666;}
 .zhihuE_LvChips {display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;}
 .zhihuE_LvChip {padding:3px 8px;border-radius:999px;background:#f0f0f0;color:#666;font-size:12px;}
-.zhihuE_LvSwitch {flex:none;width:48px;height:28px;border:0;border-radius:999px;background:#ddd;position:relative;cursor:pointer;transition:background .2s;}
-.zhihuE_LvSwitch::after {content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.15);transition:transform .2s;}
-.zhihuE_LvSwitch.is-on {background:#1d1d1f;}
-.zhihuE_LvSwitch.is-on::after {transform:translateX(20px);}
-.zhihuE_LvFoot {padding:16px 32px 22px;border-top:1px solid #eee;color:#8a8a8a;font-size:13px;}
-[data-theme="dark"] .zhihuE_LvRoot {background:#2b2f36;color:#e8edf2;}
-[data-theme="dark"] .zhihuE_LvHead,[data-theme="dark"] .zhihuE_LvFoot {border-color:#3c434d;}
-[data-theme="dark"] .zhihuE_LvTips,[data-theme="dark"] .zhihuE_LvFoot,[data-theme="dark"] .zhihuE_LvDesc,[data-theme="dark"] .zhihuE_LvHint {color:#9aa4b2;}
-[data-theme="dark"] .zhihuE_LvClose,[data-theme="dark"] .zhihuE_LvCard {background:#343a44;border-color:#3c434d;}
-[data-theme="dark"] .zhihuE_LvCard.is-on {background:#3a414c;}
-[data-theme="dark"] .zhihuE_LvClose:hover {background:#e8edf2;color:#1d1d1f;}
+.zhihuE_ListMount,.zhihuE_LxMount,.zhihuE_IoMount {flex:1;min-height:0;display:flex;flex-direction:column;gap:12px;}
+.zhihuE_DlgAdd {display:flex;gap:10px;flex:none;}
+.zhihuE_DlgInput,.zhihuE_DlgFilter {width:100%;height:44px;padding:0 16px;border:1px solid #e8e8e8;border-radius:12px;background:#fafafa;font-size:14px;outline:none;}
+.zhihuE_DlgInput:focus,.zhihuE_DlgFilter:focus {border-color:#1d1d1f;background:#fff;box-shadow:0 0 0 4px rgba(29,29,31,.06);}
+.zhihuE_DlgAddBtn {flex:none;height:44px;padding:0 22px;border:0;border-radius:12px;background:#1d1d1f;color:#fff;font-size:14px;font-weight:500;cursor:pointer;}
+.zhihuE_DlgAddBtn:hover {opacity:.88;}
+.zhihuE_DlgFilterWrap {flex:none;}
+.zhihuE_DlgCloud {flex:1;min-height:0;overflow:auto;padding:6px 2px 12px;display:flex;flex-wrap:wrap;align-content:flex-start;gap:10px;}
+.zhihuE_DlgChip {display:inline-flex;align-items:center;gap:8px;max-width:100%;padding:8px 8px 8px 14px;border:1px solid #ececec;border-radius:999px;background:#f7f7f7;font-size:13px;line-height:1.3;color:#333;}
+.zhihuE_DlgChip:hover {background:#fff;border-color:#d4d4d4;box-shadow:0 4px 12px rgba(0,0,0,.04);}
+.zhihuE_DlgChip span {overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.zhihuE_DlgChipDel {flex:none;width:22px;height:22px;border:0;border-radius:50%;background:transparent;color:#999;font-size:16px;line-height:22px;cursor:pointer;}
+.zhihuE_DlgChipDel:hover {background:#1d1d1f;color:#fff;}
+.zhihuE_DlgEmpty {width:100%;padding:80px 0;text-align:center;color:#b0b0b0;font-size:14px;}
+.zhihuE_DlgFoot {display:flex;align-items:center;justify-content:space-between;gap:16px;flex:none;color:#8a8a8a;font-size:13px;}
+.zhihuE_DlgFootRight {display:flex;align-items:center;gap:10px;}
+.zhihuE_DlgCopy {height:36px;padding:0 16px;border:1px solid #e4e4e4;border-radius:10px;background:#fff;color:#1d1d1f;font-size:13px;cursor:pointer;}
+.zhihuE_DlgCopy:hover {background:#f7f7f7;border-color:#ccc;}
+.zhihuE_DlgCopy.is-ok {background:#1d1d1f;border-color:#1d1d1f;color:#fff;}
+.zhihuE_DlgImport {display:none;flex:none;}
+.zhihuE_DlgImport.is-open {display:block;}
+.zhihuE_DlgImportArea {width:100%;min-height:120px;padding:12px 14px;border:1px solid #e8e8e8;border-radius:12px;background:#fafafa;font-size:13px;line-height:1.6;resize:vertical;outline:none;box-sizing:border-box;font-family:inherit;}
+.zhihuE_DlgImportActions {display:flex;justify-content:flex-end;gap:8px;margin-top:10px;}
+.zhihuE_DlgCount b {color:#1d1d1f;font-weight:600;}
+.zhihuE_LxMain {flex:1;min-height:0;display:flex;border:1px solid #eee;border-radius:16px;overflow:hidden;background:#fff;}
+.zhihuE_LxNav {width:168px;flex:none;overflow:auto;padding:10px;background:#fafafa;}
+.zhihuE_LxNavBtn {width:100%;text-align:left;border:0;background:transparent;border-radius:10px;padding:9px 10px;margin-bottom:4px;font-size:13px;cursor:pointer;color:#333;}
+.zhihuE_LxNavBtn.is-on {background:#1d1d1f;color:#fff;}
+.zhihuE_LxPane {flex:1;min-width:0;display:flex;flex-direction:column;padding:14px 16px 10px;}
+.zhihuE_LxTabs {display:flex;gap:8px;margin-bottom:10px;}
+.zhihuE_LxTab {height:30px;padding:0 12px;border:1px solid #e8e8e8;border-radius:999px;background:#fff;cursor:pointer;font-size:12px;}
+.zhihuE_LxTab.is-on {background:#1d1d1f;border-color:#1d1d1f;color:#fff;}
+.zhihuE_LxAdd {display:flex;gap:8px;margin-bottom:10px;}
+.zhihuE_LxInput {flex:1;height:38px;padding:0 12px;border:1px solid #e8e8e8;border-radius:12px;background:#fafafa;font-size:13px;outline:none;}
+.zhihuE_LxWeight {width:72px;flex:none;}
+.zhihuE_LxBtn {height:38px;padding:0 14px;border:0;border-radius:12px;background:#1d1d1f;color:#fff;cursor:pointer;font-size:13px;}
+.zhihuE_LxBtn.ghost {background:#fff;border:1px solid #e4e4e4;color:#1d1d1f;}
+.zhihuE_LxCloud {flex:1;min-height:0;overflow:auto;display:flex;flex-wrap:wrap;align-content:flex-start;gap:8px;}
+.zhihuE_LxChip {display:inline-flex;align-items:center;gap:6px;padding:6px 8px 6px 12px;border:1px solid #ececec;border-radius:999px;background:#f7f7f7;font-size:12px;}
+.zhihuE_LxChip b {font-weight:600;color:#888;}
+.zhihuE_LxDel {width:20px;height:20px;border:0;border-radius:50%;background:transparent;color:#999;cursor:pointer;}
+.zhihuE_LxDel:hover {background:#1d1d1f;color:#fff;}
+.zhihuE_LxEmpty {width:100%;padding:48px 0;text-align:center;color:#bbb;font-size:13px;}
+.zhihuE_LxFoot {display:flex;justify-content:space-between;align-items:center;gap:12px;flex:none;color:#8a8a8a;font-size:13px;}
+.zhihuE_LxFootRight {display:flex;gap:8px;flex-wrap:wrap;}
+.zhihuE_IoArea {flex:1;min-height:180px;width:100%;padding:14px 16px;border:1px solid #e8e8e8;border-radius:12px;background:#fafafa;font:12px/1.55 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;resize:none;outline:none;box-sizing:border-box;}
+.zhihuE_IoArea:focus {border-color:#1d1d1f;background:#fff;box-shadow:0 0 0 4px rgba(29,29,31,.06);}
+.zhihuE_IoMsg {min-height:18px;font-size:12px;color:#c45c26;flex:none;}
+.zhihuE_IoFoot {display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px;flex:none;}
+.zhihuE_IoBtns {display:flex;flex-wrap:wrap;gap:8px;}
+.zhihuE_IoBtn {height:36px;padding:0 14px;border:1px solid #e4e4e4;border-radius:10px;background:#fff;color:#1d1d1f;font-size:13px;cursor:pointer;}
+.zhihuE_IoBtn:hover {background:#f7f7f7;border-color:#ccc;}
+.zhihuE_IoBtn.is-ok {background:#1d1d1f;border-color:#1d1d1f;color:#fff;}
+.zhihuE_IoPrimary {background:#1d1d1f;border-color:#1d1d1f;color:#fff;}
+.zhihuE_IoPrimary:hover {opacity:.88;background:#1d1d1f;}
+.zhihuE_IoFile {display:none;}
+[data-theme="dark"] .zhihuE_StRoot {background:#2b2f36;color:#e8edf2;}
+[data-theme="dark"] .zhihuE_StMain,[data-theme="dark"] .zhihuE_StNav,[data-theme="dark"] .zhihuE_LxMain {border-color:#3c434d;}
+[data-theme="dark"] .zhihuE_StKicker,[data-theme="dark"] .zhihuE_StTips,[data-theme="dark"] .zhihuE_StDesc,[data-theme="dark"] .zhihuE_StLink,[data-theme="dark"] .zhihuE_StNavBtn span,[data-theme="dark"] .zhihuE_StGroupLabel,[data-theme="dark"] .zhihuE_StPaneTips,[data-theme="dark"] .zhihuE_LvHint,[data-theme="dark"] .zhihuE_LvDesc,[data-theme="dark"] .zhihuE_DlgFoot,[data-theme="dark"] .zhihuE_LxFoot {color:#9aa4b2;}
+[data-theme="dark"] .zhihuE_StClose,[data-theme="dark"] .zhihuE_StRow,[data-theme="dark"] .zhihuE_LvCard,[data-theme="dark"] .zhihuE_DlgInput,[data-theme="dark"] .zhihuE_DlgFilter,[data-theme="dark"] .zhihuE_DlgChip,[data-theme="dark"] .zhihuE_LxNav,[data-theme="dark"] .zhihuE_LxInput,[data-theme="dark"] .zhihuE_LxChip {background:#343a44;border-color:#3c434d;color:#e8edf2;}
+[data-theme="dark"] .zhihuE_StRow.is-on,[data-theme="dark"] .zhihuE_LvCard.is-on {background:#3a414c;}
+[data-theme="dark"] .zhihuE_StClose:hover,[data-theme="dark"] .zhihuE_StNavBtn.is-on,[data-theme="dark"] .zhihuE_StSwitch.is-on,[data-theme="dark"] .zhihuE_StTab.is-on,[data-theme="dark"] .zhihuE_DlgAddBtn,[data-theme="dark"] .zhihuE_DlgChipDel:hover,[data-theme="dark"] .zhihuE_LxNavBtn.is-on,[data-theme="dark"] .zhihuE_LxTab.is-on,[data-theme="dark"] .zhihuE_LxBtn,[data-theme="dark"] .zhihuE_LxDel:hover {background:#e8edf2;color:#1d1d1f;}
+[data-theme="dark"] .zhihuE_StNavBtn,[data-theme="dark"] .zhihuE_LxNavBtn {color:#c5ced8;}
+[data-theme="dark"] .zhihuE_StNavBtn.is-on span {color:rgba(29,29,31,.55);}
+[data-theme="dark"] .zhihuE_StSwitch {background:#4a5260;}
+[data-theme="dark"] .zhihuE_StLink:hover {color:#fff;}
+[data-theme="dark"] .zhihuE_StTab {background:#343a44;border-color:#3c434d;color:#c5ced8;}
 [data-theme="dark"] .zhihuE_LvTag {background:#e8edf2;color:#1d1d1f;}
 [data-theme="dark"] .zhihuE_LvChip {background:#2b2f36;color:#c5ced8;}
-[data-theme="dark"] .zhihuE_LvSwitch {background:#4a5260;}
-[data-theme="dark"] .zhihuE_LvSwitch.is-on {background:#e8edf2;}
+[data-theme="dark"] .zhihuE_DlgCopy,[data-theme="dark"] .zhihuE_IoBtn,[data-theme="dark"] .zhihuE_LxBtn.ghost {background:#343a44;border-color:#3c434d;color:#e8edf2;}
+[data-theme="dark"] .zhihuE_DlgCopy.is-ok,[data-theme="dark"] .zhihuE_IoBtn.is-ok,[data-theme="dark"] .zhihuE_IoPrimary {background:#e8edf2;border-color:#e8edf2;color:#1d1d1f;}
+[data-theme="dark"] .zhihuE_DlgImportArea,[data-theme="dark"] .zhihuE_IoArea {background:#343a44;border-color:#3c434d;color:#e8edf2;}
+[data-theme="dark"] .zhihuE_DlgCount b {color:#fff;}
 </style>
-<div class="zhihuE_LvMask">
-  <div class="zhihuE_LvRoot">
-    <div class="zhihuE_LvHead">
-      <div class="zhihuE_LvHeadTop">
-        <div>
-          <h3 class="zhihuE_LvTitle">${escapeHtml(title)}</h3>
-          <p class="zhihuE_LvTips">${escapeHtml(tips)}</p>
-        </div>
-        <button type="button" class="zhihuE_LvClose" title="关闭" aria-label="关闭">
-          <svg fill="currentColor" viewBox="0 0 24 24" width="18" height="18"><path d="M13.486 12l5.208-5.207a1.048 1.048 0 0 0-.006-1.483 1.046 1.046 0 0 0-1.482-.005L12 10.514 6.793 5.305a1.048 1.048 0 0 0-1.483.005 1.046 1.046 0 0 0-.005 1.483L10.514 12l-5.208 5.207a1.048 1.048 0 0 0 .006 1.483 1.046 1.046 0 0 0 1.482.005L12 13.486l5.207 5.208a1.048 1.048 0 0 0 1.483-.006 1.046 1.046 0 0 0 .005-1.482L13.486 12z" fill-rule="evenodd"></path></svg>
-        </button>
+<div class="zhihuE_StMask">
+  <div class="zhihuE_StRoot">
+    <div class="zhihuE_StHead">
+      <div>
+        <p class="zhihuE_StKicker">Zhihu Enhancement Plus</p>
+        <h3 class="zhihuE_StTitle">设置</h3>
+        <p class="zhihuE_StTips">开关即时保存，刷新后生效。屏蔽相关已放在左侧二级菜单，内容直接铺在右侧。</p>
       </div>
+      <button type="button" class="zhihuE_StClose" aria-label="关闭">×</button>
     </div>
-    <div class="zhihuE_LvBody">${items.map(item => {
-        const on = !!menuValue(item.key);
-        const chips = (item.tags || []).map(t => `<span class="zhihuE_LvChip">${escapeHtml(t)}</span>`).join('');
-        return `<div class="zhihuE_LvCard${on ? ' is-on' : ''}" data-key="${item.key}">
-          <div class="zhihuE_LvCardMain">
-            <div class="zhihuE_LvCardTop">
-              ${item.tag ? `<span class="zhihuE_LvTag">${escapeHtml(item.tag)}</span>` : ''}
-              <span class="zhihuE_LvName">${escapeHtml(item.name)}</span>
-              ${item.hint ? `<span class="zhihuE_LvHint">${escapeHtml(item.hint)}</span>` : ''}
-            </div>
-            ${item.desc ? `<p class="zhihuE_LvDesc">${escapeHtml(item.desc)}</p>` : ''}
-            ${chips ? `<div class="zhihuE_LvChips">${chips}</div>` : ''}
-          </div>
-          <button type="button" class="zhihuE_LvSwitch${on ? ' is-on' : ''}" data-key="${item.key}" aria-label="${escapeHtml(item.name)}"></button>
-        </div>`;
-    }).join('')}</div>
-    <div class="zhihuE_LvFoot">${escapeHtml(footer || '修改后刷新页面生效')}</div>
+    <div class="zhihuE_StMain">
+      <div class="zhihuE_StNav"></div>
+      <div class="zhihuE_StBody"></div>
+    </div>
   </div>
 </div>`;
 
     document.body.insertAdjacentHTML('beforeend', html);
-    const mask = document.querySelector('.zhihuE_LvMask');
+    const mask = document.querySelector('.zhihuE_StMask');
+    const navEl = mask.querySelector('.zhihuE_StNav');
+    const bodyEl = mask.querySelector('.zhihuE_StBody');
+
     const close = () => {
+        document.removeEventListener('keydown', onKey);
         mask.remove();
-        const style = document.querySelector('.zhihuE_LvStyle');
+        const style = document.querySelector('.zhihuE_StStyle');
         if (style) style.remove();
     };
-    mask.querySelector('.zhihuE_LvClose').onclick = close;
+    const onKey = event => {
+        if (event.key === 'Escape') close();
+    };
+
+    const navButton = (item, extra = '') =>
+        `<button type="button" class="zhihuE_StNavBtn${extra}${item.id === current ? ' is-on' : ''}" data-id="${item.id}"><strong>${escapeHtml(item.name)}</strong><span>${escapeHtml(item.hint)}</span></button>`;
+
+    const renderNav = () => {
+        navEl.innerHTML = navItems.map(item => navButton(item)).join('') +
+            `<div class="zhihuE_StGroup"><div class="zhihuE_StGroupLabel">屏蔽</div>${blockItems.map(item => navButton(item, ' zhihuE_StNavSub')).join('')}</div>` +
+            navButton(dataItem) +
+            '<div class="zhihuE_StNavFoot"><button type="button" class="zhihuE_StLink">反馈与建议</button></div>';
+    };
+
+    const renderBody = () => {
+        const fill = current === 'block-users' || current === 'block-words' || current === 'data';
+        bodyEl.classList.toggle('is-fill', fill);
+        if (current === 'look') {
+            bodyEl.innerHTML = lookKeys.map(settingsSwitchRow).join('');
+            return;
+        }
+        if (current === 'read') {
+            bodyEl.innerHTML = readKeys.map(settingsSwitchRow).join('');
+            return;
+        }
+        if (current === 'block-users') {
+            bodyEl.innerHTML = settingsSwitchRow('menu_blockUsers');
+            mountListEditor(bodyEl, {
+                storageKey: 'menu_customBlockUsers',
+                placeholder: '例如：盐选推荐, 故事档案局',
+                tips: '用户名需完全匹配。可用逗号、顿号或 | 一次添加多个。'
+            });
+            return;
+        }
+        if (current === 'block-words') {
+            bodyEl.innerHTML = settingsSwitchRow('menu_blockKeywords') +
+                `<div class="zhihuE_StTabs">
+                    <button type="button" class="zhihuE_StTab${wordTab === 'levels' ? ' is-on' : ''}" data-tab="levels">过滤档位</button>
+                    <button type="button" class="zhihuE_StTab${wordTab === 'custom' ? ' is-on' : ''}" data-tab="custom">自定义词</button>
+                    <button type="button" class="zhihuE_StTab${wordTab === 'lexicon' ? ' is-on' : ''}" data-tab="lexicon">噪音词库</button>
+                </div>
+                <div class="zhihuE_StPane${wordTab === 'levels' ? '' : ' is-fill'}"></div>`;
+            const pane = bodyEl.querySelector('.zhihuE_StPane');
+            if (wordTab === 'levels') {
+                pane.innerHTML = settingsNoiseCards().map(settingsToggleCard).join('') +
+                    '<div class="zhihuE_StFootNote">0–30 保留 · 30–60 降权 · 60–100 隐藏</div>';
+            } else if (wordTab === 'custom') {
+                mountListEditor(pane, {
+                    storageKey: 'menu_customBlockKeywords',
+                    placeholder: '例如：广告, 引流, [捂脸]',
+                    tips: '不区分大小写，支持表情。可用逗号、/ 或 | 一次添加多个，会加权到噪音分。'
+                });
+            } else {
+                mountLexiconEditor(pane);
+            }
+            return;
+        }
+        if (current === 'block-types') {
+            bodyEl.innerHTML = '<p class="zhihuE_StPaneTips">勾选后隐藏对应类型的信息流，刷新页面后生效。</p>' +
+                settingsTypeCards().map(settingsToggleCard).join('');
+            return;
+        }
+        mountIoPane(bodyEl);
+    };
+
+    const render = () => {
+        renderNav();
+        renderBody();
+    };
+
+    mask.querySelector('.zhihuE_StClose').onclick = close;
     mask.addEventListener('click', event => {
         if (event.target === mask) close();
     });
-    mask.querySelectorAll('.zhihuE_LvSwitch').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const key = btn.dataset.key;
-            const next = !menuValue(key);
-            menuSet(key, next);
-            btn.classList.toggle('is-on', next);
-            const card = mask.querySelector(`.zhihuE_LvCard[data-key="${key}"]`);
-            if (card) card.classList.toggle('is-on', next);
-        });
+    navEl.addEventListener('click', event => {
+        const link = event.target.closest('.zhihuE_StLink');
+        if (link) {
+            GM_openInTab('https://github.com/XIU2/UserScript#xiu2userscript', { active: true, insert: true, setParent: true });
+            GM_openInTab('https://greasyfork.org/zh-CN/scripts/419081/feedback', { active: true, insert: true, setParent: true });
+            return;
+        }
+        const btn = event.target.closest('.zhihuE_StNavBtn');
+        if (!btn) return;
+        current = btn.dataset.id;
+        render();
     });
-}
-
-function menuSetting(title, tips, menus) {
-    const meta = {
-        menu_blockTypeVideo: { tag: '视频', name: '视频', desc: '首页、搜索页和问题页里的视频卡片、视频回答。', tags: ['首页', '搜索', '问题页'] },
-        menu_blockTypeArticle: { tag: '文章', name: '文章', desc: '信息流里的专栏文章，不影响问题回答。', tags: ['首页', '搜索'] },
-        menu_blockTypePin: { tag: '想法', name: '想法', desc: '首页信息流中的想法/动态。', tags: ['首页'] },
-        menu_blockTypeTopic: { tag: '话题', name: '话题', desc: '搜索结果里的话题卡片。', tags: ['搜索'] },
-        menu_blockTypeSearch: { tag: '盐选', name: '杂志 / 盐选 / 相关搜索', desc: '搜索页里的杂志、盐选专栏和相关搜索。', tags: ['搜索'] },
-        menu_blockYanXuan: { tag: '付费', name: '盐选内容', desc: '问题页里带购买入口的盐选回答。', tags: ['问题页'] },
-        menu_blockTypeLiveHot: { tag: '热榜', name: '热榜杂项', desc: '热榜中的直播、广告和非问题条目，并重排序号。', tags: ['热榜'] }
-    };
-    toggleCardDialog({
-        title,
-        tips: `${tips} 改完刷新页面后生效。`,
-        footer: '打开后隐藏对应类型的信息流',
-        items: menus.map(item => Object.assign({
-            key: item.key,
-            name: item.label,
-            desc: item.tip || ''
-        }, meta[item.key] || {}))
+    bodyEl.addEventListener('click', event => {
+        const tab = event.target.closest('.zhihuE_StTab');
+        if (tab && tab.dataset.tab) {
+            wordTab = tab.dataset.tab;
+            renderBody();
+            return;
+        }
+        const sw = event.target.closest('.zhihuE_StSwitch');
+        if (!sw) return;
+        const key = sw.dataset.key;
+        const next = !menuValue(key);
+        menuSet(key, next);
+        sw.classList.toggle('is-on', next);
+        const row = sw.closest('.zhihuE_StRow, .zhihuE_LvCard');
+        if (row) row.classList.toggle('is-on', next);
     });
-}
-
-function noiseLevelDialog() {
-    toggleCardDialog({
-        title: '噪音过滤档位',
-        tips: '按语义类别分层计分。L1 最狠，L3 最轻。改完刷新页面后生效。',
-        footer: '0–30 保留 · 30–60 降权 · 60–100 隐藏',
-        items: [
-            { key: 'menu_noiseL1', tag: 'L1', name: '强过滤', hint: '默认开启', desc: '明星八卦、饭圈、男女对立、婚恋生育、吃瓜爆料。命中后更容易直接隐藏。', tags: ['塌房', '热搜', '饭圈', '男女对立', '催婚'] },
-            { key: 'menu_noiseL2', tag: 'L2', name: '中强过滤', hint: '默认开启', desc: '二次元抽卡、消费种草、汽车热点、体育赛事、网红生活。多数会降权，而不是一刀切。', tags: ['抽卡', '种草', '理想汽车', '世界杯', '探店'] },
-            { key: 'menu_noiseL3', tag: 'L3', name: '低强过滤', hint: '默认关闭', desc: '国际政治情绪、A股短线、社会比较。信息量往往更高，建议按需打开。', tags: ['俄乌', 'A股', '985', '年薪', '特朗普'] }
-        ]
-    });
+    document.addEventListener('keydown', onKey);
+    render();
 }
 
 function parseWeightedWords(input, fallback = 6) {
@@ -941,281 +1265,6 @@ function parseWeightedWords(input, fallback = 6) {
         out[word] = Math.max(1, Math.min(20, weight));
     }
     return out;
-}
-
-function noiseLexiconDialog() {
-    if (document.querySelector('.zhihuE_LxMask')) return;
-    let lex = getActiveLexicon();
-    const buckets = NOISE_CATEGORIES.map(cat => ({
-        id: cat.id,
-        kind: 'cat',
-        token: 'cat:' + cat.id,
-        name: `L${cat.level} ${cat.name}`
-    })).concat([
-        { id: 'emotion', kind: 'map', token: 'emotion', name: '情绪词' },
-        { id: 'controversy', kind: 'list', token: 'controversy', name: '争议词' },
-        { id: 'clickbait', kind: 'list', token: 'clickbait', name: '标题党' },
-        { id: 'value', kind: 'map', token: 'value', name: '价值白名单' }
-    ]);
-    let current = buckets[0].id;
-    let tab = 'words';
-
-    const html = `<style class="zhihuE_LxStyle">
-.zhihuE_LxMask {position:fixed;inset:0;z-index:10050;display:flex;align-items:center;justify-content:center;padding:24px 16px;background:rgba(18,18,18,.48);backdrop-filter:blur(8px);}
-.zhihuE_LxRoot {width:min(980px,96vw);height:min(780px,88vh);display:flex;flex-direction:column;background:#fff;color:#1d1d1f;border-radius:20px;box-shadow:0 24px 80px rgba(0,0,0,.22);overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Noto Sans SC","Microsoft YaHei",sans-serif;}
-.zhihuE_LxHead {padding:24px 28px 16px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:flex-start;gap:16px;}
-.zhihuE_LxTitle {margin:0;font-size:22px;font-weight:600;}
-.zhihuE_LxTips {margin:8px 0 0;font-size:13px;line-height:1.6;color:#8a8a8a;}
-.zhihuE_LxClose {flex:none;width:36px;height:36px;border:0;border-radius:50%;background:#f4f4f5;color:#666;cursor:pointer;}
-.zhihuE_LxClose:hover {background:#1d1d1f;color:#fff;}
-.zhihuE_LxMain {flex:1;min-height:0;display:flex;}
-.zhihuE_LxNav {width:200px;flex:none;overflow:auto;padding:12px;border-right:1px solid #eee;background:#fafafa;}
-.zhihuE_LxNavBtn {width:100%;text-align:left;border:0;background:transparent;border-radius:10px;padding:10px 12px;margin-bottom:4px;font-size:13px;cursor:pointer;color:#333;}
-.zhihuE_LxNavBtn.is-on {background:#1d1d1f;color:#fff;}
-.zhihuE_LxPane {flex:1;min-width:0;display:flex;flex-direction:column;padding:16px 24px 12px;}
-.zhihuE_LxTabs {display:flex;gap:8px;margin-bottom:12px;}
-.zhihuE_LxTab {height:32px;padding:0 12px;border:1px solid #e8e8e8;border-radius:999px;background:#fff;cursor:pointer;font-size:12px;}
-.zhihuE_LxTab.is-on {background:#1d1d1f;border-color:#1d1d1f;color:#fff;}
-.zhihuE_LxAdd {display:flex;gap:8px;margin-bottom:12px;}
-.zhihuE_LxInput {flex:1;height:40px;padding:0 14px;border:1px solid #e8e8e8;border-radius:12px;background:#fafafa;font-size:13px;outline:none;}
-.zhihuE_LxWeight {width:72px;flex:none;}
-.zhihuE_LxBtn {height:40px;padding:0 14px;border:0;border-radius:12px;background:#1d1d1f;color:#fff;cursor:pointer;font-size:13px;}
-.zhihuE_LxBtn.ghost {background:#fff;border:1px solid #e4e4e4;color:#1d1d1f;}
-.zhihuE_LxCloud {flex:1;min-height:0;overflow:auto;display:flex;flex-wrap:wrap;align-content:flex-start;gap:8px;}
-.zhihuE_LxChip {display:inline-flex;align-items:center;gap:6px;padding:6px 8px 6px 12px;border:1px solid #ececec;border-radius:999px;background:#f7f7f7;font-size:12px;}
-.zhihuE_LxChip b {font-weight:600;color:#888;}
-.zhihuE_LxDel {width:20px;height:20px;border:0;border-radius:50%;background:transparent;color:#999;cursor:pointer;}
-.zhihuE_LxDel:hover {background:#1d1d1f;color:#fff;}
-.zhihuE_LxEmpty {width:100%;padding:60px 0;text-align:center;color:#bbb;font-size:13px;}
-.zhihuE_LxFoot {display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 28px 20px;border-top:1px solid #eee;color:#8a8a8a;font-size:13px;}
-.zhihuE_LxFootRight {display:flex;gap:8px;flex-wrap:wrap;}
-[data-theme="dark"] .zhihuE_LxRoot {background:#2b2f36;color:#e8edf2;}
-[data-theme="dark"] .zhihuE_LxHead,[data-theme="dark"] .zhihuE_LxNav,[data-theme="dark"] .zhihuE_LxFoot {border-color:#3c434d;}
-[data-theme="dark"] .zhihuE_LxNav,[data-theme="dark"] .zhihuE_LxInput,[data-theme="dark"] .zhihuE_LxChip {background:#343a44;color:#e8edf2;border-color:#3c434d;}
-[data-theme="dark"] .zhihuE_LxTips,[data-theme="dark"] .zhihuE_LxFoot {color:#9aa4b2;}
-[data-theme="dark"] .zhihuE_LxNavBtn {color:#d5dce4;}
-[data-theme="dark"] .zhihuE_LxNavBtn.is-on,[data-theme="dark"] .zhihuE_LxTab.is-on,[data-theme="dark"] .zhihuE_LxBtn {background:#e8edf2;color:#1d1d1f;}
-[data-theme="dark"] .zhihuE_LxClose:hover,[data-theme="dark"] .zhihuE_LxDel:hover {background:#e8edf2;color:#1d1d1f;}
-[data-theme="dark"] .zhihuE_LxBtn.ghost {background:#343a44;border-color:#3c434d;color:#e8edf2;}
-</style>
-<div class="zhihuE_LxMask">
-  <div class="zhihuE_LxRoot">
-    <div class="zhihuE_LxHead">
-      <div>
-        <h3 class="zhihuE_LxTitle">编辑噪音词库</h3>
-        <p class="zhihuE_LxTips">按分类增删词条。加权词可用「词:8」导入。未改过的分类会跟随脚本默认更新；改过的只以你的版本为准。</p>
-      </div>
-      <button type="button" class="zhihuE_LxClose" aria-label="关闭">×</button>
-    </div>
-    <div class="zhihuE_LxMain">
-      <div class="zhihuE_LxNav"></div>
-      <div class="zhihuE_LxPane">
-        <div class="zhihuE_LxTabs"></div>
-        <div class="zhihuE_LxAdd">
-          <input class="zhihuE_LxInput zhihuE_LxWord" type="text" placeholder="添加词语，逗号分隔；可写 词:权重" />
-          <input class="zhihuE_LxInput zhihuE_LxWeight" type="number" min="1" max="20" value="6" title="默认权重" />
-          <button type="button" class="zhihuE_LxBtn zhihuE_LxAddBtn">添加</button>
-        </div>
-        <div class="zhihuE_LxCloud"></div>
-      </div>
-    </div>
-    <div class="zhihuE_LxFoot">
-      <span class="zhihuE_LxCount">0 条</span>
-      <div class="zhihuE_LxFootRight">
-        <button type="button" class="zhihuE_LxBtn ghost zhihuE_LxCopy">复制本类</button>
-        <button type="button" class="zhihuE_LxBtn ghost zhihuE_LxImport">粘贴覆盖</button>
-        <button type="button" class="zhihuE_LxBtn ghost zhihuE_LxReset">恢复本类默认</button>
-        <span>改完刷新页面生效</span>
-      </div>
-    </div>
-  </div>
-</div>`;
-
-    document.body.insertAdjacentHTML('beforeend', html);
-    const mask = document.querySelector('.zhihuE_LxMask');
-    const nav = mask.querySelector('.zhihuE_LxNav');
-    const tabs = mask.querySelector('.zhihuE_LxTabs');
-    const cloud = mask.querySelector('.zhihuE_LxCloud');
-    const countEl = mask.querySelector('.zhihuE_LxCount');
-    const wordInput = mask.querySelector('.zhihuE_LxWord');
-    const weightInput = mask.querySelector('.zhihuE_LxWeight');
-
-    const persist = () => {
-        saveLexicon(lex);
-        render();
-    };
-
-    const currentBucket = () => buckets.find(b => b.id === current);
-
-    const currentMap = () => {
-        const bucket = currentBucket();
-        if (bucket.kind === 'cat') {
-            const cat = lex.cats[bucket.id];
-            return tab === 'excludes' ? null : cat.words;
-        }
-        if (bucket.kind === 'map') return lex[bucket.id];
-        return null;
-    };
-
-    const currentList = () => {
-        const bucket = currentBucket();
-        if (bucket.kind === 'cat' && tab === 'excludes') return lex.cats[bucket.id].excludes;
-        if (bucket.kind === 'list') return lex[bucket.id];
-        return null;
-    };
-
-    const mark = () => touchLexicon(lex, currentBucket().token);
-
-    const renderNav = () => {
-        nav.innerHTML = buckets.map(b =>
-            `<button type="button" class="zhihuE_LxNavBtn${b.id === current ? ' is-on' : ''}" data-id="${b.id}">${escapeHtml(b.name)}</button>`
-        ).join('');
-    };
-
-    const renderTabs = () => {
-        const bucket = currentBucket();
-        if (bucket.kind !== 'cat') {
-            tabs.innerHTML = '';
-            weightInput.style.display = bucket.kind === 'list' ? 'none' : '';
-            return;
-        }
-        tabs.innerHTML = `<button type="button" class="zhihuE_LxTab${tab === 'words' ? ' is-on' : ''}" data-tab="words">关键词</button>
-            <button type="button" class="zhihuE_LxTab${tab === 'excludes' ? ' is-on' : ''}" data-tab="excludes">排除词</button>`;
-        weightInput.style.display = tab === 'excludes' ? 'none' : '';
-    };
-
-    const renderCloud = () => {
-        const map = currentMap();
-        const list = currentList();
-        if (map) {
-            const keys = Object.keys(map);
-            countEl.textContent = `${keys.length} 条`;
-            cloud.innerHTML = keys.length
-                ? keys.map(word => `<span class="zhihuE_LxChip" data-word="${escapeHtml(word)}"><span>${escapeHtml(word)}</span><b>${map[word]}</b><button type="button" class="zhihuE_LxDel" data-word="${escapeHtml(word)}">×</button></span>`).join('')
-                : '<div class="zhihuE_LxEmpty">还没有词，在上方添加</div>';
-            return;
-        }
-        countEl.textContent = `${list.length} 条`;
-        cloud.innerHTML = list.length
-            ? list.map((word, i) => `<span class="zhihuE_LxChip"><span>${escapeHtml(word)}</span><button type="button" class="zhihuE_LxDel" data-index="${i}">×</button></span>`).join('')
-            : '<div class="zhihuE_LxEmpty">还没有词，在上方添加</div>';
-    };
-
-    const render = () => {
-        renderNav();
-        renderTabs();
-        renderCloud();
-    };
-
-    const addWords = text => {
-        const fallback = Number(weightInput.value) || 6;
-        const bucket = currentBucket();
-        mark();
-        if (currentMap()) {
-            const added = parseWeightedWords(text, fallback);
-            Object.assign(currentMap(), added);
-        } else {
-            const list = currentList();
-            for (const word of uniqueWords(parseWords(text))) {
-                if (!list.some(x => x.toLowerCase() === word.toLowerCase())) list.push(word);
-            }
-        }
-        persist();
-    };
-
-    const exportText = () => {
-        const map = currentMap();
-        if (map) return Object.keys(map).map(k => `${k}:${map[k]}`).join(', ');
-        return (currentList() || []).join(', ');
-    };
-
-    const importText = text => {
-        if (!String(text || '').trim()) return;
-        const fallback = Number(weightInput.value) || 6;
-        const bucket = currentBucket();
-        mark();
-        if (bucket.kind === 'cat' && tab === 'excludes') {
-            lex.cats[bucket.id].excludes = uniqueWords(parseWords(text));
-        } else if (bucket.kind === 'list') {
-            lex[bucket.id] = uniqueWords(parseWords(text));
-        } else if (bucket.kind === 'cat') {
-            lex.cats[bucket.id].words = parseWeightedWords(text, fallback);
-        } else {
-            lex[bucket.id] = parseWeightedWords(text, fallback);
-        }
-        persist();
-    };
-
-    const resetCurrent = () => {
-        const fresh = defaultLexicon();
-        const bucket = currentBucket();
-        lex.touched = (lex.touched || []).filter(x => x !== bucket.token);
-        if (bucket.kind === 'cat') lex.cats[bucket.id] = fresh.cats[bucket.id];
-        else lex[bucket.id] = fresh[bucket.id];
-        persist();
-    };
-
-    mask.querySelector('.zhihuE_LxClose').onclick = () => {
-        mask.remove();
-        const style = document.querySelector('.zhihuE_LxStyle');
-        if (style) style.remove();
-    };
-    mask.addEventListener('click', event => {
-        if (event.target === mask) mask.querySelector('.zhihuE_LxClose').click();
-    });
-    nav.addEventListener('click', event => {
-        const btn = event.target.closest('.zhihuE_LxNavBtn');
-        if (!btn) return;
-        current = btn.dataset.id;
-        tab = 'words';
-        render();
-    });
-    tabs.addEventListener('click', event => {
-        const btn = event.target.closest('.zhihuE_LxTab');
-        if (!btn) return;
-        tab = btn.dataset.tab;
-        render();
-    });
-    mask.querySelector('.zhihuE_LxAddBtn').onclick = () => {
-        addWords(wordInput.value);
-        wordInput.value = '';
-        wordInput.focus();
-    };
-    wordInput.addEventListener('keydown', event => {
-        if (event.key === 'Enter') mask.querySelector('.zhihuE_LxAddBtn').click();
-    });
-    cloud.addEventListener('click', event => {
-        const btn = event.target.closest('.zhihuE_LxDel');
-        if (!btn) return;
-        mark();
-        if (btn.dataset.word != null) {
-            delete currentMap()[btn.dataset.word];
-        } else {
-            currentList().splice(Number(btn.dataset.index), 1);
-        }
-        persist();
-    });
-    mask.querySelector('.zhihuE_LxCopy').onclick = async () => {
-        const text = exportText();
-        try {
-            if (navigator.clipboard && navigator.clipboard.writeText) await navigator.clipboard.writeText(text);
-        } catch (e) { /* ignore */ }
-        const btn = mask.querySelector('.zhihuE_LxCopy');
-        const raw = btn.textContent;
-        btn.textContent = '已复制';
-        setTimeout(() => { btn.textContent = raw; }, 1200);
-    };
-    mask.querySelector('.zhihuE_LxImport').onclick = async () => {
-        let text = '';
-        try {
-            if (navigator.clipboard && navigator.clipboard.readText) text = await navigator.clipboard.readText();
-        } catch (e) { /* ignore */ }
-        if (!text) text = prompt('粘贴词库，覆盖当前分类（词:权重 或纯词）', '') || '';
-        importText(text);
-    };
-    mask.querySelector('.zhihuE_LxReset').onclick = resetCurrent;
-
-    render();
 }
 
 function escapeHtml(text) {
@@ -1238,275 +1287,6 @@ function uniqueWords(words) {
         out.push(word);
     }
     return out;
-}
-
-function editListDialog({ title, tips, storageKey, placeholder }) {
-    if (document.querySelector('.zhihuE_DlgRoot')) return;
-    let list = [...(menuValue(storageKey) || [])];
-    let filter = '';
-
-    const html = `<style class="zhihuE_DlgStyle">
-.zhihuE_DlgMask {position:fixed;inset:0;z-index:10050;display:flex;align-items:center;justify-content:center;padding:32px 20px;background:rgba(18,18,18,.48);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);}
-.zhihuE_DlgRoot {width:min(840px,96vw);height:min(760px,86vh);display:flex;flex-direction:column;background:#fff;color:#1d1d1f;border-radius:20px;box-shadow:0 24px 80px rgba(0,0,0,.22);overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Noto Sans SC","Microsoft YaHei",sans-serif;}
-.zhihuE_DlgHead {padding:28px 32px 18px;border-bottom:1px solid #eee;}
-.zhihuE_DlgHeadTop {display:flex;align-items:flex-start;justify-content:space-between;gap:16px;}
-.zhihuE_DlgTitle {margin:0;font-size:22px;font-weight:600;letter-spacing:.02em;line-height:1.3;}
-.zhihuE_DlgTips {margin:8px 0 0;font-size:13px;line-height:1.6;color:#8a8a8a;}
-.zhihuE_DlgClose {flex:none;width:36px;height:36px;border:0;border-radius:50%;background:#f4f4f5;color:#666;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s,color .2s;}
-.zhihuE_DlgClose:hover {background:#1d1d1f;color:#fff;}
-.zhihuE_DlgBody {flex:1;min-height:0;display:flex;flex-direction:column;padding:20px 32px 12px;}
-.zhihuE_DlgAdd {display:flex;gap:10px;margin-bottom:14px;}
-.zhihuE_DlgInput,.zhihuE_DlgFilter {width:100%;height:44px;padding:0 16px;border:1px solid #e8e8e8;border-radius:12px;background:#fafafa;font-size:14px;outline:none;transition:border-color .2s,background .2s,box-shadow .2s;}
-.zhihuE_DlgInput:focus,.zhihuE_DlgFilter:focus {border-color:#1d1d1f;background:#fff;box-shadow:0 0 0 4px rgba(29,29,31,.06);}
-.zhihuE_DlgAddBtn {flex:none;height:44px;padding:0 22px;border:0;border-radius:12px;background:#1d1d1f;color:#fff;font-size:14px;font-weight:500;cursor:pointer;transition:opacity .2s,transform .15s;}
-.zhihuE_DlgAddBtn:hover {opacity:.88;}
-.zhihuE_DlgFilterWrap {margin-bottom:14px;}
-.zhihuE_DlgCloud {flex:1;min-height:0;overflow:auto;padding:6px 2px 12px;display:flex;flex-wrap:wrap;align-content:flex-start;gap:10px;}
-.zhihuE_DlgCloud::-webkit-scrollbar {width:8px;}
-.zhihuE_DlgCloud::-webkit-scrollbar-thumb {background:#ddd;border-radius:8px;}
-.zhihuE_DlgChip {display:inline-flex;align-items:center;gap:8px;max-width:100%;padding:8px 8px 8px 14px;border:1px solid #ececec;border-radius:999px;background:#f7f7f7;font-size:13px;line-height:1.3;color:#333;transition:border-color .15s,background .15s,box-shadow .15s;}
-.zhihuE_DlgChip:hover {background:#fff;border-color:#d4d4d4;box-shadow:0 4px 12px rgba(0,0,0,.04);}
-.zhihuE_DlgChip span {overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.zhihuE_DlgChipDel {flex:none;width:22px;height:22px;border:0;border-radius:50%;background:transparent;color:#999;font-size:16px;line-height:22px;cursor:pointer;}
-.zhihuE_DlgChipDel:hover {background:#1d1d1f;color:#fff;}
-.zhihuE_DlgEmpty {width:100%;padding:80px 0;text-align:center;color:#b0b0b0;font-size:14px;}
-.zhihuE_DlgFoot {display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 32px 22px;border-top:1px solid #eee;color:#8a8a8a;font-size:13px;}
-.zhihuE_DlgFootRight {display:flex;align-items:center;gap:10px;}
-.zhihuE_DlgCopy {height:36px;padding:0 16px;border:1px solid #e4e4e4;border-radius:10px;background:#fff;color:#1d1d1f;font-size:13px;cursor:pointer;transition:background .15s,border-color .15s;}
-.zhihuE_DlgCopy:hover {background:#f7f7f7;border-color:#ccc;}
-.zhihuE_DlgCopy.is-ok {background:#1d1d1f;border-color:#1d1d1f;color:#fff;}
-.zhihuE_DlgImport {display:none;padding:0 32px 18px;}
-.zhihuE_DlgImport.is-open {display:block;}
-.zhihuE_DlgImportArea {width:100%;min-height:120px;padding:12px 14px;border:1px solid #e8e8e8;border-radius:12px;background:#fafafa;font-size:13px;line-height:1.6;resize:vertical;outline:none;box-sizing:border-box;font-family:inherit;}
-.zhihuE_DlgImportArea:focus {border-color:#1d1d1f;background:#fff;box-shadow:0 0 0 4px rgba(29,29,31,.06);}
-.zhihuE_DlgImportActions {display:flex;justify-content:flex-end;gap:8px;margin-top:10px;}
-.zhihuE_DlgCount b {color:#1d1d1f;font-weight:600;}
-[data-theme="dark"] .zhihuE_DlgRoot {background:#2b2f36;color:#e8edf2;}
-[data-theme="dark"] .zhihuE_DlgHead,[data-theme="dark"] .zhihuE_DlgFoot {border-color:#3c434d;}
-[data-theme="dark"] .zhihuE_DlgTips,[data-theme="dark"] .zhihuE_DlgFoot {color:#9aa4b2;}
-[data-theme="dark"] .zhihuE_DlgClose,[data-theme="dark"] .zhihuE_DlgInput,[data-theme="dark"] .zhihuE_DlgFilter,[data-theme="dark"] .zhihuE_DlgChip {background:#343a44;border-color:#3c434d;color:#e8edf2;}
-[data-theme="dark"] .zhihuE_DlgInput:focus,[data-theme="dark"] .zhihuE_DlgFilter:focus {background:#2b2f36;border-color:#c8d0da;box-shadow:0 0 0 4px rgba(255,255,255,.06);}
-[data-theme="dark"] .zhihuE_DlgAddBtn,[data-theme="dark"] .zhihuE_DlgClose:hover,[data-theme="dark"] .zhihuE_DlgChipDel:hover {background:#e8edf2;color:#1d1d1f;}
-[data-theme="dark"] .zhihuE_DlgCopy {background:#343a44;border-color:#3c434d;color:#e8edf2;}
-[data-theme="dark"] .zhihuE_DlgCopy:hover {background:#3c434d;}
-[data-theme="dark"] .zhihuE_DlgCopy.is-ok {background:#e8edf2;border-color:#e8edf2;color:#1d1d1f;}
-[data-theme="dark"] .zhihuE_DlgImportArea {background:#343a44;border-color:#3c434d;color:#e8edf2;}
-[data-theme="dark"] .zhihuE_DlgImportArea:focus {background:#2b2f36;border-color:#c8d0da;}
-[data-theme="dark"] .zhihuE_DlgCount b {color:#fff;}
-</style>
-<div class="zhihuE_DlgMask">
-  <div class="zhihuE_DlgRoot">
-    <div class="zhihuE_DlgHead">
-      <div class="zhihuE_DlgHeadTop">
-        <div>
-          <h3 class="zhihuE_DlgTitle">${escapeHtml(title)}</h3>
-          <p class="zhihuE_DlgTips">${escapeHtml(tips)}</p>
-        </div>
-        <button type="button" class="zhihuE_DlgClose" title="关闭" aria-label="关闭">
-          <svg fill="currentColor" viewBox="0 0 24 24" width="18" height="18"><path d="M13.486 12l5.208-5.207a1.048 1.048 0 0 0-.006-1.483 1.046 1.046 0 0 0-1.482-.005L12 10.514 6.793 5.305a1.048 1.048 0 0 0-1.483.005 1.046 1.046 0 0 0-.005 1.483L10.514 12l-5.208 5.207a1.048 1.048 0 0 0 .006 1.483 1.046 1.046 0 0 0 1.482.005L12 13.486l5.207 5.208a1.048 1.048 0 0 0 1.483-.006 1.046 1.046 0 0 0 .005-1.482L13.486 12z" fill-rule="evenodd"></path></svg>
-        </button>
-      </div>
-    </div>
-    <div class="zhihuE_DlgBody">
-      <div class="zhihuE_DlgAdd">
-        <input class="zhihuE_DlgInput" type="text" placeholder="${escapeHtml(placeholder)}" />
-        <button type="button" class="zhihuE_DlgAddBtn">添加</button>
-      </div>
-      <div class="zhihuE_DlgFilterWrap"><input class="zhihuE_DlgFilter" type="search" placeholder="在已有词条中筛选…" /></div>
-      <div class="zhihuE_DlgCloud"></div>
-    </div>
-    <div class="zhihuE_DlgFoot">
-      <div class="zhihuE_DlgCount">共 <b class="zhihuE_DlgCountNum">0</b> 条</div>
-      <div class="zhihuE_DlgFootRight">
-        <span>修改后刷新页面生效</span>
-        <button type="button" class="zhihuE_DlgCopy zhihuE_DlgImportBtn">粘贴导入</button>
-        <button type="button" class="zhihuE_DlgCopy zhihuE_DlgCopyAll">复制全部</button>
-      </div>
-    </div>
-    <div class="zhihuE_DlgImport">
-      <textarea class="zhihuE_DlgImportArea" placeholder="粘贴词表，用逗号、换行或 | 分隔。确认后覆盖当前列表并自动去重。"></textarea>
-      <div class="zhihuE_DlgImportActions">
-        <button type="button" class="zhihuE_DlgCopy zhihuE_DlgImportCancel">取消</button>
-        <button type="button" class="zhihuE_DlgCopy is-ok zhihuE_DlgImportOk">确认覆盖导入</button>
-      </div>
-    </div>
-  </div>
-</div>`;
-
-    document.body.insertAdjacentHTML('beforeend', html);
-    const mask = document.querySelector('.zhihuE_DlgMask');
-    const cloud = mask.querySelector('.zhihuE_DlgCloud');
-    const countEl = mask.querySelector('.zhihuE_DlgCountNum');
-    const input = mask.querySelector('.zhihuE_DlgInput');
-
-    const visibleList = () => {
-        if (!filter) return list.map((word, index) => ({ word, index }));
-        const q = filter.toLowerCase();
-        return list.map((word, index) => ({ word, index })).filter(item => item.word.toLowerCase().includes(q));
-    };
-
-    const persist = () => {
-        menuSet(storageKey, list);
-        countEl.textContent = String(list.length);
-        const items = visibleList();
-        if (!list.length) {
-            cloud.innerHTML = '<div class="zhihuE_DlgEmpty">还没有词条，在上方添加</div>';
-            return;
-        }
-        if (!items.length) {
-            cloud.innerHTML = '<div class="zhihuE_DlgEmpty">没有匹配的词条</div>';
-            return;
-        }
-        cloud.innerHTML = items.map(({ word, index }) =>
-            `<span class="zhihuE_DlgChip" title="${escapeHtml(word)}"><span>${escapeHtml(word)}</span><button type="button" class="zhihuE_DlgChipDel" data-index="${index}" aria-label="删除">×</button></span>`
-        ).join('');
-    };
-
-    const close = () => {
-        mask.remove();
-        const style = document.querySelector('.zhihuE_DlgStyle');
-        if (style) style.remove();
-    };
-
-    const addFromInput = () => {
-        const words = parseWords(input.value);
-        const added = words.filter(w => !list.includes(w));
-        if (!added.length) return;
-        list = added.concat(list);
-        input.value = '';
-        persist();
-        input.focus();
-    };
-
-    const flashBtn = (btn, text, ok = true) => {
-        const raw = btn.dataset.label || btn.textContent;
-        btn.dataset.label = raw;
-        btn.textContent = text;
-        btn.classList.toggle('is-ok', ok);
-        setTimeout(() => {
-            btn.textContent = btn.dataset.label;
-            btn.classList.remove('is-ok');
-        }, 1600);
-    };
-
-    const applyImport = text => {
-        const next = uniqueWords(parseWords(text));
-        const btn = mask.querySelector('.zhihuE_DlgImportBtn');
-        if (!next.length) {
-            flashBtn(btn, '没有可用词条', false);
-            return false;
-        }
-        list = next;
-        persist();
-        flashBtn(btn, `已导入 ${next.length} 条`);
-        return true;
-    };
-
-    const openImportPanel = (preset = '') => {
-        const panel = mask.querySelector('.zhihuE_DlgImport');
-        const area = mask.querySelector('.zhihuE_DlgImportArea');
-        panel.classList.add('is-open');
-        area.value = preset;
-        area.focus();
-        area.select();
-    };
-
-    const closeImportPanel = () => {
-        mask.querySelector('.zhihuE_DlgImport').classList.remove('is-open');
-    };
-
-    const importFromPaste = async () => {
-        try {
-            if (navigator.clipboard && navigator.clipboard.readText) {
-                const text = (await navigator.clipboard.readText() || '').trim();
-                if (text) {
-                    applyImport(text);
-                    closeImportPanel();
-                    return;
-                }
-            }
-        } catch (e) { /* 无剪贴板权限时改为手动粘贴 */ }
-        openImportPanel();
-    };
-
-    const copyAll = async () => {
-        const text = list.join(', ');
-        const btn = mask.querySelector('.zhihuE_DlgCopyAll');
-        const done = ok => {
-            btn.textContent = ok ? '已复制' : '复制失败';
-            btn.classList.toggle('is-ok', ok);
-            setTimeout(() => {
-                btn.textContent = '复制全部';
-                btn.classList.remove('is-ok');
-            }, 1600);
-        };
-        try {
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                await navigator.clipboard.writeText(text);
-            } else {
-                const ta = document.createElement('textarea');
-                ta.value = text;
-                ta.setAttribute('readonly', '');
-                ta.style.cssText = 'position:fixed;left:-9999px;top:0';
-                document.body.appendChild(ta);
-                ta.select();
-                document.execCommand('copy');
-                ta.remove();
-            }
-            done(true);
-        } catch (e) {
-            done(false);
-        }
-    };
-
-    mask.querySelector('.zhihuE_DlgClose').onclick = close;
-    mask.addEventListener('click', event => {
-        if (event.target === mask) close();
-    });
-    mask.querySelector('.zhihuE_DlgAddBtn').onclick = addFromInput;
-    mask.querySelector('.zhihuE_DlgCopyAll').onclick = copyAll;
-    mask.querySelector('.zhihuE_DlgImportBtn').onclick = importFromPaste;
-    mask.querySelector('.zhihuE_DlgImportCancel').onclick = closeImportPanel;
-    mask.querySelector('.zhihuE_DlgImportOk').onclick = () => {
-        if (applyImport(mask.querySelector('.zhihuE_DlgImportArea').value)) closeImportPanel();
-    };
-    input.addEventListener('keydown', event => {
-        if (event.key === 'Enter') addFromInput();
-        if (event.key === 'Escape') close();
-    });
-    mask.querySelector('.zhihuE_DlgFilter').addEventListener('input', event => {
-        filter = event.target.value.trim();
-        persist();
-    });
-    cloud.addEventListener('click', event => {
-        const btn = event.target.closest('.zhihuE_DlgChipDel');
-        if (!btn) return;
-        const index = Number(btn.dataset.index);
-        if (Number.isNaN(index)) return;
-        list.splice(index, 1);
-        persist();
-    });
-
-    persist();
-    setTimeout(() => input.focus(), 50);
-}
-
-function customBlockUsers() {
-    editListDialog({
-        title: '编辑屏蔽用户',
-        tips: '用户名需完全匹配。可用逗号、顿号或 | 一次添加多个。',
-        storageKey: 'menu_customBlockUsers',
-        placeholder: '例如：盐选推荐, 故事档案局'
-    });
-}
-
-function customBlockKeywords() {
-    editListDialog({
-        title: '编辑屏蔽关键词',
-        tips: '不区分大小写，支持表情如 [捂脸]。可用逗号、/ 或 | 一次添加多个。',
-        storageKey: 'menu_customBlockKeywords',
-        placeholder: '例如：广告, 引流, [捂脸]'
-    });
 }
 
 /* -------------------------------------------------------------------------- */
