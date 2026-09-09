@@ -3,12 +3,12 @@
 // @name:zh-CN   知乎增强优化
 // @name:zh-TW   知乎增強優化
 // @name:en      Zhihu Enhancement Plus
-// @version      1.7.13
+// @version      1.7.14
 // @author       local (based on X.I.U / 知乎增强 2.2.15)
-// @description  用于知乎网页。可开关：低饱和配色、隐藏右侧栏、清空或锁定标签标题与图标、净化搜索热门、默认/一键/点空白收起回答与评论、右键回顶、展开问题描述、置顶发布时间、信息流类型标签、直达问题、按用户与噪音档位及关键词过滤、按类别屏蔽视频/文章/想法/话题/盐选/相关搜索/热榜杂项。设置可 JSON 导入导出。始终生效：关登录弹窗、原图、站外直链、点浮层关评论、去掉搜索高亮链接。基于 XIU2「知乎增强」2.2.15（GPL-3.0），无远程外部脚本。
-// @description:zh-CN 用于知乎网页。可开关：低饱和配色、隐藏右侧栏、清空或锁定标签标题与图标、净化搜索热门、默认/一键/点空白收起回答与评论、右键回顶、展开问题描述、置顶发布时间、信息流类型标签、直达问题、按用户与噪音档位及关键词过滤、按类别屏蔽视频/文章/想法/话题/盐选/相关搜索/热榜杂项。设置可 JSON 导入导出。始终生效：关登录弹窗、原图、站外直链、点浮层关评论、去掉搜索高亮链接。基于 XIU2「知乎增强」2.2.15（GPL-3.0），无远程外部脚本。
-// @description:zh-TW 用於知乎網頁。可開關：低飽和配色、隱藏右側欄、清空或鎖定分頁標題與圖示、淨化搜尋熱門、預設/一鍵/點空白收起回答與評論、右鍵回頂、展開問題描述、置頂發布時間、資訊流類型標籤、直達問題、按使用者與噪音檔位及關鍵詞過濾、按類別屏蔽影片/文章/想法/話題/鹽選/相關搜尋/熱榜雜項。設定可 JSON 匯入匯出。始終生效：關登入彈窗、原圖、站外直連、點浮層關評論、去掉搜尋高亮連結。基於 XIU2「知乎增強」2.2.15（GPL-3.0），無遠端外部腳本。
-// @description:en For Zhihu. Toggles: desaturated UI, hide sidebar, blank/lock tab title, clean search hot terms, collapse answers (default/one-click/side), right-click to top, expand question, pin time, type labels, jump to question, filter by user/noise/keywords, hide video/article/pin/topic/Yanxuan/related search/hot extras. JSON import/export. Always: close login modal, original images, unwrap outbound links, overlay closes comments, strip search highlight links. From XIU2 (GPL-3.0); no remote scripts.
+// @description  用于知乎网页。可开关：低饱和配色、隐藏右侧栏、清空或锁定标签标题与图标、净化搜索热门、默认/一键/点空白收起回答与评论、右键回顶、展开问题描述、置顶发布时间、信息流类型标签、直达问题、按用户与噪音评分（可显示得分、可过滤）及关键词、按类别屏蔽视频/文章/想法/话题/盐选/相关搜索/热榜杂项。设置可 JSON 导入导出。始终生效：关登录弹窗、原图、站外直链、点浮层关评论、去掉搜索高亮链接。基于 XIU2「知乎增强」2.2.15（GPL-3.0），无远程外部脚本。
+// @description:zh-CN 用于知乎网页。可开关：低饱和配色、隐藏右侧栏、清空或锁定标签标题与图标、净化搜索热门、默认/一键/点空白收起回答与评论、右键回顶、展开问题描述、置顶发布时间、信息流类型标签、直达问题、按用户与噪音评分（可显示得分、可过滤）及关键词、按类别屏蔽视频/文章/想法/话题/盐选/相关搜索/热榜杂项。设置可 JSON 导入导出。始终生效：关登录弹窗、原图、站外直链、点浮层关评论、去掉搜索高亮链接。基于 XIU2「知乎增强」2.2.15（GPL-3.0），无远程外部脚本。
+// @description:zh-TW 用於知乎網頁。可開關：低飽和配色、隱藏右側欄、清空或鎖定分頁標題與圖示、淨化搜尋熱門、預設/一鍵/點空白收起回答與評論、右鍵回頂、展開問題描述、置頂發布時間、資訊流類型標籤、直達問題、按使用者與噪音評分（可顯示得分、可過濾）及關鍵詞、按類別屏蔽影片/文章/想法/話題/鹽選/相關搜尋/熱榜雜項。設定可 JSON 匯入匯出。始終生效：關登入彈窗、原圖、站外直連、點浮層關評論、去掉搜尋高亮連結。基於 XIU2「知乎增強」2.2.15（GPL-3.0），無遠端外部腳本。
+// @description:en For Zhihu. Toggles: desaturated UI, hide sidebar, blank/lock tab title, clean search hot terms, collapse answers (default/one-click/side), right-click to top, expand question, pin time, type labels, jump to question, score/show/filter noise, filter by user/keywords, hide video/article/pin/topic/Yanxuan/related search/hot extras. JSON import/export. Always: close login modal, original images, unwrap outbound links, overlay closes comments, strip search highlight links. From XIU2 (GPL-3.0); no remote scripts.
 // @match        *://www.zhihu.com/*
 // @match        *://zhuanlan.zhihu.com/*
 // @exclude      https://www.zhihu.com/signin*
@@ -87,7 +87,9 @@ const MENU_ITEMS = [
     /* 屏蔽 */
     { key: 'menu_blockUsers',          label: '屏蔽指定用户',         tip: '隐藏黑名单用户的回答、文章和评论。可在下方编辑名单。', def: true },
     { key: 'menu_customBlockUsers',    label: '编辑屏蔽用户',         tip: '自定义屏蔽用户',   def: DEFAULT_BLOCK_USERS, kind: 'users' },
-    { key: 'menu_blockKeywords',       label: '噪音评分过滤',         tip: '按语义噪音打分：低分保留、中分降权、高分隐藏。自定义词会加权。', def: true },
+    { key: 'menu_noiseScore',          label: '噪音评分',             tip: '给信息流打噪音分。过滤和显示得分都要先开这项。', def: true },
+    { key: 'menu_blockKeywords',       label: '噪音过滤',             tip: '按分数隐藏高噪音、降权中噪音。必须先开启评分。', def: true },
+    { key: 'menu_noiseBadge',          label: '显示噪音得分',         tip: '每条内容显示分数，分越高标识越鲜艳。必须先开启评分。', def: true },
     { key: 'menu_customBlockKeywords', label: '编辑屏蔽关键词',       tip: '自定义词加权到噪音分', def: DEFAULT_BLOCK_KEYWORDS, kind: 'keywords' },
     {
         key: 'menu_noiseLevel',
@@ -300,6 +302,8 @@ for (const item of MENU_ITEMS) {
             GM_setValue(item.key, DEFAULT_BLOCK_KEYWORDS);
         }
         GM_setValue('menu_kw_pack_v1', true);
+    } else if (item.key === 'menu_noiseScore' && GM_getValue(item.key) == null) {
+        GM_setValue(item.key, GM_getValue('menu_blockKeywords') !== false);
     } else if (GM_getValue(item.key) == null) {
         GM_setValue(item.key, item.def);
     }
@@ -513,10 +517,10 @@ function registerMenuCommand() {
     menuCommandIds.push(GM_registerMenuCommand('setting', openSettingsPanel));
 }
 
-function settingsSwitchRow(key) {
+function settingsSwitchRow(key, extra = '') {
     const item = MENU_ITEMS.find(x => x.key === key);
     const on = !!menuValue(key);
-    return `<div class="zhihuE_StRow${on ? ' is-on' : ''}" data-key="${key}">
+    return `<div class="zhihuE_StRow${on ? ' is-on' : ''}${extra}" data-key="${key}">
         <div><div class="zhihuE_StName">${escapeHtml(item.label)}</div><div class="zhihuE_StDesc">${escapeHtml(item.tip || '')}</div></div>
         <button type="button" class="zhihuE_StSwitch${on ? ' is-on' : ''}" data-key="${key}" aria-label="${escapeHtml(item.label)}"></button>
     </div>`;
@@ -635,9 +639,15 @@ function mountNoiseTestPane(container) {
             ['V', '价值', parts.V]
         ].map(([k, name, v]) => `<div class="zhihuE_TsItem"><b>${k}</b>${name}<span>${Math.round(v)}</span></div>`).join('');
         board.className = `zhihuE_TsBoard is-${verdict.id}`;
-        hintEl.textContent = menuValue('menu_blockKeywords')
-            ? '分项来自标题。信息流刷新后才会按此结果处理卡片。'
-            : '噪音过滤总开关已关闭，信息流不会处理，但分数仍按当前词库计算。';
+        const filterOn = !!menuValue('menu_blockKeywords');
+        const badgeOn = !!menuValue('menu_noiseBadge');
+        if (filterOn) {
+            hintEl.textContent = '分项来自标题。信息流刷新后才会按此结果隐藏或降权。';
+        } else if (badgeOn) {
+            hintEl.textContent = '过滤已关闭：信息流会打分并显示角标，但不会隐藏或降权。';
+        } else {
+            hintEl.textContent = '过滤和角标都已关闭：只按当前词库算分，信息流卡片外观不变。';
+        }
     };
 
     titleEl.addEventListener('input', run);
@@ -1176,7 +1186,9 @@ function openSettingsPanel() {
 .zhihuE_StBody.is-fill {overflow:hidden;}
 .zhihuE_StRow {display:flex;align-items:center;justify-content:space-between;gap:20px;padding:18px 22px;border:1px solid #eee;border-radius:16px;background:#fafafa;flex:none;}
 .zhihuE_StRow.is-on {background:#fff;border-color:#e5e5e5;box-shadow:0 8px 24px rgba(0,0,0,.04);}
+.zhihuE_StRow.is-sub {padding:14px 20px 14px 26px;border-radius:14px;}
 .zhihuE_StName {font-size:15px;font-weight:600;}
+.zhihuE_StRow.is-sub .zhihuE_StName {font-size:14px;}
 .zhihuE_StDesc {margin:4px 0 0;font-size:12px;line-height:1.6;color:#8a8a8a;}
 .zhihuE_StSwitch {flex:none;width:48px;height:28px;border:0;border-radius:999px;background:#ddd;position:relative;cursor:pointer;}
 .zhihuE_StSwitch::after {content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.15);transition:transform .2s;}
@@ -1352,8 +1364,8 @@ function openSettingsPanel() {
     };
 
     const renderBody = () => {
-        const keywordsOn = !!menuValue('menu_blockKeywords');
-        const fill = current === 'block-users' || (current === 'block-words' && keywordsOn) || current === 'data';
+        const scoreOn = !!menuValue('menu_noiseScore');
+        const fill = current === 'block-users' || (current === 'block-words' && scoreOn) || current === 'data';
         bodyEl.classList.toggle('is-fill', fill);
         if (current === 'look') {
             bodyEl.innerHTML = lookKeys.map(settingsSwitchRow).join('');
@@ -1373,16 +1385,18 @@ function openSettingsPanel() {
             return;
         }
         if (current === 'block-words') {
-            bodyEl.innerHTML = settingsSwitchRow('menu_blockKeywords') + (keywordsOn
-                ? `<div class="zhihuE_StTabs">
+            bodyEl.innerHTML = settingsSwitchRow('menu_noiseScore') + (scoreOn
+                ? settingsSwitchRow('menu_blockKeywords', ' is-sub') +
+                    settingsSwitchRow('menu_noiseBadge', ' is-sub') +
+                    `<div class="zhihuE_StTabs">
                     <button type="button" class="zhihuE_StTab${wordTab === 'levels' ? ' is-on' : ''}" data-tab="levels">过滤档位</button>
                     <button type="button" class="zhihuE_StTab${wordTab === 'custom' ? ' is-on' : ''}" data-tab="custom">自定义词</button>
                     <button type="button" class="zhihuE_StTab${wordTab === 'lexicon' ? ' is-on' : ''}" data-tab="lexicon">噪音词库</button>
                     <button type="button" class="zhihuE_StTab${wordTab === 'test' ? ' is-on' : ''}" data-tab="test">试算</button>
                 </div>
                 <div class="zhihuE_StPane${wordTab === 'levels' || wordTab === 'test' ? '' : ' is-fill'}"></div>`
-                : '<p class="zhihuE_StPaneTips">信息流不会按噪音分处理。档位、自定义词、词库和试算已折叠，打开后仍用上次的设置。</p>');
-            if (!keywordsOn) return;
+                : '<p class="zhihuE_StPaneTips">评分关闭后，过滤和角标都不会生效。档位、词库和试算已折叠，打开后仍用上次的设置。</p>');
+            if (!scoreOn) return;
             const pane = bodyEl.querySelector('.zhihuE_StPane');
             if (wordTab === 'levels') {
                 pane.innerHTML = settingsNoiseFormulaHtml() + settingsNoiseCards().map(settingsToggleCard).join('');
@@ -1439,7 +1453,7 @@ function openSettingsPanel() {
         const key = sw.dataset.key;
         const next = !menuValue(key);
         menuSet(key, next);
-        if (key === 'menu_blockKeywords') {
+        if (key === 'menu_noiseScore') {
             renderBody();
             return;
         }
@@ -2249,14 +2263,37 @@ function noiseVerdict(score) {
     return { id: 'keep', name: '会保留' };
 }
 
+function noiseTint(score) {
+    const s = Math.max(0, Math.min(100, Number(score) || 0));
+    if (s <= NOISE_DEMOTE) return (s / NOISE_DEMOTE) * 0.38;
+    if (s < NOISE_HIDE) return 0.38 + (s - NOISE_DEMOTE) / (NOISE_HIDE - NOISE_DEMOTE) * 0.32;
+    return 0.7 + (s - NOISE_HIDE) / (100 - NOISE_HIDE) * 0.3;
+}
+
 function injectNoiseStyles() {
     injectStyle('zhihu-plus-noise', `
         .zhihu-plus-noise-hide {display: none !important;}
-        .zhihu-plus-noise-demote {opacity: .42; filter: grayscale(.28); transition: opacity .2s;}
-        .zhihu-plus-noise-demote:hover {opacity: .8; filter: none;}
-        .zhihu-plus-noise-tag {position:absolute;top:8px;right:8px;z-index:2;padding:2px 8px;border-radius:999px;background:rgba(29,29,31,.08);color:#888;font-size:11px;pointer-events:none;}
-        [data-theme="dark"] .zhihu-plus-noise-tag {background:rgba(255,255,255,.08);color:#9aa4b2;}
+        .zhihu-plus-noise-demote {opacity: .42; transition: opacity .2s;}
+        .zhihu-plus-noise-demote:hover {opacity: .88;}
+        .zhihu-plus-noise-tag {position:absolute;top:8px;right:8px;z-index:6;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:650;font-variant-numeric:tabular-nums;line-height:1.5;pointer-events:none;--t:0;background:hsla(calc(145 - 145 * var(--t)), calc(42% + 53% * var(--t)), calc(94% - 42% * var(--t)), calc(0.78 + 0.22 * var(--t)));color:hsl(calc(145 - 145 * var(--t)), calc(48% + 40% * var(--t)), calc(26% + 56% * var(--t)));border:1px solid hsla(calc(145 - 145 * var(--t)), 72%, 38%, calc(0.1 + 0.42 * var(--t)));box-shadow:0 0 calc(2px + 12px * var(--t)) hsla(calc(145 - 145 * var(--t)), 90%, 48%, calc(0.04 + 0.42 * var(--t)));text-shadow:0 1px 2px rgba(0,0,0,calc(0.08 + 0.28 * var(--t)));}
+        [data-theme="dark"] .zhihu-plus-noise-tag {background:hsla(calc(145 - 145 * var(--t)), calc(48% + 42% * var(--t)), calc(20% + 10% * var(--t)), calc(0.62 + 0.32 * var(--t)));color:hsl(calc(145 - 145 * var(--t)), 86%, calc(86% - 6% * var(--t)));}
     `);
+}
+
+function ensureCardPosition(card) {
+    if (getComputedStyle(card).position === 'static') card.style.position = 'relative';
+}
+
+function paintNoiseBadge(card, score) {
+    ensureCardPosition(card);
+    let tag = card.querySelector('.zhihu-plus-noise-tag');
+    if (!tag) {
+        tag = document.createElement('div');
+        tag.className = 'zhihu-plus-noise-tag';
+        card.insertAdjacentElement('afterbegin', tag);
+    }
+    tag.style.setProperty('--t', noiseTint(score).toFixed(3));
+    tag.textContent = String(score);
 }
 
 function cardNoiseText(card, titleCss) {
@@ -2279,27 +2316,24 @@ function applyNoiseToCard(card, titleCss) {
     const { title, body } = cardNoiseText(card, titleCss);
     if (!title && !body) return;
     const { final } = scoreFeedNoise(title, body);
-    card.dataset.zhihuPlusNoise = String(Math.round(final));
-    if (final >= NOISE_HIDE) {
+    const rounded = Math.round(final);
+    card.dataset.zhihuPlusNoise = String(rounded);
+    const filterOn = !!menuValue('menu_blockKeywords');
+    if (filterOn && final >= NOISE_HIDE) {
         card.classList.add('zhihu-plus-noise-hide');
         card.hidden = true;
         card.style.display = 'none';
         return;
     }
-    if (final >= NOISE_DEMOTE) {
+    if (filterOn && final >= NOISE_DEMOTE) {
         card.classList.add('zhihu-plus-noise-demote');
-        if (getComputedStyle(card).position === 'static') card.style.position = 'relative';
-        if (!card.querySelector('.zhihu-plus-noise-tag')) {
-            const tag = document.createElement('div');
-            tag.className = 'zhihu-plus-noise-tag';
-            tag.textContent = `噪音 ${Math.round(final)}`;
-            card.insertAdjacentElement('afterbegin', tag);
-        }
+        ensureCardPosition(card);
     }
+    if (menuValue('menu_noiseBadge')) paintNoiseBadge(card, rounded);
 }
 
 function blockKeywords(type) {
-    if (!menuValue('menu_blockKeywords')) return;
+    if (!menuValue('menu_noiseScore')) return;
     noiseIndex = null;
     injectNoiseStyles();
 
@@ -2367,6 +2401,7 @@ function blockKeywordsSearch() {
 }
 
 function blockKeywordsComment() {
+    if (!menuValue('menu_blockKeywords')) return;
     const filterComment = comment => {
         const content = comment.querySelector('.RichText');
         if (!content || content.dataset.zhihuPlusNoise) return;
