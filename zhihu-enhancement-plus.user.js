@@ -3,7 +3,7 @@
 // @name:zh-CN   知乎增强优化
 // @name:zh-TW   知乎增強優化
 // @name:en      Zhihu Enhancement Plus
-// @version      1.7.3
+// @version      1.7.4
 // @author       local (based on X.I.U / 知乎增强 2.2.15)
 // @description  用于知乎网页。可开关：低饱和配色、隐藏右侧栏、清空或锁定标签标题与图标、净化搜索热门、默认/一键/点空白收起回答与评论、右键回顶、展开问题描述、置顶发布时间、信息流类型标签、直达问题、按用户与噪音档位及关键词过滤、按类别屏蔽视频/文章/想法/话题/盐选/相关搜索/热榜杂项。设置可 JSON 导入导出。始终生效：关登录弹窗、原图、站外直链、点浮层关评论、去掉搜索高亮链接。基于 XIU2「知乎增强」2.2.15（GPL-3.0），无远程外部脚本。
 // @description:zh-CN 用于知乎网页。可开关：低饱和配色、隐藏右侧栏、清空或锁定标签标题与图标、净化搜索热门、默认/一键/点空白收起回答与评论、右键回顶、展开问题描述、置顶发布时间、信息流类型标签、直达问题、按用户与噪音档位及关键词过滤、按类别屏蔽视频/文章/想法/话题/盐选/相关搜索/热榜杂项。设置可 JSON 导入导出。始终生效：关登录弹窗、原图、站外直链、点浮层关评论、去掉搜索高亮链接。基于 XIU2「知乎增强」2.2.15（GPL-3.0），无远程外部脚本。
@@ -301,6 +301,26 @@ function page() {
     };
 }
 
+function qs(selector, root = document) {
+    return (root || document).querySelector(selector);
+}
+
+function qsa(selector, root = document) {
+    return Array.from((root || document).querySelectorAll(selector));
+}
+
+function on(target, type, handler, options) {
+    if (!target) return () => {};
+    target.addEventListener(type, handler, options);
+    return () => target.removeEventListener(type, handler, options);
+}
+
+function eachMatch(root, selector, handle) {
+    const scope = root || document;
+    if (scope.nodeType === 1 && scope.matches(selector)) handle(scope);
+    qsa(selector, scope).forEach(handle);
+}
+
 function injectStyle(id, css) {
     if (document.getElementById(id)) return;
     const el = document.createElement('style');
@@ -319,15 +339,16 @@ function getXpath(xpath, contextNode, doc = document) {
     }
 }
 
-function findParentElement(item, className, exact = false) {
-    let el = item && item.parentElement;
-    while (el) {
-        const cn = el.className;
-        if (typeof cn === 'string' && cn) {
-            if (exact ? cn === className : cn.includes(className)) return el;
-        }
-        el = el.parentElement;
-    }
+function cardWrap(el) {
+    return el && (el.closest('.List-item') || el.closest('.Card'));
+}
+
+function hideClosest(el, selector, remove = false) {
+    const node = el && el.closest(selector);
+    if (!node) return false;
+    if (remove) node.remove();
+    else node.hidden = true;
+    return true;
 }
 
 function isElementInViewport(el) {
@@ -361,17 +382,17 @@ function observeTree(callback) {
 }
 
 function onReadyNodes(selector, handle, { timeout = 8000 } = {}) {
-    const run = () => {
-        const nodes = document.querySelectorAll(selector);
-        if (!nodes.length) return false;
-        nodes.forEach(handle);
-        return true;
+    const seen = new WeakSet();
+    const visit = node => {
+        if (seen.has(node)) return;
+        seen.add(node);
+        handle(node);
     };
-    if (run()) return;
-    const timer = setInterval(() => {
-        if (run()) clearInterval(timer);
-    }, 120);
-    setTimeout(() => clearInterval(timer), timeout);
+    eachMatch(document, selector, visit);
+    const observer = observeTree(mutations => {
+        forAddedElements(mutations, target => eachMatch(target, selector, visit));
+    });
+    setTimeout(() => observer.disconnect(), timeout);
 }
 
 function addUrlChangeEvent() {
@@ -389,7 +410,7 @@ function addUrlChangeEvent() {
         return ret;
     })(history.replaceState);
 
-    window.addEventListener('popstate', () => {
+    on(window, 'popstate', () => {
         window.dispatchEvent(new Event('urlchange'));
     });
 }
@@ -1654,11 +1675,11 @@ function collapsedNowAnswer(selectors) {
             }
         }
 
-        for (const el of document.querySelectorAll('.Comments-container')) {
+        for (const el of qsa('.Comments-container')) {
             if (!isElementInViewport(el)) continue;
-            const parentElement = findParentElement(el, 'List-item') || findParentElement(el, 'Card ');
+            const parentElement = cardWrap(el);
             if (!parentElement) continue;
-            const commentBtn = parentElement.querySelector('.ContentItem-actions > button.Button.ContentItem-action.Button--plain.Button--withIcon.Button--withLabel:first-of-type');
+            const commentBtn = qs('.ContentItem-actions > button.Button.ContentItem-action.Button--plain.Button--withIcon.Button--withLabel:first-of-type', parentElement);
             if (commentBtn && commentBtn.textContent.includes('收起评论')) {
                 commentBtn.click();
                 if (!isElementInViewport(commentBtn)) scrollTo(0, parentElement.offsetTop + parentElement.offsetHeight - 50);
@@ -1666,11 +1687,11 @@ function collapsedNowAnswer(selectors) {
             }
         }
 
-        for (const el of document.querySelectorAll('.Editable-content')) {
+        for (const el of qsa('.Editable-content')) {
             if (!isElementInViewport(el)) continue;
-            const parentElement = findParentElement(el, 'List-item') || findParentElement(el, 'Card ');
+            const parentElement = cardWrap(el);
             if (!parentElement) continue;
-            const commentBtn = parentElement.querySelector('.ContentItem-actions > button.Button.ContentItem-action.Button--plain.Button--withIcon.Button--withLabel:first-of-type');
+            const commentBtn = qs('.ContentItem-actions > button.Button.ContentItem-action.Button--plain.Button--withIcon.Button--withLabel:first-of-type', parentElement);
             if (commentBtn && commentBtn.textContent.includes('收起评论')) {
                 commentBtn.click();
                 if (!isElementInViewport(commentBtn)) scrollTo(0, parentElement.offsetTop + parentElement.offsetHeight - 50);
@@ -2331,7 +2352,7 @@ function blockType(type) {
     if (type === 'search') {
         if (!menuValue('menu_blockTypeVideo') && !menuValue('menu_blockTypeArticle') && !menuValue('menu_blockTypePin') && !menuValue('menu_blockTypeTopic') && !menuValue('menu_blockTypeSearch')) return;
         if (menuValue('menu_blockTypeSearch') && location.pathname === '/search') {
-            setTimeout(() => document.querySelectorAll('.RelevantQuery').forEach(r => { r.parentElement.parentElement.hidden = true; }), 2000);
+            setTimeout(() => qsa('.RelevantQuery').forEach(r => { r.parentElement.parentElement.hidden = true; }), 2000);
         }
         name = 'h2.ContentItem-title a:not(.zhihu_e_toQuestion), a.KfeCollection-PcCollegeCard-link, h2.SearchTopicHeader-Title a';
         onReadyNodes(name, blockTypeNode);
@@ -2339,7 +2360,7 @@ function blockType(type) {
         if (!menuValue('menu_blockTypeVideo')) return;
         injectStyle('zhihu-plus-hide-video-answer', `.VideoAnswerPlayer, .VideoAnswerPlayer video, .VideoAnswerPlayer-video, .VideoAnswerPlayer-iframe {display: none !important;}`);
         name = '.VideoAnswerPlayer';
-        document.querySelectorAll(name).forEach(blockTypeNode);
+        qsa(name).forEach(blockTypeNode);
     } else {
         if (!menuValue('menu_blockTypeVideo') && !menuValue('menu_blockTypeArticle') && !menuValue('menu_blockTypePin')) return;
         if (menuValue('menu_blockTypeVideo')) {
@@ -2348,7 +2369,7 @@ function blockType(type) {
         name = menuValue('menu_blockTypePin')
             ? 'h2.ContentItem-title a:not(.zhihu_e_toQuestion), .ContentItem.PinItem'
             : 'h2.ContentItem-title a:not(.zhihu_e_toQuestion)';
-        document.querySelectorAll(name).forEach(blockTypeNode);
+        qsa(name).forEach(blockTypeNode);
     }
 
     observeTree(mutations => {
@@ -2358,82 +2379,59 @@ function blockType(type) {
                     target.hidden = true;
                 }
             } else {
-                blockTypeNode(target.querySelector(name));
+                eachMatch(target, name, blockTypeNode);
             }
         });
     });
 
-    window.addEventListener('urlchange', () => {
+    on(window, 'urlchange', () => {
         onReadyNodes(name, blockTypeNode);
         if (menuValue('menu_blockTypeSearch') && location.pathname === '/search' && location.search.includes('type=content')) {
-            setTimeout(() => document.querySelectorAll('.RelevantQuery').forEach(r => { r.parentElement.parentElement.hidden = true; }), 1500);
+            setTimeout(() => qsa('.RelevantQuery').forEach(r => { r.parentElement.parentElement.hidden = true; }), 1500);
         }
     });
 }
 
 function blockTypeNode(titleA) {
     if (!titleA) return;
+    const feedCard = '.Card.TopstoryItem.TopstoryItem-isRecommend';
+    const searchCard = '.Card.SearchResult-Card';
     if (location.pathname === '/search') {
         if (!location.search.includes('type=content')) return;
         const href = titleA.href || '';
-        if (href.includes('/zvideo/') || href.includes('video.zhihu.com')) {
-            if (menuValue('menu_blockTypeVideo')) {
-                const card = findParentElement(titleA, 'Card');
-                if (card) card.remove();
-            }
-        } else if (href.includes('zhuanlan.zhihu.com')) {
-            if (menuValue('menu_blockTypeArticle')) {
-                const card = findParentElement(titleA, 'Card SearchResult-Card');
-                if (card) card.hidden = true;
-            }
-        } else if (href.includes('/topic/')) {
-            if (menuValue('menu_blockTypeTopic')) {
-                const card = findParentElement(titleA, 'Card SearchResult-Card');
-                if (card) card.hidden = true;
-            }
-        } else if (href.includes('/market/')) {
-            if (menuValue('menu_blockTypeSearch')) {
-                const card = findParentElement(titleA, 'Card SearchResult-Card');
-                if (card) card.hidden = true;
-            }
+        if ((href.includes('/zvideo/') || href.includes('video.zhihu.com')) && menuValue('menu_blockTypeVideo')) {
+            hideClosest(titleA, '.Card', true);
+        } else if (href.includes('zhuanlan.zhihu.com') && menuValue('menu_blockTypeArticle')) {
+            hideClosest(titleA, searchCard);
+        } else if (href.includes('/topic/') && menuValue('menu_blockTypeTopic')) {
+            hideClosest(titleA, searchCard);
+        } else if (href.includes('/market/') && menuValue('menu_blockTypeSearch')) {
+            hideClosest(titleA, searchCard);
         }
         return;
     }
 
     if (location.pathname.includes('/question/')) {
-        if (menuValue('menu_blockTypeVideo')) {
-            const item = findParentElement(titleA, 'List-item');
-            if (item) item.hidden = true;
-        }
+        if (menuValue('menu_blockTypeVideo')) hideClosest(titleA, '.List-item');
         return;
     }
 
-    if (titleA.className === 'ContentItem PinItem') {
-        if (menuValue('menu_blockTypePin')) {
-            const card = findParentElement(titleA, 'Card TopstoryItem TopstoryItem-isRecommend');
-            if (card) card.hidden = true;
-        }
+    if (titleA.classList.contains('PinItem')) {
+        if (menuValue('menu_blockTypePin')) hideClosest(titleA, feedCard);
         return;
     }
 
     const href = titleA.href || '';
-    if (href.includes('/zvideo/') || href.includes('video.zhihu.com') || href.includes('/education/video-course/')) {
-        if (menuValue('menu_blockTypeVideo')) {
-            const card = findParentElement(titleA, 'Card TopstoryItem TopstoryItem-isRecommend');
-            if (card) card.hidden = true;
-        }
+    if ((href.includes('/zvideo/') || href.includes('video.zhihu.com') || href.includes('/education/video-course/')) && menuValue('menu_blockTypeVideo')) {
+        hideClosest(titleA, feedCard);
     } else if (href.includes('/answer/')) {
-        const answer = findParentElement(titleA, 'ContentItem AnswerItem');
-        if (answer && answer.querySelector('.VideoAnswerPlayer') && menuValue('menu_blockTypeVideo')) {
-            const card = findParentElement(titleA, 'Card TopstoryItem TopstoryItem-isRecommend');
-            if (card) card.hidden = true;
+        const answer = titleA.closest('.ContentItem.AnswerItem');
+        if (answer && qs('.VideoAnswerPlayer', answer) && menuValue('menu_blockTypeVideo')) {
+            hideClosest(titleA, feedCard);
             answer.remove();
         }
-    } else if (href.includes('zhuanlan.zhihu.com')) {
-        if (menuValue('menu_blockTypeArticle')) {
-            const card = findParentElement(titleA, 'Card TopstoryItem TopstoryItem-isRecommend');
-            if (card) card.hidden = true;
-        }
+    } else if (href.includes('zhuanlan.zhihu.com') && menuValue('menu_blockTypeArticle')) {
+        hideClosest(titleA, feedCard);
     }
 }
 
@@ -2652,13 +2650,14 @@ function addToQuestion() {
         titleA.insertAdjacentHTML('afterend', `<a class="zhihu_e_toQuestion VoteButton" href="${meta.content}" target="_blank">直达问题</a>`);
     };
 
-    if (location.pathname === '/search') onReadyNodes('h2.ContentItem-title a:not(.zhihu_e_tips)', decorate);
-    else document.querySelectorAll('h2.ContentItem-title a:not(.zhihu_e_tips)').forEach(decorate);
+    const titleSel = 'h2.ContentItem-title a:not(.zhihu_e_tips)';
+    if (location.pathname === '/search') onReadyNodes(titleSel, decorate);
+    else qsa(titleSel).forEach(decorate);
 
     observeTree(mutations => {
-        forAddedElements(mutations, target => decorate(target.querySelector('h2.ContentItem-title a:not(.zhihu_e_tips)')));
+        forAddedElements(mutations, target => eachMatch(target, titleSel, decorate));
     });
-    window.addEventListener('urlchange', () => onReadyNodes('h2.ContentItem-title a:not(.zhihu_e_tips)', decorate));
+    on(window, 'urlchange', () => onReadyNodes(titleSel, decorate));
 }
 
 function questionRichTextMore() {
