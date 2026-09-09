@@ -3,7 +3,7 @@
 // @name:zh-CN   知乎增强优化
 // @name:zh-TW   知乎增強優化
 // @name:en      Zhihu Enhancement Plus
-// @version      1.7.12
+// @version      1.7.13
 // @author       local (based on X.I.U / 知乎增强 2.2.15)
 // @description  用于知乎网页。可开关：低饱和配色、隐藏右侧栏、清空或锁定标签标题与图标、净化搜索热门、默认/一键/点空白收起回答与评论、右键回顶、展开问题描述、置顶发布时间、信息流类型标签、直达问题、按用户与噪音档位及关键词过滤、按类别屏蔽视频/文章/想法/话题/盐选/相关搜索/热榜杂项。设置可 JSON 导入导出。始终生效：关登录弹窗、原图、站外直链、点浮层关评论、去掉搜索高亮链接。基于 XIU2「知乎增强」2.2.15（GPL-3.0），无远程外部脚本。
 // @description:zh-CN 用于知乎网页。可开关：低饱和配色、隐藏右侧栏、清空或锁定标签标题与图标、净化搜索热门、默认/一键/点空白收起回答与评论、右键回顶、展开问题描述、置顶发布时间、信息流类型标签、直达问题、按用户与噪音档位及关键词过滤、按类别屏蔽视频/文章/想法/话题/盐选/相关搜索/热榜杂项。设置可 JSON 导入导出。始终生效：关登录弹窗、原图、站外直链、点浮层关评论、去掉搜索高亮链接。基于 XIU2「知乎增强」2.2.15（GPL-3.0），无远程外部脚本。
@@ -1352,7 +1352,8 @@ function openSettingsPanel() {
     };
 
     const renderBody = () => {
-        const fill = current === 'block-users' || current === 'block-words' || current === 'data';
+        const keywordsOn = !!menuValue('menu_blockKeywords');
+        const fill = current === 'block-users' || (current === 'block-words' && keywordsOn) || current === 'data';
         bodyEl.classList.toggle('is-fill', fill);
         if (current === 'look') {
             bodyEl.innerHTML = lookKeys.map(settingsSwitchRow).join('');
@@ -1372,14 +1373,16 @@ function openSettingsPanel() {
             return;
         }
         if (current === 'block-words') {
-            bodyEl.innerHTML = settingsSwitchRow('menu_blockKeywords') +
-                `<div class="zhihuE_StTabs">
+            bodyEl.innerHTML = settingsSwitchRow('menu_blockKeywords') + (keywordsOn
+                ? `<div class="zhihuE_StTabs">
                     <button type="button" class="zhihuE_StTab${wordTab === 'levels' ? ' is-on' : ''}" data-tab="levels">过滤档位</button>
                     <button type="button" class="zhihuE_StTab${wordTab === 'custom' ? ' is-on' : ''}" data-tab="custom">自定义词</button>
                     <button type="button" class="zhihuE_StTab${wordTab === 'lexicon' ? ' is-on' : ''}" data-tab="lexicon">噪音词库</button>
                     <button type="button" class="zhihuE_StTab${wordTab === 'test' ? ' is-on' : ''}" data-tab="test">试算</button>
                 </div>
-                <div class="zhihuE_StPane${wordTab === 'levels' || wordTab === 'test' ? '' : ' is-fill'}"></div>`;
+                <div class="zhihuE_StPane${wordTab === 'levels' || wordTab === 'test' ? '' : ' is-fill'}"></div>`
+                : '<p class="zhihuE_StPaneTips">信息流不会按噪音分处理。档位、自定义词、词库和试算已折叠，打开后仍用上次的设置。</p>');
+            if (!keywordsOn) return;
             const pane = bodyEl.querySelector('.zhihuE_StPane');
             if (wordTab === 'levels') {
                 pane.innerHTML = settingsNoiseFormulaHtml() + settingsNoiseCards().map(settingsToggleCard).join('');
@@ -1436,6 +1439,10 @@ function openSettingsPanel() {
         const key = sw.dataset.key;
         const next = !menuValue(key);
         menuSet(key, next);
+        if (key === 'menu_blockKeywords') {
+            renderBody();
+            return;
+        }
         sw.classList.toggle('is-on', next);
         const row = sw.closest('.zhihuE_StRow, .zhihuE_LvCard');
         if (row) row.classList.toggle('is-on', next);
