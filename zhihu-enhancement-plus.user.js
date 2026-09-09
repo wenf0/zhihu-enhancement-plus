@@ -3,7 +3,7 @@
 // @name:zh-CN   知乎增强优化
 // @name:zh-TW   知乎增強優化
 // @name:en      Zhihu Enhancement Plus
-// @version      1.7.16
+// @version      1.7.17
 // @author       local (based on X.I.U / 知乎增强 2.2.15)
 // @description  用于知乎网页。可开关：低饱和配色、隐藏右侧栏、清空或锁定标签标题与图标、净化搜索热门、默认/一键/点空白收起回答与评论、右键回顶、展开问题描述、置顶发布时间、信息流类型标签、直达问题、按用户与噪音评分（可显示得分、可过滤）及关键词、按类别屏蔽视频/文章/想法/话题/盐选/相关搜索/热榜杂项。设置可 JSON 导入导出。始终生效：关登录弹窗、原图、站外直链、点浮层关评论、去掉搜索高亮链接。基于 XIU2「知乎增强」2.2.15（GPL-3.0），无远程外部脚本。
 // @description:zh-CN 用于知乎网页。可开关：低饱和配色、隐藏右侧栏、清空或锁定标签标题与图标、净化搜索热门、默认/一键/点空白收起回答与评论、右键回顶、展开问题描述、置顶发布时间、信息流类型标签、直达问题、按用户与噪音评分（可显示得分、可过滤）及关键词、按类别屏蔽视频/文章/想法/话题/盐选/相关搜索/热榜杂项。设置可 JSON 导入导出。始终生效：关登录弹窗、原图、站外直链、点浮层关评论、去掉搜索高亮链接。基于 XIU2「知乎增强」2.2.15（GPL-3.0），无远程外部脚本。
@@ -205,8 +205,42 @@ function snapshotSettings() {
     }
     const lexicon = snapshotLexicon();
     if (lexicon) values[LEXICON_KEY] = lexicon;
-    const script = (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version) || '';
+    const script = scriptVersion();
     return { v: 1, kind: SETTINGS_KIND, script, t: Date.now(), values };
+}
+
+function scriptVersion() {
+    return (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version) || '';
+}
+
+function utf8Bytes(text) {
+    try {
+        return new TextEncoder().encode(String(text || '')).length;
+    } catch (err) {
+        return unescape(encodeURIComponent(String(text || ''))).length;
+    }
+}
+
+function formatBytes(n) {
+    const size = Math.max(0, Number(n) || 0);
+    if (size < 1024) return size + ' B';
+    if (size < 1024 * 1024) {
+        const kb = size / 1024;
+        return (kb < 10 ? kb.toFixed(1) : String(Math.round(kb))) + ' KB';
+    }
+    return (size / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+function settingsJsonBytes(pretty) {
+    const json = pretty ? JSON.stringify(snapshotSettings(), null, 2) : JSON.stringify(snapshotSettings());
+    return utf8Bytes(json);
+}
+
+function settingsMetaText() {
+    const ver = scriptVersion() || '—';
+    const handler = (typeof GM_info !== 'undefined' && GM_info.scriptHandler) || '';
+    const size = formatBytes(settingsJsonBytes(false));
+    return handler ? `v${ver} · ${handler} · 配置 ${size}` : `v${ver} · 配置 ${size}`;
 }
 
 function writeSettingsBackup() {
@@ -1049,9 +1083,14 @@ function mountLexiconEditor(container) {
 }
 
 function mountIoPane(container) {
-    const pretty = () => JSON.stringify(snapshotSettings(), null, 2);
+    const snap = snapshotSettings();
+    const compactText = JSON.stringify(snap);
+    const prettyText = JSON.stringify(snap, null, 2);
+    const compactBytes = utf8Bytes(compactText);
+    const keys = Object.keys(snap.values || {}).length;
     container.innerHTML = `<div class="zhihuE_IoMount">
         <p class="zhihuE_StPaneTips">包含全部开关、屏蔽用户/关键词，以及完整噪音词库（<code>noise_lexicon_v1</code>）。导入会覆盖当前配置并刷新页面。</p>
+        <p class="zhihuE_IoStat">脚本 v${escapeHtml(scriptVersion() || '—')} · 已保存 ${formatBytes(compactBytes)} · 格式化 ${formatBytes(utf8Bytes(prettyText))} · ${keys} 项</p>
         <textarea class="zhihuE_IoArea" spellcheck="false"></textarea>
         <div class="zhihuE_IoMsg"></div>
         <div class="zhihuE_IoFoot">
@@ -1069,8 +1108,15 @@ function mountIoPane(container) {
     const root = container.querySelector('.zhihuE_IoMount');
     const area = root.querySelector('.zhihuE_IoArea');
     const msg = root.querySelector('.zhihuE_IoMsg');
+    const stat = root.querySelector('.zhihuE_IoStat');
     const fileInput = root.querySelector('.zhihuE_IoFile');
-    area.value = pretty();
+    area.value = prettyText;
+
+    const refreshStat = () => {
+        stat.textContent = `脚本 v${scriptVersion() || '—'} · 已保存 ${formatBytes(compactBytes)} · 编辑区 ${formatBytes(utf8Bytes(area.value))} · ${keys} 项`;
+    };
+    area.addEventListener('input', refreshStat);
+    refreshStat();
 
     const flash = (btn, text) => {
         const raw = btn.textContent;
@@ -1105,13 +1151,13 @@ function mountIoPane(container) {
         if (!btn) return;
         const act = btn.dataset.act;
         if (act === 'download') {
-            downloadJsonFile(settingsExportFilename(), area.value.trim() || pretty());
+            downloadJsonFile(settingsExportFilename(), area.value.trim() || prettyText);
             flash(btn, '已下载');
             notify('已导出 JSON');
             return;
         }
         if (act === 'copy') {
-            const text = area.value.trim() || pretty();
+            const text = area.value.trim() || prettyText;
             try {
                 if (navigator.clipboard && navigator.clipboard.writeText) await navigator.clipboard.writeText(text);
             } catch (e) { /* ignore */ }
@@ -1135,6 +1181,7 @@ function mountIoPane(container) {
         reader.onload = () => {
             area.value = String(reader.result || '');
             showError('');
+            refreshStat();
         };
         reader.onerror = () => showError('无法读取该文件。');
         reader.readAsText(file, 'utf-8');
@@ -1166,6 +1213,7 @@ function openSettingsPanel() {
 .zhihuE_StKicker {margin:0 0 6px;font-size:12px;letter-spacing:.16em;color:#aaa;text-transform:uppercase;}
 .zhihuE_StTitle {margin:0;font-size:26px;font-weight:650;letter-spacing:.02em;}
 .zhihuE_StTips {margin:8px 0 0;font-size:13px;line-height:1.65;color:#8a8a8a;}
+.zhihuE_StMeta {margin:8px 0 0;font-size:12px;line-height:1.5;color:#aaa;font-variant-numeric:tabular-nums;}
 .zhihuE_StClose {flex:none;width:36px;height:36px;border:0;border-radius:50%;background:#f4f4f5;color:#666;cursor:pointer;font-size:18px;line-height:1;}
 .zhihuE_StClose:hover {background:#1d1d1f;color:#fff;}
 .zhihuE_StMain {flex:1;min-height:0;display:flex;border-top:1px solid #eee;}
@@ -1296,9 +1344,10 @@ function openSettingsPanel() {
 .zhihuE_IoPrimary {background:#1d1d1f;border-color:#1d1d1f;color:#fff;}
 .zhihuE_IoPrimary:hover {opacity:.88;background:#1d1d1f;}
 .zhihuE_IoFile {display:none;}
+.zhihuE_IoStat {margin:0;font-size:12px;line-height:1.5;color:#aaa;font-variant-numeric:tabular-nums;flex:none;}
 [data-theme="dark"] .zhihuE_StRoot {background:#2b2f36;color:#e8edf2;}
 [data-theme="dark"] .zhihuE_StMain,[data-theme="dark"] .zhihuE_StNav,[data-theme="dark"] .zhihuE_LxMain {border-color:#3c434d;}
-[data-theme="dark"] .zhihuE_StKicker,[data-theme="dark"] .zhihuE_StTips,[data-theme="dark"] .zhihuE_StDesc,[data-theme="dark"] .zhihuE_StLink,[data-theme="dark"] .zhihuE_StNavBtn span,[data-theme="dark"] .zhihuE_StGroupLabel,[data-theme="dark"] .zhihuE_StPaneTips,[data-theme="dark"] .zhihuE_LvHint,[data-theme="dark"] .zhihuE_LvDesc,[data-theme="dark"] .zhihuE_DlgFoot,[data-theme="dark"] .zhihuE_LxFoot {color:#9aa4b2;}
+[data-theme="dark"] .zhihuE_StKicker,[data-theme="dark"] .zhihuE_StTips,[data-theme="dark"] .zhihuE_StMeta,[data-theme="dark"] .zhihuE_IoStat,[data-theme="dark"] .zhihuE_StDesc,[data-theme="dark"] .zhihuE_StLink,[data-theme="dark"] .zhihuE_StNavBtn span,[data-theme="dark"] .zhihuE_StGroupLabel,[data-theme="dark"] .zhihuE_StPaneTips,[data-theme="dark"] .zhihuE_LvHint,[data-theme="dark"] .zhihuE_LvDesc,[data-theme="dark"] .zhihuE_DlgFoot,[data-theme="dark"] .zhihuE_LxFoot {color:#9aa4b2;}
 [data-theme="dark"] .zhihuE_StClose,[data-theme="dark"] .zhihuE_StRow,[data-theme="dark"] .zhihuE_LvCard,[data-theme="dark"] .zhihuE_DlgInput,[data-theme="dark"] .zhihuE_DlgFilter,[data-theme="dark"] .zhihuE_DlgChip,[data-theme="dark"] .zhihuE_LxNav,[data-theme="dark"] .zhihuE_LxInput,[data-theme="dark"] .zhihuE_LxChip {background:#343a44;border-color:#3c434d;color:#e8edf2;}
 [data-theme="dark"] .zhihuE_StRow.zhihuE_isOn,[data-theme="dark"] .zhihuE_LvCard.zhihuE_isOn {background:#3a414c;}
 [data-theme="dark"] .zhihuE_StClose:hover,[data-theme="dark"] .zhihuE_StNavBtn.zhihuE_isOn,[data-theme="dark"] .zhihuE_StSwitch.zhihuE_isOn,[data-theme="dark"] .zhihuE_StTab.zhihuE_isOn,[data-theme="dark"] .zhihuE_DlgAddBtn,[data-theme="dark"] .zhihuE_DlgChipDel:hover,[data-theme="dark"] .zhihuE_LxNavBtn.zhihuE_isOn,[data-theme="dark"] .zhihuE_LxTab.zhihuE_isOn,[data-theme="dark"] .zhihuE_LxBtn,[data-theme="dark"] .zhihuE_LxDel:hover {background:#e8edf2;color:#1d1d1f;}
@@ -1332,6 +1381,7 @@ function openSettingsPanel() {
       <div>
         <p class="zhihuE_StKicker">Zhihu Enhancement Plus</p>
         <h3 class="zhihuE_StTitle">设置</h3>
+        <p class="zhihuE_StMeta"></p>
         <p class="zhihuE_StTips">开关即时保存，刷新后生效。屏蔽相关已放在左侧二级菜单，内容直接铺在右侧。</p>
       </div>
       <button type="button" class="zhihuE_StClose" aria-label="关闭">×</button>
@@ -1347,6 +1397,11 @@ function openSettingsPanel() {
     const mask = document.querySelector('.zhihuE_StMask');
     const navEl = mask.querySelector('.zhihuE_StNav');
     const bodyEl = mask.querySelector('.zhihuE_StBody');
+    const metaEl = mask.querySelector('.zhihuE_StMeta');
+
+    const refreshMeta = () => {
+        metaEl.textContent = settingsMetaText();
+    };
 
     const close = () => {
         document.removeEventListener('keydown', onKey);
@@ -1429,6 +1484,7 @@ function openSettingsPanel() {
     const render = () => {
         renderNav();
         renderBody();
+        refreshMeta();
     };
 
     mask.querySelector('.zhihuE_StClose').onclick = close;
