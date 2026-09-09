@@ -1243,7 +1243,7 @@ button,input,textarea {font:inherit;color:inherit;}
 .zhihuE_StName {font-size:15px;font-weight:600;}
 .zhihuE_StRow.is-sub .zhihuE_StName {font-size:14px;}
 .zhihuE_StDesc {margin:4px 0 0;font-size:12px;line-height:1.6;color:#8a8a8a;}
-.zhihuE_StSwitch {flex:none;width:48px;height:28px;min-width:48px;padding:0;border:0;border-radius:999px;background:#ddd;position:relative;cursor:pointer;align-self:center;}
+.zhihuE_StSwitch {flex:none;width:48px;height:28px;min-width:48px;padding:0;border:0;border-radius:999px;background:#ddd;position:relative;cursor:pointer;align-self:center;appearance:none;-webkit-appearance:none;}
 .zhihuE_StSwitch.zhihuE_isOn {background:#1d1d1f;}
 .zhihuE_StSwitch::after {content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.15);transition:transform .2s;}
 .zhihuE_StSwitch.zhihuE_isOn::after {transform:translateX(20px);}
