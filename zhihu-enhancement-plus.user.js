@@ -3,7 +3,7 @@
 // @name:zh-CN   知乎增强优化
 // @name:zh-TW   知乎增強優化
 // @name:en      Zhihu Enhancement Plus
-// @version      1.7.15
+// @version      1.7.16
 // @author       local (based on X.I.U / 知乎增强 2.2.15)
 // @description  用于知乎网页。可开关：低饱和配色、隐藏右侧栏、清空或锁定标签标题与图标、净化搜索热门、默认/一键/点空白收起回答与评论、右键回顶、展开问题描述、置顶发布时间、信息流类型标签、直达问题、按用户与噪音评分（可显示得分、可过滤）及关键词、按类别屏蔽视频/文章/想法/话题/盐选/相关搜索/热榜杂项。设置可 JSON 导入导出。始终生效：关登录弹窗、原图、站外直链、点浮层关评论、去掉搜索高亮链接。基于 XIU2「知乎增强」2.2.15（GPL-3.0），无远程外部脚本。
 // @description:zh-CN 用于知乎网页。可开关：低饱和配色、隐藏右侧栏、清空或锁定标签标题与图标、净化搜索热门、默认/一键/点空白收起回答与评论、右键回顶、展开问题描述、置顶发布时间、信息流类型标签、直达问题、按用户与噪音评分（可显示得分、可过滤）及关键词、按类别屏蔽视频/文章/想法/话题/盐选/相关搜索/热榜杂项。设置可 JSON 导入导出。始终生效：关登录弹窗、原图、站外直链、点浮层关评论、去掉搜索高亮链接。基于 XIU2「知乎增强」2.2.15（GPL-3.0），无远程外部脚本。
@@ -520,16 +520,16 @@ function registerMenuCommand() {
 function settingsSwitchRow(key, extra = '') {
     const item = MENU_ITEMS.find(x => x.key === key);
     const on = !!menuValue(key);
-    return `<div class="zhihuE_StRow${on ? ' is-on' : ''}${extra}" data-key="${key}">
+    return `<div class="zhihuE_StRow${on ? ' zhihuE_isOn' : ''}${extra}" data-key="${key}">
         <div><div class="zhihuE_StName">${escapeHtml(item.label)}</div><div class="zhihuE_StDesc">${escapeHtml(item.tip || '')}</div></div>
-        <button type="button" class="zhihuE_StSwitch${on ? ' is-on' : ''}" data-key="${key}" aria-label="${escapeHtml(item.label)}"></button>
+        <button type="button" class="zhihuE_StSwitch${on ? ' zhihuE_isOn' : ''}" data-key="${key}" aria-label="${escapeHtml(item.label)}"></button>
     </div>`;
 }
 
 function settingsToggleCard(item) {
     const on = !!menuValue(item.key);
     const chips = (item.tags || []).map(t => `<span class="zhihuE_LvChip">${escapeHtml(t)}</span>`).join('');
-    return `<div class="zhihuE_LvCard${on ? ' is-on' : ''}" data-key="${item.key}">
+    return `<div class="zhihuE_LvCard${on ? ' zhihuE_isOn' : ''}" data-key="${item.key}">
         <div class="zhihuE_LvCardMain">
             <div class="zhihuE_LvCardTop">
                 ${item.tag ? `<span class="zhihuE_LvTag">${escapeHtml(item.tag)}</span>` : ''}
@@ -539,7 +539,7 @@ function settingsToggleCard(item) {
             ${item.desc ? `<p class="zhihuE_LvDesc">${escapeHtml(item.desc)}</p>` : ''}
             ${chips ? `<div class="zhihuE_LvChips">${chips}</div>` : ''}
         </div>
-        <button type="button" class="zhihuE_StSwitch${on ? ' is-on' : ''}" data-key="${item.key}" aria-label="${escapeHtml(item.name)}"></button>
+        <button type="button" class="zhihuE_StSwitch${on ? ' zhihuE_isOn' : ''}" data-key="${item.key}" aria-label="${escapeHtml(item.name)}"></button>
     </div>`;
 }
 
@@ -926,7 +926,7 @@ function mountLexiconEditor(container) {
 
     const renderNav = () => {
         nav.innerHTML = buckets.map(b =>
-            `<button type="button" class="zhihuE_LxNavBtn${b.id === current ? ' is-on' : ''}" data-id="${b.id}">${escapeHtml(b.name)}</button>`
+            `<button type="button" class="zhihuE_LxNavBtn${b.id === current ? ' zhihuE_isOn' : ''}" data-id="${b.id}">${escapeHtml(b.name)}</button>`
         ).join('');
     };
     const renderTabs = () => {
@@ -936,8 +936,8 @@ function mountLexiconEditor(container) {
             weightInput.style.display = bucket.kind === 'list' ? 'none' : '';
             return;
         }
-        tabs.innerHTML = `<button type="button" class="zhihuE_LxTab${tab === 'words' ? ' is-on' : ''}" data-tab="words">关键词</button>
-            <button type="button" class="zhihuE_LxTab${tab === 'excludes' ? ' is-on' : ''}" data-tab="excludes">排除词</button>`;
+        tabs.innerHTML = `<button type="button" class="zhihuE_LxTab${tab === 'words' ? ' zhihuE_isOn' : ''}" data-tab="words">关键词</button>
+            <button type="button" class="zhihuE_LxTab${tab === 'excludes' ? ' zhihuE_isOn' : ''}" data-tab="excludes">排除词</button>`;
         weightInput.style.display = tab === 'excludes' ? 'none' : '';
     };
     const renderCloud = () => {
@@ -1173,8 +1173,8 @@ function openSettingsPanel() {
 .zhihuE_StNavBtn {display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;padding:12px 14px;border:0;border-radius:14px;background:transparent;color:#666;cursor:pointer;text-align:left;font:inherit;}
 .zhihuE_StNavBtn strong {font-size:15px;font-weight:600;}
 .zhihuE_StNavBtn span {font-size:12px;color:#aaa;}
-.zhihuE_StNavBtn.is-on {background:#1d1d1f;color:#fff;}
-.zhihuE_StNavBtn.is-on span {color:rgba(255,255,255,.62);}
+.zhihuE_StNavBtn.zhihuE_isOn {background:#1d1d1f;color:#fff;}
+.zhihuE_StNavBtn.zhihuE_isOn span {color:rgba(255,255,255,.62);}
 .zhihuE_StGroup {margin:8px 0 4px;}
 .zhihuE_StGroupLabel {padding:8px 14px 6px;font-size:11px;letter-spacing:.16em;color:#bbb;text-transform:uppercase;}
 .zhihuE_StNavSub {padding:10px 14px 10px 16px;border-radius:12px;}
@@ -1184,21 +1184,24 @@ function openSettingsPanel() {
 .zhihuE_StLink:hover {color:#1d1d1f;}
 .zhihuE_StBody {flex:1;min-width:0;overflow:auto;padding:24px 32px 32px;display:flex;flex-direction:column;gap:12px;}
 .zhihuE_StBody.is-fill {overflow:hidden;}
-.zhihuE_StRow {display:flex;align-items:center;justify-content:space-between;gap:20px;padding:18px 22px;border:1px solid #ececec;border-radius:16px;background:#fff;box-shadow:0 8px 24px rgba(0,0,0,.04);flex:none;}
-.zhihuE_StRow.is-on {border-color:#e5e5e5;}
-.zhihuE_StRow:not(.is-on) .zhihuE_StName {color:#6e6e73;}
-.zhihuE_StRow.is-sub {padding:14px 20px 14px 26px;border-radius:14px;}
+.zhihuE_StMask .zhihuE_StBody {display:flex !important;flex-direction:column !important;gap:12px !important;}
+.zhihuE_StMask .zhihuE_StRow,.zhihuE_StMask .zhihuE_LvCard {display:flex !important;flex-direction:row !important;align-items:center !important;justify-content:space-between !important;gap:20px !important;box-sizing:border-box !important;width:auto !important;max-width:none !important;margin:0 !important;padding:18px 22px !important;border:1px solid #ececec !important;border-radius:16px !important;background:#fff !important;box-shadow:0 8px 24px rgba(0,0,0,.04) !important;flex:none !important;float:none !important;min-height:0 !important;}
+.zhihuE_StMask .zhihuE_LvCard {align-items:flex-start !important;padding:18px 20px !important;}
+.zhihuE_StMask .zhihuE_StRow > div,.zhihuE_StMask .zhihuE_LvCardMain {flex:1 1 auto !important;min-width:0 !important;width:auto !important;max-width:none !important;float:none !important;display:block !important;}
+.zhihuE_StMask .zhihuE_StRow.zhihuE_isOn,.zhihuE_StMask .zhihuE_LvCard.zhihuE_isOn {border-color:#e5e5e5 !important;}
+.zhihuE_StMask .zhihuE_StRow:not(.zhihuE_isOn) .zhihuE_StName,.zhihuE_StMask .zhihuE_LvCard:not(.zhihuE_isOn) .zhihuE_LvName {color:#6e6e73;}
+.zhihuE_StMask .zhihuE_StRow.is-sub {padding:14px 20px 14px 26px !important;border-radius:14px !important;}
 .zhihuE_StName {font-size:15px;font-weight:600;}
-.zhihuE_StRow.is-sub .zhihuE_StName {font-size:14px;}
+.zhihuE_StMask .zhihuE_StRow.is-sub .zhihuE_StName {font-size:14px;}
 .zhihuE_StDesc {margin:4px 0 0;font-size:12px;line-height:1.6;color:#8a8a8a;}
-.zhihuE_StSwitch {flex:none;width:48px;height:28px;border:0;border-radius:999px;background:#ddd;position:relative;cursor:pointer;}
-.zhihuE_StSwitch::after {content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.15);transition:transform .2s;}
-.zhihuE_StSwitch.is-on {background:#1d1d1f;}
-.zhihuE_StSwitch.is-on::after {transform:translateX(20px);}
+.zhihuE_StMask button.zhihuE_StSwitch {all:unset;box-sizing:border-box !important;display:block !important;flex:0 0 48px !important;width:48px !important;height:28px !important;min-width:48px !important;min-height:28px !important;max-width:48px !important;margin:0 !important;padding:0 !important;border:0 !important;border-radius:999px !important;background:#ddd !important;position:relative !important;cursor:pointer !important;align-self:center !important;appearance:none !important;-webkit-appearance:none !important;}
+.zhihuE_StMask button.zhihuE_StSwitch.zhihuE_isOn {background:#1d1d1f !important;}
+.zhihuE_StMask button.zhihuE_StSwitch::after {content:"" !important;position:absolute !important;top:3px !important;left:3px !important;width:22px !important;height:22px !important;border-radius:50% !important;background:#fff !important;box-shadow:0 1px 4px rgba(0,0,0,.15) !important;transition:transform .2s !important;display:block !important;pointer-events:none !important;}
+.zhihuE_StMask button.zhihuE_StSwitch.zhihuE_isOn::after {transform:translateX(20px) !important;}
 .zhihuE_StPaneTips {margin:0;font-size:13px;line-height:1.65;color:#8a8a8a;flex:none;}
 .zhihuE_StTabs {display:flex;flex-wrap:wrap;gap:8px;flex:none;}
 .zhihuE_StTab {height:34px;padding:0 14px;border:1px solid #eee;border-radius:999px;background:#fff;color:#666;cursor:pointer;font:inherit;font-size:13px;}
-.zhihuE_StTab.is-on {background:#1d1d1f;border-color:#1d1d1f;color:#fff;}
+.zhihuE_StTab.zhihuE_isOn {background:#1d1d1f;border-color:#1d1d1f;color:#fff;}
 .zhihuE_StPane {flex:1;min-height:0;display:flex;flex-direction:column;gap:12px;overflow:auto;}
 .zhihuE_StPane.is-fill {overflow:hidden;}
 .zhihuE_StFootNote {margin-top:4px;font-size:12px;color:#aaa;flex:none;}
@@ -1228,10 +1231,6 @@ function openSettingsPanel() {
 .zhihuE_TsItem b {margin-right:4px;color:#1d1d1f;font-size:13px;}
 .zhihuE_TsItem span {display:block;margin-top:4px;font-size:18px;font-weight:650;color:#1d1d1f;font-variant-numeric:tabular-nums;}
 .zhihuE_TsHint {margin:12px 0 0;font-size:12px;line-height:1.65;color:#8a8a8a;}
-.zhihuE_LvCard {display:flex;align-items:flex-start;justify-content:space-between;gap:20px;padding:18px 20px;border:1px solid #ececec;border-radius:16px;background:#fff;box-shadow:0 8px 24px rgba(0,0,0,.04);flex:none;}
-.zhihuE_LvCard.is-on {border-color:#dcdcdc;}
-.zhihuE_LvCard:not(.is-on) .zhihuE_LvName {color:#6e6e73;}
-.zhihuE_LvCardMain {min-width:0;}
 .zhihuE_LvCardTop {display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap;}
 .zhihuE_LvTag {flex:none;min-width:36px;padding:2px 8px;border-radius:999px;background:#1d1d1f;color:#fff;font-size:12px;font-weight:600;text-align:center;}
 .zhihuE_LvName {font-size:16px;font-weight:600;}
@@ -1268,11 +1267,11 @@ function openSettingsPanel() {
 .zhihuE_LxMain {flex:1;min-height:0;display:flex;border:1px solid #eee;border-radius:16px;overflow:hidden;background:#fff;}
 .zhihuE_LxNav {width:168px;flex:none;overflow:auto;padding:10px;background:#fafafa;}
 .zhihuE_LxNavBtn {width:100%;text-align:left;border:0;background:transparent;border-radius:10px;padding:9px 10px;margin-bottom:4px;font-size:13px;cursor:pointer;color:#333;}
-.zhihuE_LxNavBtn.is-on {background:#1d1d1f;color:#fff;}
+.zhihuE_LxNavBtn.zhihuE_isOn {background:#1d1d1f;color:#fff;}
 .zhihuE_LxPane {flex:1;min-width:0;display:flex;flex-direction:column;padding:14px 16px 10px;}
 .zhihuE_LxTabs {display:flex;gap:8px;margin-bottom:10px;}
 .zhihuE_LxTab {height:30px;padding:0 12px;border:1px solid #e8e8e8;border-radius:999px;background:#fff;cursor:pointer;font-size:12px;}
-.zhihuE_LxTab.is-on {background:#1d1d1f;border-color:#1d1d1f;color:#fff;}
+.zhihuE_LxTab.zhihuE_isOn {background:#1d1d1f;border-color:#1d1d1f;color:#fff;}
 .zhihuE_LxAdd {display:flex;gap:8px;margin-bottom:10px;}
 .zhihuE_LxInput {flex:1;height:38px;padding:0 12px;border:1px solid #e8e8e8;border-radius:12px;background:#fafafa;font-size:13px;outline:none;}
 .zhihuE_LxWeight {width:72px;flex:none;}
@@ -1301,10 +1300,10 @@ function openSettingsPanel() {
 [data-theme="dark"] .zhihuE_StMain,[data-theme="dark"] .zhihuE_StNav,[data-theme="dark"] .zhihuE_LxMain {border-color:#3c434d;}
 [data-theme="dark"] .zhihuE_StKicker,[data-theme="dark"] .zhihuE_StTips,[data-theme="dark"] .zhihuE_StDesc,[data-theme="dark"] .zhihuE_StLink,[data-theme="dark"] .zhihuE_StNavBtn span,[data-theme="dark"] .zhihuE_StGroupLabel,[data-theme="dark"] .zhihuE_StPaneTips,[data-theme="dark"] .zhihuE_LvHint,[data-theme="dark"] .zhihuE_LvDesc,[data-theme="dark"] .zhihuE_DlgFoot,[data-theme="dark"] .zhihuE_LxFoot {color:#9aa4b2;}
 [data-theme="dark"] .zhihuE_StClose,[data-theme="dark"] .zhihuE_StRow,[data-theme="dark"] .zhihuE_LvCard,[data-theme="dark"] .zhihuE_DlgInput,[data-theme="dark"] .zhihuE_DlgFilter,[data-theme="dark"] .zhihuE_DlgChip,[data-theme="dark"] .zhihuE_LxNav,[data-theme="dark"] .zhihuE_LxInput,[data-theme="dark"] .zhihuE_LxChip {background:#343a44;border-color:#3c434d;color:#e8edf2;}
-[data-theme="dark"] .zhihuE_StRow.is-on,[data-theme="dark"] .zhihuE_LvCard.is-on {background:#3a414c;}
-[data-theme="dark"] .zhihuE_StClose:hover,[data-theme="dark"] .zhihuE_StNavBtn.is-on,[data-theme="dark"] .zhihuE_StSwitch.is-on,[data-theme="dark"] .zhihuE_StTab.is-on,[data-theme="dark"] .zhihuE_DlgAddBtn,[data-theme="dark"] .zhihuE_DlgChipDel:hover,[data-theme="dark"] .zhihuE_LxNavBtn.is-on,[data-theme="dark"] .zhihuE_LxTab.is-on,[data-theme="dark"] .zhihuE_LxBtn,[data-theme="dark"] .zhihuE_LxDel:hover {background:#e8edf2;color:#1d1d1f;}
+[data-theme="dark"] .zhihuE_StRow.zhihuE_isOn,[data-theme="dark"] .zhihuE_LvCard.zhihuE_isOn {background:#3a414c;}
+[data-theme="dark"] .zhihuE_StClose:hover,[data-theme="dark"] .zhihuE_StNavBtn.zhihuE_isOn,[data-theme="dark"] .zhihuE_StSwitch.zhihuE_isOn,[data-theme="dark"] .zhihuE_StTab.zhihuE_isOn,[data-theme="dark"] .zhihuE_DlgAddBtn,[data-theme="dark"] .zhihuE_DlgChipDel:hover,[data-theme="dark"] .zhihuE_LxNavBtn.zhihuE_isOn,[data-theme="dark"] .zhihuE_LxTab.zhihuE_isOn,[data-theme="dark"] .zhihuE_LxBtn,[data-theme="dark"] .zhihuE_LxDel:hover {background:#e8edf2;color:#1d1d1f;}
 [data-theme="dark"] .zhihuE_StNavBtn,[data-theme="dark"] .zhihuE_LxNavBtn {color:#c5ced8;}
-[data-theme="dark"] .zhihuE_StNavBtn.is-on span {color:rgba(29,29,31,.55);}
+[data-theme="dark"] .zhihuE_StNavBtn.zhihuE_isOn span {color:rgba(29,29,31,.55);}
 [data-theme="dark"] .zhihuE_StSwitch {background:#4a5260;}
 [data-theme="dark"] .zhihuE_StLink:hover {color:#fff;}
 [data-theme="dark"] .zhihuE_StTab {background:#343a44;border-color:#3c434d;color:#c5ced8;}
@@ -1321,6 +1320,10 @@ function openSettingsPanel() {
 [data-theme="dark"] .zhihuE_DlgCopy,[data-theme="dark"] .zhihuE_IoBtn,[data-theme="dark"] .zhihuE_LxBtn.ghost {background:#343a44;border-color:#3c434d;color:#e8edf2;}
 [data-theme="dark"] .zhihuE_DlgCopy.is-ok,[data-theme="dark"] .zhihuE_IoBtn.is-ok,[data-theme="dark"] .zhihuE_IoPrimary {background:#e8edf2;border-color:#e8edf2;color:#1d1d1f;}
 [data-theme="dark"] .zhihuE_DlgImportArea,[data-theme="dark"] .zhihuE_IoArea {background:#343a44;border-color:#3c434d;color:#e8edf2;}
+[data-theme="dark"] .zhihuE_StMask .zhihuE_StRow,[data-theme="dark"] .zhihuE_StMask .zhihuE_LvCard {background:#343a44 !important;border-color:#3c434d !important;color:#e8edf2 !important;}
+[data-theme="dark"] .zhihuE_StMask .zhihuE_StRow.zhihuE_isOn,[data-theme="dark"] .zhihuE_StMask .zhihuE_LvCard.zhihuE_isOn {background:#3a414c !important;}
+[data-theme="dark"] .zhihuE_StMask button.zhihuE_StSwitch {background:#4a5260 !important;}
+[data-theme="dark"] .zhihuE_StMask button.zhihuE_StSwitch.zhihuE_isOn {background:#e8edf2 !important;}
 [data-theme="dark"] .zhihuE_DlgCount b {color:#fff;}
 </style>
 <div class="zhihuE_StMask">
@@ -1356,7 +1359,7 @@ function openSettingsPanel() {
     };
 
     const navButton = (item, extra = '') =>
-        `<button type="button" class="zhihuE_StNavBtn${extra}${item.id === current ? ' is-on' : ''}" data-id="${item.id}"><strong>${escapeHtml(item.name)}</strong><span>${escapeHtml(item.hint)}</span></button>`;
+        `<button type="button" class="zhihuE_StNavBtn${extra}${item.id === current ? ' zhihuE_isOn' : ''}" data-id="${item.id}"><strong>${escapeHtml(item.name)}</strong><span>${escapeHtml(item.hint)}</span></button>`;
 
     const renderNav = () => {
         navEl.innerHTML = navItems.map(item => navButton(item)).join('') +
@@ -1391,10 +1394,10 @@ function openSettingsPanel() {
                 ? settingsSwitchRow('menu_blockKeywords', ' is-sub') +
                     settingsSwitchRow('menu_noiseBadge', ' is-sub') +
                     `<div class="zhihuE_StTabs">
-                    <button type="button" class="zhihuE_StTab${wordTab === 'levels' ? ' is-on' : ''}" data-tab="levels">过滤档位</button>
-                    <button type="button" class="zhihuE_StTab${wordTab === 'custom' ? ' is-on' : ''}" data-tab="custom">自定义词</button>
-                    <button type="button" class="zhihuE_StTab${wordTab === 'lexicon' ? ' is-on' : ''}" data-tab="lexicon">噪音词库</button>
-                    <button type="button" class="zhihuE_StTab${wordTab === 'test' ? ' is-on' : ''}" data-tab="test">试算</button>
+                    <button type="button" class="zhihuE_StTab${wordTab === 'levels' ? ' zhihuE_isOn' : ''}" data-tab="levels">过滤档位</button>
+                    <button type="button" class="zhihuE_StTab${wordTab === 'custom' ? ' zhihuE_isOn' : ''}" data-tab="custom">自定义词</button>
+                    <button type="button" class="zhihuE_StTab${wordTab === 'lexicon' ? ' zhihuE_isOn' : ''}" data-tab="lexicon">噪音词库</button>
+                    <button type="button" class="zhihuE_StTab${wordTab === 'test' ? ' zhihuE_isOn' : ''}" data-tab="test">试算</button>
                 </div>
                 <div class="zhihuE_StPane${wordTab === 'levels' || wordTab === 'test' ? '' : ' is-fill'}"></div>`
                 : '<p class="zhihuE_StPaneTips">评分关闭后，过滤和角标都不会生效。档位、词库和试算已折叠，打开后仍用上次的设置。</p>');
@@ -1459,9 +1462,9 @@ function openSettingsPanel() {
             renderBody();
             return;
         }
-        sw.classList.toggle('is-on', next);
+        sw.classList.toggle('zhihuE_isOn', next);
         const row = sw.closest('.zhihuE_StRow, .zhihuE_LvCard');
-        if (row) row.classList.toggle('is-on', next);
+        if (row) row.classList.toggle('zhihuE_isOn', next);
     });
     document.addEventListener('keydown', onKey);
     render();
