@@ -3,7 +3,7 @@
 // @name:zh-CN   知乎增强优化
 // @name:zh-TW   知乎增強優化
 // @name:en      Zhihu Enhancement Plus
-// @version      1.7.8
+// @version      1.7.9
 // @author       local (based on X.I.U / 知乎增强 2.2.15)
 // @description  用于知乎网页。可开关：低饱和配色、隐藏右侧栏、清空或锁定标签标题与图标、净化搜索热门、默认/一键/点空白收起回答与评论、右键回顶、展开问题描述、置顶发布时间、信息流类型标签、直达问题、按用户与噪音档位及关键词过滤、按类别屏蔽视频/文章/想法/话题/盐选/相关搜索/热榜杂项。设置可 JSON 导入导出。始终生效：关登录弹窗、原图、站外直链、点浮层关评论、去掉搜索高亮链接。基于 XIU2「知乎增强」2.2.15（GPL-3.0），无远程外部脚本。
 // @description:zh-CN 用于知乎网页。可开关：低饱和配色、隐藏右侧栏、清空或锁定标签标题与图标、净化搜索热门、默认/一键/点空白收起回答与评论、右键回顶、展开问题描述、置顶发布时间、信息流类型标签、直达问题、按用户与噪音档位及关键词过滤、按类别屏蔽视频/文章/想法/话题/盐选/相关搜索/热榜杂项。设置可 JSON 导入导出。始终生效：关登录弹窗、原图、站外直链、点浮层关评论、去掉搜索高亮链接。基于 XIU2「知乎增强」2.2.15（GPL-3.0），无远程外部脚本。
@@ -135,7 +135,9 @@ const SETTINGS_BACKUP_KEY = 'zhihu-enhancement-plus:settings:v1';
 const SETTINGS_GM_FLAG = 'zhihu_plus_persist_v1';
 const SETTINGS_KIND = 'zhihu-enhancement-plus-settings';
 const LEXICON_KEY = 'noise_lexicon_v1';
-const SETTINGS_EXTRA_KEYS = ['menu_kw_pack_v1', LEXICON_KEY];
+const USERS_OFF_KEY = 'menu_customBlockUsersOff';
+const KEYWORDS_OFF_KEY = 'menu_customBlockKeywordsOff';
+const SETTINGS_EXTRA_KEYS = ['menu_kw_pack_v1', LEXICON_KEY, USERS_OFF_KEY, KEYWORDS_OFF_KEY];
 
 function pageLocalStorage() {
     try {
@@ -216,6 +218,9 @@ function writeSettingsBackup() {
 function isValidSettingValue(key, value) {
     if (key === 'menu_kw_pack_v1') return typeof value === 'boolean';
     if (key === LEXICON_KEY) return !!(value && typeof value === 'object' && !Array.isArray(value));
+    if (key === USERS_OFF_KEY || key === KEYWORDS_OFF_KEY) {
+        return Array.isArray(value) && value.every(x => typeof x === 'string');
+    }
     const item = MENU_ITEMS.find(x => x.key === key);
     if (!item) return false;
     if (item.kind === 'users' || item.kind === 'keywords') {
@@ -310,6 +315,39 @@ function menuSet(key, value) {
     cache[key] = value;
     GM_setValue(key, value);
     writeSettingsBackup();
+}
+
+function listOffKey(storageKey) {
+    if (storageKey === 'menu_customBlockUsers') return USERS_OFF_KEY;
+    if (storageKey === 'menu_customBlockKeywords') return KEYWORDS_OFF_KEY;
+    return '';
+}
+
+function isPackedListItem(storageKey, word) {
+    if (storageKey === 'menu_customBlockUsers') return DEFAULT_BLOCK_USERS.includes(word);
+    if (storageKey === 'menu_customBlockKeywords') {
+        const k = String(word).toLowerCase();
+        return DEFAULT_BLOCK_KEYWORDS.some(x => x.toLowerCase() === k);
+    }
+    return false;
+}
+
+function readListOff(storageKey) {
+    const key = listOffKey(storageKey);
+    const raw = key ? GM_getValue(key) : [];
+    return new Set(Array.isArray(raw) ? raw : []);
+}
+
+function writeListOff(storageKey, off) {
+    const key = listOffKey(storageKey);
+    if (!key) return;
+    GM_setValue(key, [...off]);
+    writeSettingsBackup();
+}
+
+function activeListValues(storageKey) {
+    const off = readListOff(storageKey);
+    return (menuValue(storageKey) || []).filter(word => word && !off.has(word));
 }
 
 /* -------------------------------------------------------------------------- */
@@ -541,6 +579,7 @@ function settingsNoiseFormulaHtml() {
 
 function mountListEditor(container, { storageKey, placeholder, tips }) {
     let list = [...(menuValue(storageKey) || [])];
+    let off = readListOff(storageKey);
     let filter = '';
     container.insertAdjacentHTML('beforeend', `<div class="zhihuE_ListMount">
         ${tips ? `<p class="zhihuE_StPaneTips">${escapeHtml(tips)}</p>` : ''}
@@ -551,14 +590,14 @@ function mountListEditor(container, { storageKey, placeholder, tips }) {
         <div class="zhihuE_DlgFilterWrap"><input class="zhihuE_DlgFilter" type="search" placeholder="在已有词条中筛选…" /></div>
         <div class="zhihuE_DlgCloud"></div>
         <div class="zhihuE_DlgFoot">
-            <div class="zhihuE_DlgCount">共 <b class="zhihuE_DlgCountNum">0</b> 条</div>
+            <div class="zhihuE_DlgCount">共 <b class="zhihuE_DlgCountNum">0</b> 条 · 启用 <b class="zhihuE_DlgCountOn">0</b> 条</div>
             <div class="zhihuE_DlgFootRight">
                 <button type="button" class="zhihuE_DlgCopy zhihuE_DlgImportBtn">粘贴导入</button>
                 <button type="button" class="zhihuE_DlgCopy zhihuE_DlgCopyAll">复制全部</button>
             </div>
         </div>
         <div class="zhihuE_DlgImport">
-            <textarea class="zhihuE_DlgImportArea" placeholder="粘贴词表，用逗号、换行或 | 分隔。确认后覆盖当前列表并自动去重。"></textarea>
+            <textarea class="zhihuE_DlgImportArea" placeholder="粘贴词表，用逗号、换行或 | 分隔。确认后覆盖当前列表并自动去重。预置词仍会保留，仅开关状态可能变化。"></textarea>
             <div class="zhihuE_DlgImportActions">
                 <button type="button" class="zhihuE_DlgCopy zhihuE_DlgImportCancel">取消</button>
                 <button type="button" class="zhihuE_DlgCopy is-ok zhihuE_DlgImportOk">确认覆盖导入</button>
@@ -568,6 +607,7 @@ function mountListEditor(container, { storageKey, placeholder, tips }) {
     const root = container.querySelector('.zhihuE_ListMount:last-child');
     const cloud = root.querySelector('.zhihuE_DlgCloud');
     const countEl = root.querySelector('.zhihuE_DlgCountNum');
+    const countOnEl = root.querySelector('.zhihuE_DlgCountOn');
     const input = root.querySelector('.zhihuE_DlgInput');
 
     const visibleList = () => {
@@ -578,7 +618,14 @@ function mountListEditor(container, { storageKey, placeholder, tips }) {
 
     const persist = () => {
         menuSet(storageKey, list);
+        writeListOff(storageKey, off);
+        noiseIndex = null;
+        renderCloud();
+    };
+
+    const renderCloud = () => {
         countEl.textContent = String(list.length);
+        countOnEl.textContent = String(list.filter(word => !off.has(word)).length);
         const items = visibleList();
         if (!list.length) {
             cloud.innerHTML = '<div class="zhihuE_DlgEmpty">还没有词条，在上方添加</div>';
@@ -588,9 +635,13 @@ function mountListEditor(container, { storageKey, placeholder, tips }) {
             cloud.innerHTML = '<div class="zhihuE_DlgEmpty">没有匹配的词条</div>';
             return;
         }
-        cloud.innerHTML = items.map(({ word, index }) =>
-            `<span class="zhihuE_DlgChip" title="${escapeHtml(word)}"><span>${escapeHtml(word)}</span><button type="button" class="zhihuE_DlgChipDel" data-index="${index}" aria-label="删除">×</button></span>`
-        ).join('');
+        cloud.innerHTML = items.map(({ word, index }) => {
+            const packed = isPackedListItem(storageKey, word);
+            const disabled = off.has(word);
+            const title = packed ? '预置词，点击开关' : '自定义词，点击开关，× 删除';
+            const del = packed ? '' : `<button type="button" class="zhihuE_DlgChipDel" data-index="${index}" aria-label="删除">×</button>`;
+            return `<span class="zhihuE_DlgChip${packed ? ' is-pack' : ''}${disabled ? ' is-off' : ''}" data-index="${index}" title="${escapeHtml(title)}"><span>${escapeHtml(word)}</span>${del}</span>`;
+        }).join('');
     };
 
     const addFromInput = () => {
@@ -598,6 +649,7 @@ function mountListEditor(container, { storageKey, placeholder, tips }) {
         const added = words.filter(w => !list.includes(w));
         if (!added.length) return;
         list = added.concat(list);
+        for (const word of added) off.delete(word);
         input.value = '';
         persist();
         input.focus();
@@ -621,7 +673,11 @@ function mountListEditor(container, { storageKey, placeholder, tips }) {
             flashBtn(btn, '没有可用词条', false);
             return false;
         }
-        list = next;
+        const packedKeep = list.filter(w => isPackedListItem(storageKey, w));
+        const incoming = new Set(next.map(w => w.toLowerCase()));
+        const custom = next.filter(w => !isPackedListItem(storageKey, w));
+        list = uniqueWords(packedKeep.concat(custom));
+        off = new Set(packedKeep.filter(w => !incoming.has(w.toLowerCase())));
         persist();
         flashBtn(btn, `已导入 ${next.length} 条`);
         return true;
@@ -696,14 +752,27 @@ function mountListEditor(container, { storageKey, placeholder, tips }) {
     });
     root.querySelector('.zhihuE_DlgFilter').addEventListener('input', event => {
         filter = event.target.value.trim();
-        persist();
+        renderCloud();
     });
     cloud.addEventListener('click', event => {
-        const btn = event.target.closest('.zhihuE_DlgChipDel');
-        if (!btn) return;
-        const index = Number(btn.dataset.index);
+        const del = event.target.closest('.zhihuE_DlgChipDel');
+        if (del) {
+            const index = Number(del.dataset.index);
+            if (Number.isNaN(index)) return;
+            const word = list[index];
+            if (isPackedListItem(storageKey, word)) return;
+            list.splice(index, 1);
+            off.delete(word);
+            persist();
+            return;
+        }
+        const chip = event.target.closest('.zhihuE_DlgChip');
+        if (!chip) return;
+        const index = Number(chip.dataset.index);
         if (Number.isNaN(index)) return;
-        list.splice(index, 1);
+        const word = list[index];
+        if (off.has(word)) off.delete(word);
+        else off.add(word);
         persist();
     });
     persist();
@@ -1079,7 +1148,9 @@ function openSettingsPanel() {
 .zhihuE_DlgAddBtn:hover {opacity:.88;}
 .zhihuE_DlgFilterWrap {flex:none;}
 .zhihuE_DlgCloud {flex:1;min-height:0;overflow:auto;padding:6px 2px 12px;display:flex;flex-wrap:wrap;align-content:flex-start;gap:10px;}
-.zhihuE_DlgChip {display:inline-flex;align-items:center;gap:8px;max-width:100%;padding:8px 8px 8px 14px;border:1px solid #ececec;border-radius:999px;background:#f7f7f7;font-size:13px;line-height:1.3;color:#333;}
+.zhihuE_DlgChip {display:inline-flex;align-items:center;gap:8px;max-width:100%;padding:8px 8px 8px 14px;border:1px solid #ececec;border-radius:999px;background:#f7f7f7;font-size:13px;line-height:1.3;color:#333;cursor:pointer;}
+.zhihuE_DlgChip.is-pack {padding-right:14px;}
+.zhihuE_DlgChip.is-off {opacity:.4;}
 .zhihuE_DlgChip:hover {background:#fff;border-color:#d4d4d4;box-shadow:0 4px 12px rgba(0,0,0,.04);}
 .zhihuE_DlgChip span {overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .zhihuE_DlgChipDel {flex:none;width:22px;height:22px;border:0;border-radius:50%;background:transparent;color:#999;font-size:16px;line-height:22px;cursor:pointer;}
@@ -1139,6 +1210,7 @@ function openSettingsPanel() {
 [data-theme="dark"] .zhihuE_StLink:hover {color:#fff;}
 [data-theme="dark"] .zhihuE_StTab {background:#343a44;border-color:#3c434d;color:#c5ced8;}
 [data-theme="dark"] .zhihuE_LvTag {background:#e8edf2;color:#1d1d1f;}
+[data-theme="dark"] .zhihuE_LvChip {background:#2b2f36;color:#c5ced8;}
 [data-theme="dark"] .zhihuE_Fx {background:#343a44;border-color:#3c434d;}
 [data-theme="dark"] .zhihuE_FxItem {background:#3a414c;border-color:#3c434d;}
 [data-theme="dark"] .zhihuE_FxKicker,[data-theme="dark"] .zhihuE_FxItem span,[data-theme="dark"] .zhihuE_FxNote {color:#9aa4b2;}
@@ -1205,7 +1277,7 @@ function openSettingsPanel() {
             mountListEditor(bodyEl, {
                 storageKey: 'menu_customBlockUsers',
                 placeholder: '例如：盐选推荐, 故事档案局',
-                tips: '用户名需完全匹配。可用逗号、顿号或 | 一次添加多个。'
+                tips: '用户名需完全匹配。预置名单只能开关，自己加的可以开关或删除。'
             });
             return;
         }
@@ -1224,7 +1296,7 @@ function openSettingsPanel() {
                 mountListEditor(pane, {
                     storageKey: 'menu_customBlockKeywords',
                     placeholder: '例如：广告, 引流, [捂脸]',
-                    tips: '不区分大小写，支持表情。可用逗号、/ 或 | 一次添加多个，会加权到噪音分。'
+                    tips: '预置词只能开关，自己加的可以开关或删除。不区分大小写，会加权到噪音分。'
                 });
             } else {
                 mountLexiconEditor(pane);
@@ -1583,8 +1655,7 @@ function authorFromZop(item) {
 }
 
 function userBlocked(name) {
-    const list = menuValue('menu_customBlockUsers') || [];
-    return name && list.includes(name);
+    return !!(name && activeListValues('menu_customBlockUsers').includes(name));
 }
 
 function hideBlockedCard(card, item) {
@@ -1735,7 +1806,15 @@ function blockUsersButtonPeople() {
 function blockUsersAdd(name, userid, reload) {
     if (!name || !userid) return;
     const users = menuValue('menu_customBlockUsers') || [];
+    const off = readListOff('menu_customBlockUsers');
     if (users.includes(name)) {
+        if (off.has(name)) {
+            off.delete(name);
+            writeListOff('menu_customBlockUsers', off);
+            notify('已重新启用对该用户的屏蔽~\n刷新网页后生效~');
+            if (reload) setTimeout(() => location.reload(), 200);
+            return;
+        }
         notify('该用户已经被屏蔽啦，无需重复屏蔽~');
         return;
     }
@@ -1754,8 +1833,17 @@ function blockUsersDel(name, userid, reload) {
         notify('没有在屏蔽列表中找到该用户...');
         return;
     }
-    users.splice(index, 1);
-    menuSet('menu_customBlockUsers', users);
+    if (isPackedListItem('menu_customBlockUsers', name)) {
+        const off = readListOff('menu_customBlockUsers');
+        off.add(name);
+        writeListOff('menu_customBlockUsers', off);
+    } else {
+        users.splice(index, 1);
+        const off = readListOff('menu_customBlockUsers');
+        off.delete(name);
+        menuSet('menu_customBlockUsers', users);
+        writeListOff('menu_customBlockUsers', off);
+    }
     GM_xmlhttpRequest({ url: `https://www.zhihu.com/api/v4/members/${userid}/actions/block`, method: 'DELETE', timeout: 2000 });
     if (reload) setTimeout(() => location.reload(), 200);
     else notify('该用户已取消屏蔽啦~\n刷新网页后生效~');
@@ -1965,10 +2053,11 @@ function compileNoiseIndex() {
         });
     }
     const custom = [];
+    const customOff = new Set([...readListOff('menu_customBlockKeywords')].map(x => String(x).toLowerCase()));
     for (const word of menuValue('menu_customBlockKeywords') || []) {
         if (!word) continue;
         const k = String(word).toLowerCase();
-        if (seen.has(k)) continue;
+        if (customOff.has(k) || seen.has(k)) continue;
         custom.push(k);
     }
     const toPairs = map => Object.keys(map).map(k => ({ k: k.toLowerCase(), w: map[k] }));
