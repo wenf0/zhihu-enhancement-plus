@@ -2414,8 +2414,10 @@ function paintNoiseBadge(card, score, titleCss) {
         tag.className = 'zhihu-plus-noise-tag';
         tag.setAttribute('aria-label', '查看噪音评分过程');
     }
-    if (anchor) anchor.insertAdjacentElement('afterend', tag);
-    else {
+    if (anchor) {
+        if (anchor.tagName === 'A' || anchor.tagName === 'H2') anchor.appendChild(tag);
+        else anchor.insertAdjacentElement('afterend', tag);
+    } else {
         ensureCardPosition(card);
         card.insertAdjacentElement('afterbegin', tag);
     }
