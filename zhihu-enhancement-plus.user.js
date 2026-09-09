@@ -3,7 +3,7 @@
 // @name:zh-CN   知乎增强优化
 // @name:zh-TW   知乎增強優化
 // @name:en      Zhihu Enhancement Plus
-// @version      1.7.14
+// @version      1.7.15
 // @author       local (based on X.I.U / 知乎增强 2.2.15)
 // @description  用于知乎网页。可开关：低饱和配色、隐藏右侧栏、清空或锁定标签标题与图标、净化搜索热门、默认/一键/点空白收起回答与评论、右键回顶、展开问题描述、置顶发布时间、信息流类型标签、直达问题、按用户与噪音评分（可显示得分、可过滤）及关键词、按类别屏蔽视频/文章/想法/话题/盐选/相关搜索/热榜杂项。设置可 JSON 导入导出。始终生效：关登录弹窗、原图、站外直链、点浮层关评论、去掉搜索高亮链接。基于 XIU2「知乎增强」2.2.15（GPL-3.0），无远程外部脚本。
 // @description:zh-CN 用于知乎网页。可开关：低饱和配色、隐藏右侧栏、清空或锁定标签标题与图标、净化搜索热门、默认/一键/点空白收起回答与评论、右键回顶、展开问题描述、置顶发布时间、信息流类型标签、直达问题、按用户与噪音评分（可显示得分、可过滤）及关键词、按类别屏蔽视频/文章/想法/话题/盐选/相关搜索/热榜杂项。设置可 JSON 导入导出。始终生效：关登录弹窗、原图、站外直链、点浮层关评论、去掉搜索高亮链接。基于 XIU2「知乎增强」2.2.15（GPL-3.0），无远程外部脚本。
@@ -1184,8 +1184,9 @@ function openSettingsPanel() {
 .zhihuE_StLink:hover {color:#1d1d1f;}
 .zhihuE_StBody {flex:1;min-width:0;overflow:auto;padding:24px 32px 32px;display:flex;flex-direction:column;gap:12px;}
 .zhihuE_StBody.is-fill {overflow:hidden;}
-.zhihuE_StRow {display:flex;align-items:center;justify-content:space-between;gap:20px;padding:18px 22px;border:1px solid #eee;border-radius:16px;background:#fafafa;flex:none;}
-.zhihuE_StRow.is-on {background:#fff;border-color:#e5e5e5;box-shadow:0 8px 24px rgba(0,0,0,.04);}
+.zhihuE_StRow {display:flex;align-items:center;justify-content:space-between;gap:20px;padding:18px 22px;border:1px solid #ececec;border-radius:16px;background:#fff;box-shadow:0 8px 24px rgba(0,0,0,.04);flex:none;}
+.zhihuE_StRow.is-on {border-color:#e5e5e5;}
+.zhihuE_StRow:not(.is-on) .zhihuE_StName {color:#6e6e73;}
 .zhihuE_StRow.is-sub {padding:14px 20px 14px 26px;border-radius:14px;}
 .zhihuE_StName {font-size:15px;font-weight:600;}
 .zhihuE_StRow.is-sub .zhihuE_StName {font-size:14px;}
@@ -1227,8 +1228,9 @@ function openSettingsPanel() {
 .zhihuE_TsItem b {margin-right:4px;color:#1d1d1f;font-size:13px;}
 .zhihuE_TsItem span {display:block;margin-top:4px;font-size:18px;font-weight:650;color:#1d1d1f;font-variant-numeric:tabular-nums;}
 .zhihuE_TsHint {margin:12px 0 0;font-size:12px;line-height:1.65;color:#8a8a8a;}
-.zhihuE_LvCard {display:flex;align-items:flex-start;justify-content:space-between;gap:20px;padding:18px 20px;border:1px solid #eee;border-radius:16px;background:#fafafa;flex:none;}
-.zhihuE_LvCard.is-on {background:#fff;border-color:#dcdcdc;box-shadow:0 8px 24px rgba(0,0,0,.04);}
+.zhihuE_LvCard {display:flex;align-items:flex-start;justify-content:space-between;gap:20px;padding:18px 20px;border:1px solid #ececec;border-radius:16px;background:#fff;box-shadow:0 8px 24px rgba(0,0,0,.04);flex:none;}
+.zhihuE_LvCard.is-on {border-color:#dcdcdc;}
+.zhihuE_LvCard:not(.is-on) .zhihuE_LvName {color:#6e6e73;}
 .zhihuE_LvCardMain {min-width:0;}
 .zhihuE_LvCardTop {display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap;}
 .zhihuE_LvTag {flex:none;min-width:36px;padding:2px 8px;border-radius:999px;background:#1d1d1f;color:#fff;font-size:12px;font-weight:600;text-align:center;}
