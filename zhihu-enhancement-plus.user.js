@@ -3,7 +3,7 @@
 // @name:zh-CN   知乎增强优化
 // @name:zh-TW   知乎增強優化
 // @name:en      Zhihu Enhancement Plus
-// @version      1.7.22
+// @version      1.7.23
 // @author       local (based on X.I.U / 知乎增强 2.2.15)
 // @description  用于知乎网页。可开关：低饱和配色、隐藏右侧栏、清空或锁定标签标题与图标、净化搜索热门、默认/一键/点空白收起回答与评论、右键回顶、展开问题描述、置顶发布时间、信息流类型标签、直达问题、按用户与噪音评分（可显示得分、可过滤）及关键词、按类别屏蔽视频/文章/想法/话题/盐选/相关搜索/热榜杂项。设置可 JSON 导入导出。始终生效：关登录弹窗、原图、站外直链、点浮层关评论、去掉搜索高亮链接。基于 XIU2「知乎增强」2.2.15（GPL-3.0），无远程外部脚本。
 // @description:zh-CN 用于知乎网页。可开关：低饱和配色、隐藏右侧栏、清空或锁定标签标题与图标、净化搜索热门、默认/一键/点空白收起回答与评论、右键回顶、展开问题描述、置顶发布时间、信息流类型标签、直达问题、按用户与噪音评分（可显示得分、可过滤）及关键词、按类别屏蔽视频/文章/想法/话题/盐选/相关搜索/热榜杂项。设置可 JSON 导入导出。始终生效：关登录弹窗、原图、站外直链、点浮层关评论、去掉搜索高亮链接。基于 XIU2「知乎增强」2.2.15（GPL-3.0），无远程外部脚本。
@@ -89,7 +89,7 @@ const MENU_ITEMS = [
     { key: 'menu_customBlockUsers',    label: '编辑屏蔽用户',         tip: '自定义屏蔽用户',   def: DEFAULT_BLOCK_USERS, kind: 'users' },
     { key: 'menu_noiseScore',          label: '噪音评分',             tip: '给信息流打噪音分。过滤和显示得分都要先开这项。', def: true },
     { key: 'menu_blockKeywords',       label: '噪音过滤',             tip: '按分数隐藏高噪音、降权中噪音。必须先开启评分。', def: true },
-    { key: 'menu_noiseBadge',          label: '显示噪音得分',         tip: '每条内容显示分数，分越高标识越鲜艳。必须先开启评分。', def: true },
+    { key: 'menu_noiseBadge',          label: '显示噪音得分',         tip: '每条内容显示分数，0 分不标。分越高标识越鲜艳。必须先开启评分。', def: true },
     { key: 'menu_customBlockKeywords', label: '编辑屏蔽关键词',       tip: '自定义词加权到噪音分', def: DEFAULT_BLOCK_KEYWORDS, kind: 'keywords' },
     {
         key: 'menu_noiseLevel',
@@ -2391,6 +2391,11 @@ function ensureCardPosition(card) {
 }
 
 function paintNoiseBadge(card, score, titleCss) {
+    if (score <= 0) {
+        const old = card.querySelector('.zhihu-plus-noise-tag');
+        if (old) old.remove();
+        return;
+    }
     ensureCardPosition(card);
     let tag = card.querySelector('.zhihu-plus-noise-tag');
     if (!tag) {
