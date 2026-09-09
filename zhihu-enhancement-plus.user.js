@@ -3,7 +3,7 @@
 // @name:zh-CN   知乎增强优化
 // @name:zh-TW   知乎增強優化
 // @name:en      Zhihu Enhancement Plus
-// @version      1.7.11
+// @version      1.7.12
 // @author       local (based on X.I.U / 知乎增强 2.2.15)
 // @description  用于知乎网页。可开关：低饱和配色、隐藏右侧栏、清空或锁定标签标题与图标、净化搜索热门、默认/一键/点空白收起回答与评论、右键回顶、展开问题描述、置顶发布时间、信息流类型标签、直达问题、按用户与噪音档位及关键词过滤、按类别屏蔽视频/文章/想法/话题/盐选/相关搜索/热榜杂项。设置可 JSON 导入导出。始终生效：关登录弹窗、原图、站外直链、点浮层关评论、去掉搜索高亮链接。基于 XIU2「知乎增强」2.2.15（GPL-3.0），无远程外部脚本。
 // @description:zh-CN 用于知乎网页。可开关：低饱和配色、隐藏右侧栏、清空或锁定标签标题与图标、净化搜索热门、默认/一键/点空白收起回答与评论、右键回顶、展开问题描述、置顶发布时间、信息流类型标签、直达问题、按用户与噪音档位及关键词过滤、按类别屏蔽视频/文章/想法/话题/盐选/相关搜索/热榜杂项。设置可 JSON 导入导出。始终生效：关登录弹窗、原图、站外直链、点浮层关评论、去掉搜索高亮链接。基于 XIU2「知乎增强」2.2.15（GPL-3.0），无远程外部脚本。
@@ -577,6 +577,73 @@ function settingsNoiseFormulaHtml() {
     </div>`;
 }
 
+function mountNoiseTestPane(container) {
+    container.insertAdjacentHTML('beforeend', `<div class="zhihuE_Ts">
+        <p class="zhihuE_StPaneTips">粘贴标题，摘要可选。和信息流同一套公式、当前档位与词库。只填一栏时按标题计分。</p>
+        <input class="zhihuE_TsTitle" type="text" placeholder="粘贴或输入标题" />
+        <textarea class="zhihuE_TsBody" placeholder="粘贴摘要或正文（可选，信息流只取前 280 字）"></textarea>
+        <div class="zhihuE_TsBoard">
+            <div class="zhihuE_TsHero">
+                <div class="zhihuE_TsScore">—</div>
+                <div class="zhihuE_TsVerdict">先粘贴一段内容</div>
+            </div>
+            <div class="zhihuE_TsSub">标题 — · 摘要 —</div>
+            <div class="zhihuE_TsGrid"></div>
+            <p class="zhihuE_TsHint"></p>
+        </div>
+    </div>`);
+    const root = container.querySelector('.zhihuE_Ts:last-child');
+    const titleEl = root.querySelector('.zhihuE_TsTitle');
+    const bodyEl = root.querySelector('.zhihuE_TsBody');
+    const scoreEl = root.querySelector('.zhihuE_TsScore');
+    const verdictEl = root.querySelector('.zhihuE_TsVerdict');
+    const subEl = root.querySelector('.zhihuE_TsSub');
+    const gridEl = root.querySelector('.zhihuE_TsGrid');
+    const hintEl = root.querySelector('.zhihuE_TsHint');
+    const board = root.querySelector('.zhihuE_TsBoard');
+
+    const run = () => {
+        noiseIndex = null;
+        let title = titleEl.value.trim();
+        let body = bodyEl.value.trim();
+        if (!title && body) {
+            title = body;
+            body = '';
+        }
+        if (!title) {
+            scoreEl.textContent = '—';
+            verdictEl.textContent = '先粘贴一段内容';
+            subEl.textContent = '标题 — · 摘要 —';
+            gridEl.innerHTML = '';
+            hintEl.textContent = '';
+            board.className = 'zhihuE_TsBoard';
+            return;
+        }
+        const { final, titleScore, bodyScore } = scoreFeedNoise(title, body);
+        const rounded = Math.round(final);
+        const verdict = noiseVerdict(final);
+        scoreEl.textContent = String(rounded);
+        verdictEl.textContent = verdict.name;
+        subEl.textContent = `标题 ${Math.round(titleScore.final)} · 摘要 ${body ? Math.round(bodyScore.final) : '—'}`;
+        const parts = titleScore;
+        gridEl.innerHTML = [
+            ['K', '关键词', parts.K],
+            ['C', '分类', parts.C],
+            ['E', '情绪', parts.E],
+            ['S', '争议', parts.S],
+            ['B', '标题党', parts.B],
+            ['V', '价值', parts.V]
+        ].map(([k, name, v]) => `<div class="zhihuE_TsItem"><b>${k}</b>${name}<span>${Math.round(v)}</span></div>`).join('');
+        board.className = `zhihuE_TsBoard is-${verdict.id}`;
+        hintEl.textContent = menuValue('menu_blockKeywords')
+            ? '分项来自标题。信息流刷新后才会按此结果处理卡片。'
+            : '噪音过滤总开关已关闭，信息流不会处理，但分数仍按当前词库计算。';
+    };
+
+    titleEl.addEventListener('input', run);
+    bodyEl.addEventListener('input', run);
+}
+
 function mountListEditor(container, { storageKey, placeholder, tips }) {
     let list = [...(menuValue(storageKey) || [])];
     let off = readListOff(storageKey);
@@ -1130,6 +1197,24 @@ function openSettingsPanel() {
 .zhihuE_FxItem b {display:inline-block;min-width:18px;margin-right:6px;font-size:14px;}
 .zhihuE_FxItem span {display:block;margin-top:6px;font-size:12px;line-height:1.55;color:#8a8a8a;font-weight:400;}
 .zhihuE_FxNote {margin:12px 0 0;font-size:12px;line-height:1.65;color:#8a8a8a;}
+.zhihuE_Ts {display:flex;flex-direction:column;gap:12px;flex:none;}
+.zhihuE_TsTitle,.zhihuE_TsBody {width:100%;padding:12px 16px;border:1px solid #e8e8e8;border-radius:12px;background:#fafafa;font:inherit;font-size:14px;outline:none;box-sizing:border-box;}
+.zhihuE_TsTitle {height:44px;}
+.zhihuE_TsBody {min-height:140px;resize:vertical;line-height:1.65;}
+.zhihuE_TsTitle:focus,.zhihuE_TsBody:focus {border-color:#1d1d1f;background:#fff;box-shadow:0 0 0 4px rgba(29,29,31,.06);}
+.zhihuE_TsBoard {padding:20px 22px;border:1px solid #eee;border-radius:16px;background:#fafafa;}
+.zhihuE_TsBoard.is-keep {background:#f7faf7;border-color:#d7e6d7;}
+.zhihuE_TsBoard.is-demote {background:#faf8f3;border-color:#eadfc8;}
+.zhihuE_TsBoard.is-hide {background:#faf5f5;border-color:#e8d4d4;}
+.zhihuE_TsHero {display:flex;align-items:baseline;gap:14px;}
+.zhihuE_TsScore {font-size:42px;font-weight:650;letter-spacing:-.03em;line-height:1;font-variant-numeric:tabular-nums;}
+.zhihuE_TsVerdict {font-size:16px;font-weight:600;}
+.zhihuE_TsSub {margin-top:8px;font-size:12px;color:#8a8a8a;}
+.zhihuE_TsGrid {display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:8px;margin-top:14px;}
+.zhihuE_TsItem {padding:10px 12px;border-radius:12px;background:#fff;border:1px solid #eee;font-size:12px;color:#8a8a8a;}
+.zhihuE_TsItem b {margin-right:4px;color:#1d1d1f;font-size:13px;}
+.zhihuE_TsItem span {display:block;margin-top:4px;font-size:18px;font-weight:650;color:#1d1d1f;font-variant-numeric:tabular-nums;}
+.zhihuE_TsHint {margin:12px 0 0;font-size:12px;line-height:1.65;color:#8a8a8a;}
 .zhihuE_LvCard {display:flex;align-items:flex-start;justify-content:space-between;gap:20px;padding:18px 20px;border:1px solid #eee;border-radius:16px;background:#fafafa;flex:none;}
 .zhihuE_LvCard.is-on {background:#fff;border-color:#dcdcdc;box-shadow:0 8px 24px rgba(0,0,0,.04);}
 .zhihuE_LvCardMain {min-width:0;}
@@ -1213,7 +1298,12 @@ function openSettingsPanel() {
 [data-theme="dark"] .zhihuE_LvChip {background:#2b2f36;color:#c5ced8;}
 [data-theme="dark"] .zhihuE_Fx {background:#343a44;border-color:#3c434d;}
 [data-theme="dark"] .zhihuE_FxItem {background:#3a414c;border-color:#3c434d;}
-[data-theme="dark"] .zhihuE_FxKicker,[data-theme="dark"] .zhihuE_FxItem span,[data-theme="dark"] .zhihuE_FxNote {color:#9aa4b2;}
+[data-theme="dark"] .zhihuE_FxKicker,[data-theme="dark"] .zhihuE_FxItem span,[data-theme="dark"] .zhihuE_FxNote,[data-theme="dark"] .zhihuE_TsSub,[data-theme="dark"] .zhihuE_TsHint,[data-theme="dark"] .zhihuE_TsItem {color:#9aa4b2;}
+[data-theme="dark"] .zhihuE_TsTitle,[data-theme="dark"] .zhihuE_TsBody,[data-theme="dark"] .zhihuE_TsBoard,[data-theme="dark"] .zhihuE_TsItem {background:#343a44;border-color:#3c434d;color:#e8edf2;}
+[data-theme="dark"] .zhihuE_TsBoard.is-keep {background:#2f3a34;border-color:#3d5244;}
+[data-theme="dark"] .zhihuE_TsBoard.is-demote {background:#3a372f;border-color:#534832;}
+[data-theme="dark"] .zhihuE_TsBoard.is-hide {background:#3a3232;border-color:#534040;}
+[data-theme="dark"] .zhihuE_TsItem b,[data-theme="dark"] .zhihuE_TsItem span {color:#e8edf2;}
 [data-theme="dark"] .zhihuE_DlgCopy,[data-theme="dark"] .zhihuE_IoBtn,[data-theme="dark"] .zhihuE_LxBtn.ghost {background:#343a44;border-color:#3c434d;color:#e8edf2;}
 [data-theme="dark"] .zhihuE_DlgCopy.is-ok,[data-theme="dark"] .zhihuE_IoBtn.is-ok,[data-theme="dark"] .zhihuE_IoPrimary {background:#e8edf2;border-color:#e8edf2;color:#1d1d1f;}
 [data-theme="dark"] .zhihuE_DlgImportArea,[data-theme="dark"] .zhihuE_IoArea {background:#343a44;border-color:#3c434d;color:#e8edf2;}
@@ -1287,8 +1377,9 @@ function openSettingsPanel() {
                     <button type="button" class="zhihuE_StTab${wordTab === 'levels' ? ' is-on' : ''}" data-tab="levels">过滤档位</button>
                     <button type="button" class="zhihuE_StTab${wordTab === 'custom' ? ' is-on' : ''}" data-tab="custom">自定义词</button>
                     <button type="button" class="zhihuE_StTab${wordTab === 'lexicon' ? ' is-on' : ''}" data-tab="lexicon">噪音词库</button>
+                    <button type="button" class="zhihuE_StTab${wordTab === 'test' ? ' is-on' : ''}" data-tab="test">试算</button>
                 </div>
-                <div class="zhihuE_StPane${wordTab === 'levels' ? '' : ' is-fill'}"></div>`;
+                <div class="zhihuE_StPane${wordTab === 'levels' || wordTab === 'test' ? '' : ' is-fill'}"></div>`;
             const pane = bodyEl.querySelector('.zhihuE_StPane');
             if (wordTab === 'levels') {
                 pane.innerHTML = settingsNoiseFormulaHtml() + settingsNoiseCards().map(settingsToggleCard).join('');
@@ -1298,8 +1389,10 @@ function openSettingsPanel() {
                     placeholder: '例如：广告, 引流, [捂脸]',
                     tips: '预置词只能开关，自己加的可以开关或删除。不区分大小写，会加权到噪音分。'
                 });
-            } else {
+            } else if (wordTab === 'lexicon') {
                 mountLexiconEditor(pane);
+            } else {
+                mountNoiseTestPane(pane);
             }
             return;
         }
@@ -2136,6 +2229,19 @@ function scoreText(raw) {
     return { final, K, C: bestC, E, S, B, V };
 }
 
+function scoreFeedNoise(title, body) {
+    const titleScore = scoreText(title);
+    const bodyScore = scoreText(String(body || '').slice(0, 280));
+    const final = Math.max(titleScore.final, titleScore.final * 0.72 + bodyScore.final * 0.28);
+    return { final, titleScore, bodyScore };
+}
+
+function noiseVerdict(score) {
+    if (score >= NOISE_HIDE) return { id: 'hide', name: '会隐藏' };
+    if (score >= NOISE_DEMOTE) return { id: 'demote', name: '会降权' };
+    return { id: 'keep', name: '会保留' };
+}
+
 function injectNoiseStyles() {
     injectStyle('zhihu-plus-noise', `
         .zhihu-plus-noise-hide {display: none !important;}
@@ -2165,9 +2271,7 @@ function applyNoiseToCard(card, titleCss) {
     if (!card || card.dataset.zhihuPlusNoise) return;
     const { title, body } = cardNoiseText(card, titleCss);
     if (!title && !body) return;
-    const titleScore = scoreText(title);
-    const bodyScore = scoreText(body);
-    const final = Math.max(titleScore.final, titleScore.final * 0.72 + bodyScore.final * 0.28);
+    const { final } = scoreFeedNoise(title, body);
     card.dataset.zhihuPlusNoise = String(Math.round(final));
     if (final >= NOISE_HIDE) {
         card.classList.add('zhihu-plus-noise-hide');
