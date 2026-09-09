@@ -3,7 +3,7 @@
 // @name:zh-CN   知乎增强优化
 // @name:zh-TW   知乎增強優化
 // @name:en      Zhihu Enhancement Plus
-// @version      1.7.21
+// @version      1.7.22
 // @author       local (based on X.I.U / 知乎增强 2.2.15)
 // @description  用于知乎网页。可开关：低饱和配色、隐藏右侧栏、清空或锁定标签标题与图标、净化搜索热门、默认/一键/点空白收起回答与评论、右键回顶、展开问题描述、置顶发布时间、信息流类型标签、直达问题、按用户与噪音评分（可显示得分、可过滤）及关键词、按类别屏蔽视频/文章/想法/话题/盐选/相关搜索/热榜杂项。设置可 JSON 导入导出。始终生效：关登录弹窗、原图、站外直链、点浮层关评论、去掉搜索高亮链接。基于 XIU2「知乎增强」2.2.15（GPL-3.0），无远程外部脚本。
 // @description:zh-CN 用于知乎网页。可开关：低饱和配色、隐藏右侧栏、清空或锁定标签标题与图标、净化搜索热门、默认/一键/点空白收起回答与评论、右键回顶、展开问题描述、置顶发布时间、信息流类型标签、直达问题、按用户与噪音评分（可显示得分、可过滤）及关键词、按类别屏蔽视频/文章/想法/话题/盐选/相关搜索/热榜杂项。设置可 JSON 导入导出。始终生效：关登录弹窗、原图、站外直链、点浮层关评论、去掉搜索高亮链接。基于 XIU2「知乎增强」2.2.15（GPL-3.0），无远程外部脚本。
@@ -2423,7 +2423,7 @@ function noisePartRows(parts) {
 
 function noiseHitChips(list, fmt) {
     if (!list || !list.length) return '<span class="zhihuE_NxEmpty">无</span>';
-    const max = 18;
+    const max = 36;
     const shown = list.slice(0, max);
     const extra = list.length - shown.length;
     return shown.map(fmt).join('') + (extra > 0 ? `<span class="zhihuE_NxMore">+${extra}</span>` : '');
@@ -2471,16 +2471,20 @@ function noiseExplainHtml(title, body, result) {
             <p class="zhihuE_NxMix">${used === 'title' ? '本条取标题分' : '本条取标题与摘要加权'}</p>
         </div>
     </div>
-    <p class="zhihuE_NxFormula">clamp(${n(w.k)}K + ${n(w.c)}C + ${n(w.e)}E + ${n(w.s)}S + ${n(w.b)}B − ${n(w.v)}V)</p>
-    <div class="zhihuE_NxRows">${rows.map(bar).join('')}</div>
-    <div class="zhihuE_NxHits">
-        <div class="zhihuE_NxBlock"><span>关键词</span><div>${noiseHitChips(hits.words, chip)}</div></div>
-        <div class="zhihuE_NxBlock"><span>情绪</span><div>${noiseHitChips(hits.emotion, chip)}</div></div>
-        <div class="zhihuE_NxBlock"><span>争议</span><div>${noiseHitChips(hits.controversy.map(word => ({ word })), chip)}</div></div>
-        <div class="zhihuE_NxBlock"><span>标题党</span><div>${noiseHitChips(hits.clickbait.map(word => ({ word })), chip)}</div></div>
-        <div class="zhihuE_NxBlock"><span>价值</span><div>${noiseHitChips(hits.value, chip)}</div></div>
+    <div class="zhihuE_NxBody">
+        <div class="zhihuE_NxCol">
+            <p class="zhihuE_NxFormula">clamp(${n(w.k)}K + ${n(w.c)}C + ${n(w.e)}E + ${n(w.s)}S + ${n(w.b)}B − ${n(w.v)}V)</p>
+            <div class="zhihuE_NxRows">${rows.map(bar).join('')}</div>
+        </div>
+        <div class="zhihuE_NxHits">
+            <div class="zhihuE_NxBlock"><span>关键词</span><div>${noiseHitChips(hits.words, chip)}</div></div>
+            <div class="zhihuE_NxBlock"><span>情绪</span><div>${noiseHitChips(hits.emotion, chip)}</div></div>
+            <div class="zhihuE_NxBlock"><span>争议</span><div>${noiseHitChips(hits.controversy.map(word => ({ word })), chip)}</div></div>
+            <div class="zhihuE_NxBlock"><span>标题党</span><div>${noiseHitChips(hits.clickbait.map(word => ({ word })), chip)}</div></div>
+            <div class="zhihuE_NxBlock"><span>价值</span><div>${noiseHitChips(hits.value, chip)}</div></div>
+        </div>
     </div>
-    ${title ? `<p class="zhihuE_NxQuote">${escapeHtml(title.slice(0, 120))}</p>` : ''}
+    ${title ? `<p class="zhihuE_NxQuote">${escapeHtml(title.slice(0, 180))}</p>` : ''}
     ${notes.length ? `<p class="zhihuE_NxNote">${notes.map(escapeHtml).join(' · ')}</p>` : ''}`;
 }
 
@@ -2497,37 +2501,42 @@ function showNoiseExplain(card, titleCss) {
 :host {all:initial;display:block;position:fixed;inset:0;z-index:2147483646;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Noto Sans SC","Microsoft YaHei",sans-serif;color:#1d1d1f;line-height:1.5;}
 *,*::before,*::after {box-sizing:border-box;}
 button {font:inherit;color:inherit;}
-.zhihuE_NxMask {position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(18,18,18,.42);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);}
-.zhihuE_NxCard {width:min(520px,96vw);max-height:min(820px,92vh);overflow:auto;padding:28px 30px 24px;border-radius:28px;background:#fff;box-shadow:0 32px 90px rgba(0,0,0,.28);}
-.zhihuE_NxHead {display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:18px;}
+.zhihuE_NxMask {position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(18,18,18,.42);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);}
+.zhihuE_NxCard {width:min(1120px,96vw);max-height:min(960px,94vh);overflow:auto;padding:36px 40px 32px;border-radius:32px;background:#fff;box-shadow:0 32px 90px rgba(0,0,0,.28);}
+.zhihuE_NxHead {display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:22px;}
 .zhihuE_NxKicker {margin:0 0 4px;font-size:11px;letter-spacing:.18em;color:#aaa;text-transform:uppercase;}
-.zhihuE_NxHead h3 {margin:0;font-size:22px;font-weight:650;}
-.zhihuE_NxClose {flex:none;width:34px;height:34px;border:0;border-radius:50%;background:#f4f4f5;color:#666;cursor:pointer;font-size:18px;line-height:1;}
+.zhihuE_NxHead h3 {margin:0;font-size:26px;font-weight:650;}
+.zhihuE_NxClose {flex:none;width:36px;height:36px;border:0;border-radius:50%;background:#f4f4f5;color:#666;cursor:pointer;font-size:18px;line-height:1;}
 .zhihuE_NxClose:hover {background:#1d1d1f;color:#fff;}
-.zhihuE_NxHero {display:flex;align-items:center;gap:18px;padding:18px 20px;border-radius:20px;margin-bottom:16px;border:1px solid #eee;}
+.zhihuE_NxHero {display:flex;align-items:center;gap:22px;padding:22px 24px;border-radius:22px;margin-bottom:22px;border:1px solid #eee;}
 .zhihuE_NxHero.is-keep {background:#f6faf6;border-color:#dbe8db;}
 .zhihuE_NxHero.is-demote {background:#faf7f1;border-color:#eadfc8;}
 .zhihuE_NxHero.is-hide {background:#faf5f5;border-color:#ead4d4;}
-.zhihuE_NxScore {font-size:56px;font-weight:650;letter-spacing:-.04em;line-height:1;font-variant-numeric:tabular-nums;}
-.zhihuE_NxVerdict {font-size:16px;font-weight:650;}
-.zhihuE_NxMix {margin:4px 0 0;font-size:12px;line-height:1.55;color:#8a8a8a;}
-.zhihuE_NxFormula {margin:0 0 14px;font-size:13px;color:#666;font-variant-numeric:tabular-nums;}
-.zhihuE_NxRows {display:flex;flex-direction:column;gap:10px;}
-.zhihuE_NxRow {display:grid;grid-template-columns:28px 1fr auto;gap:10px;align-items:center;}
-.zhihuE_NxKey {font-size:13px;font-weight:700;}
-.zhihuE_NxName {font-size:12px;color:#8a8a8a;margin-bottom:4px;}
-.zhihuE_NxTrack {height:6px;border-radius:999px;background:#f0f0f0;overflow:hidden;}
+.zhihuE_NxScore {font-size:64px;font-weight:650;letter-spacing:-.04em;line-height:1;font-variant-numeric:tabular-nums;}
+.zhihuE_NxVerdict {font-size:18px;font-weight:650;}
+.zhihuE_NxMix {margin:6px 0 0;font-size:13px;line-height:1.55;color:#8a8a8a;}
+.zhihuE_NxBody {display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.95fr);gap:8px 40px;align-items:start;}
+.zhihuE_NxFormula {margin:0 0 16px;font-size:14px;color:#666;font-variant-numeric:tabular-nums;}
+.zhihuE_NxRows {display:flex;flex-direction:column;gap:12px;}
+.zhihuE_NxRow {display:grid;grid-template-columns:28px 1fr auto;gap:12px;align-items:center;}
+.zhihuE_NxKey {font-size:14px;font-weight:700;}
+.zhihuE_NxName {font-size:12px;color:#8a8a8a;margin-bottom:5px;}
+.zhihuE_NxTrack {height:7px;border-radius:999px;background:#f0f0f0;overflow:hidden;}
 .zhihuE_NxTrack i {display:block;height:100%;border-radius:inherit;background:#1d1d1f;}
-.zhihuE_NxMath {font-size:12px;color:#8a8a8a;font-variant-numeric:tabular-nums;white-space:nowrap;}
+.zhihuE_NxMath {font-size:13px;color:#8a8a8a;font-variant-numeric:tabular-nums;white-space:nowrap;}
 .zhihuE_NxMath b {color:#1d1d1f;font-weight:650;margin-left:6px;}
-.zhihuE_NxHits {margin-top:18px;display:flex;flex-direction:column;gap:12px;}
+.zhihuE_NxHits {display:grid;grid-template-columns:1fr 1fr;gap:14px 16px;margin:0;}
 .zhihuE_NxBlock span {display:block;font-size:11px;letter-spacing:.12em;color:#aaa;margin-bottom:6px;text-transform:uppercase;}
 .zhihuE_NxBlock div {display:flex;flex-wrap:wrap;gap:6px;}
 .zhihuE_NxChip {display:inline-flex;align-items:center;gap:6px;padding:4px 8px 4px 10px;border-radius:999px;background:#f6f6f6;font-size:12px;}
 .zhihuE_NxChip b {font-weight:650;color:#888;}
 .zhihuE_NxEmpty,.zhihuE_NxMore {font-size:12px;color:#bbb;}
-.zhihuE_NxQuote {margin:16px 0 0;font-size:13px;line-height:1.65;color:#666;}
-.zhihuE_NxNote {margin:12px 0 0;font-size:12px;line-height:1.65;color:#8a8a8a;}
+.zhihuE_NxQuote {margin:20px 0 0;font-size:14px;line-height:1.65;color:#666;}
+.zhihuE_NxNote {margin:10px 0 0;font-size:12px;line-height:1.65;color:#8a8a8a;}
+@media (max-width: 820px) {
+  .zhihuE_NxCard {width:min(720px,96vw);padding:24px 22px 20px;border-radius:24px;}
+  .zhihuE_NxBody,.zhihuE_NxHits {grid-template-columns:1fr;}
+}
 [data-theme="dark"] .zhihuE_NxCard {background:#2b2f36;color:#e8edf2;}
 [data-theme="dark"] .zhihuE_NxClose,[data-theme="dark"] .zhihuE_NxChip,[data-theme="dark"] .zhihuE_NxTrack {background:#343a44;color:#c5ced8;}
 [data-theme="dark"] .zhihuE_NxClose:hover {background:#e8edf2;color:#1d1d1f;}
