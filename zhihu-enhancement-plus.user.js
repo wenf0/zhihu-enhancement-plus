@@ -3,7 +3,7 @@
 // @name:zh-CN   知乎增强优化
 // @name:zh-TW   知乎增強優化
 // @name:en      Zhihu Enhancement Plus
-// @version      1.7.27
+// @version      1.7.28
 // @author       local (based on X.I.U / 知乎增强 2.2.15)
 // @description  用于知乎网页。可开关：低饱和配色、隐藏右侧栏、清空或锁定标签标题与图标、净化搜索热门、默认/一键/点空白收起回答与评论、右键回顶、展开问题描述、置顶发布时间、信息流类型标签、直达问题、按用户与噪音评分（可显示得分、可过滤）及关键词、按类别屏蔽视频/文章/想法/话题/盐选/相关搜索/热榜杂项。设置可 JSON 导入导出。始终生效：关登录弹窗、原图、站外直链、点浮层关评论、去掉搜索高亮链接。基于 XIU2「知乎增强」2.2.15（GPL-3.0），无远程外部脚本。
 // @description:zh-CN 用于知乎网页。可开关：低饱和配色、隐藏右侧栏、清空或锁定标签标题与图标、净化搜索热门、默认/一键/点空白收起回答与评论、右键回顶、展开问题描述、置顶发布时间、信息流类型标签、直达问题、按用户与噪音评分（可显示得分、可过滤）及关键词、按类别屏蔽视频/文章/想法/话题/盐选/相关搜索/热榜杂项。设置可 JSON 导入导出。始终生效：关登录弹窗、原图、站外直链、点浮层关评论、去掉搜索高亮链接。基于 XIU2「知乎增强」2.2.15（GPL-3.0），无远程外部脚本。
@@ -1430,7 +1430,8 @@ button,input,textarea {font:inherit;color:inherit;}
 
     const renderBody = () => {
         const scoreOn = !!menuValue('menu_noiseScore');
-        const fill = current === 'block-users' || (current === 'block-words' && scoreOn) || current === 'data';
+        const usersOn = !!menuValue('menu_blockUsers');
+        const fill = (current === 'block-users' && usersOn) || (current === 'block-words' && scoreOn) || current === 'data';
         bodyEl.classList.toggle('is-fill', fill);
         if (current === 'look') {
             bodyEl.innerHTML = lookKeys.map(key => settingsSwitchRow(key)).join('');
@@ -1441,7 +1442,10 @@ button,input,textarea {font:inherit;color:inherit;}
             return;
         }
         if (current === 'block-users') {
-            bodyEl.innerHTML = settingsSwitchRow('menu_blockUsers');
+            bodyEl.innerHTML = settingsSwitchRow('menu_blockUsers') + (usersOn
+                ? ''
+                : '<p class="zhihuE_StPaneTips">关闭后不再屏蔽名单中的用户。名单已折叠，打开后仍用上次的名单。</p>');
+            if (!usersOn) return;
             mountListEditor(bodyEl, {
                 storageKey: 'menu_customBlockUsers',
                 placeholder: '例如：盐选推荐, 故事档案局',
@@ -1519,7 +1523,7 @@ button,input,textarea {font:inherit;color:inherit;}
         const key = sw.dataset.key;
         const next = !menuValue(key);
         menuSet(key, next);
-        if (key === 'menu_noiseScore') {
+        if (key === 'menu_noiseScore' || key === 'menu_blockUsers') {
             renderBody();
             return;
         }
