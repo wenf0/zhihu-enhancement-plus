@@ -3,7 +3,7 @@
 // @name:zh-CN   知乎增强优化
 // @name:zh-TW   知乎增強優化
 // @name:en      Zhihu Enhancement Plus
-// @version      1.7.24
+// @version      1.7.25
 // @author       local (based on X.I.U / 知乎增强 2.2.15)
 // @description  用于知乎网页。可开关：低饱和配色、隐藏右侧栏、清空或锁定标签标题与图标、净化搜索热门、默认/一键/点空白收起回答与评论、右键回顶、展开问题描述、置顶发布时间、信息流类型标签、直达问题、按用户与噪音评分（可显示得分、可过滤）及关键词、按类别屏蔽视频/文章/想法/话题/盐选/相关搜索/热榜杂项。设置可 JSON 导入导出。始终生效：关登录弹窗、原图、站外直链、点浮层关评论、去掉搜索高亮链接。基于 XIU2「知乎增强」2.2.15（GPL-3.0），无远程外部脚本。
 // @description:zh-CN 用于知乎网页。可开关：低饱和配色、隐藏右侧栏、清空或锁定标签标题与图标、净化搜索热门、默认/一键/点空白收起回答与评论、右键回顶、展开问题描述、置顶发布时间、信息流类型标签、直达问题、按用户与噪音评分（可显示得分、可过滤）及关键词、按类别屏蔽视频/文章/想法/话题/盐选/相关搜索/热榜杂项。设置可 JSON 导入导出。始终生效：关登录弹窗、原图、站外直链、点浮层关评论、去掉搜索高亮链接。基于 XIU2「知乎增强」2.2.15（GPL-3.0），无远程外部脚本。
@@ -2489,9 +2489,8 @@ function noiseExplainHtml(title, body, result, href) {
             <div class="zhihuE_NxBlock"><span>价值</span><div>${noiseHitChips(hits.value, chip)}</div></div>
         </div>
     </div>
-    ${title ? (href
-        ? `<p class="zhihuE_NxQuote"><a href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer">${escapeHtml(title.slice(0, 180))}</a></p>`
-        : `<p class="zhihuE_NxQuote">${escapeHtml(title.slice(0, 180))}</p>`) : ''}
+    ${title ? `<p class="zhihuE_NxQuote">${escapeHtml(title.slice(0, 180))}</p>` : ''}
+    ${href ? `<p class="zhihuE_NxLink">${escapeHtml(href)}</p>` : ''}
     ${notes.length ? `<p class="zhihuE_NxNote">${notes.map(escapeHtml).join(' · ')}</p>` : ''}`;
 }
 
@@ -2508,7 +2507,6 @@ function showNoiseExplain(card, titleCss) {
 :host {all:initial;display:block;position:fixed;inset:0;z-index:2147483646;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Noto Sans SC","Microsoft YaHei",sans-serif;color:#1d1d1f;line-height:1.5;}
 *,*::before,*::after {box-sizing:border-box;}
 button {font:inherit;color:inherit;}
-a {font:inherit;}
 .zhihuE_NxMask {position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(18,18,18,.42);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);}
 .zhihuE_NxCard {width:min(1120px,96vw);max-height:min(960px,94vh);overflow:auto;padding:36px 40px 32px;border-radius:32px;background:#fff;box-shadow:0 32px 90px rgba(0,0,0,.28);}
 .zhihuE_NxHead {display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:22px;}
@@ -2540,8 +2538,7 @@ a {font:inherit;}
 .zhihuE_NxChip b {font-weight:650;color:#888;}
 .zhihuE_NxEmpty,.zhihuE_NxMore {font-size:12px;color:#bbb;}
 .zhihuE_NxQuote {margin:20px 0 0;font-size:14px;line-height:1.65;color:#666;}
-.zhihuE_NxQuote a {color:#1764c8;text-decoration:none;}
-.zhihuE_NxQuote a:hover {text-decoration:underline;text-underline-offset:3px;}
+.zhihuE_NxLink {margin:6px 0 0;font-size:12px;line-height:1.5;color:#8a8a8a;word-break:break-all;user-select:all;}
 .zhihuE_NxNote {margin:10px 0 0;font-size:12px;line-height:1.65;color:#8a8a8a;}
 @media (max-width: 820px) {
   .zhihuE_NxCard {width:min(720px,96vw);padding:24px 22px 20px;border-radius:24px;}
@@ -2554,8 +2551,7 @@ a {font:inherit;}
 [data-theme="dark"] .zhihuE_NxHero.is-keep {background:#2f3a34;border-color:#3d5244;}
 [data-theme="dark"] .zhihuE_NxHero.is-demote {background:#3a372f;border-color:#534832;}
 [data-theme="dark"] .zhihuE_NxHero.is-hide {background:#3a3232;border-color:#534040;}
-[data-theme="dark"] .zhihuE_NxKicker,[data-theme="dark"] .zhihuE_NxMix,[data-theme="dark"] .zhihuE_NxName,[data-theme="dark"] .zhihuE_NxMath,[data-theme="dark"] .zhihuE_NxNote,[data-theme="dark"] .zhihuE_NxBlock span {color:#9aa4b2;}
-[data-theme="dark"] .zhihuE_NxQuote a {color:#7eb6ff;}
+[data-theme="dark"] .zhihuE_NxKicker,[data-theme="dark"] .zhihuE_NxMix,[data-theme="dark"] .zhihuE_NxName,[data-theme="dark"] .zhihuE_NxMath,[data-theme="dark"] .zhihuE_NxNote,[data-theme="dark"] .zhihuE_NxLink,[data-theme="dark"] .zhihuE_NxBlock span {color:#9aa4b2;}
 [data-theme="dark"] .zhihuE_NxTrack i,[data-theme="dark"] .zhihuE_NxMath b {background:#e8edf2;color:#e8edf2;}
 </style>
 <div class="zhihuE_NxMask"><div class="zhihuE_NxCard"></div></div>`;
