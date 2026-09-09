@@ -3,7 +3,7 @@
 // @name:zh-CN   知乎增强优化
 // @name:zh-TW   知乎增強優化
 // @name:en      Zhihu Enhancement Plus
-// @version      1.7.5
+// @version      1.7.6
 // @author       local (based on X.I.U / 知乎增强 2.2.15)
 // @description  用于知乎网页。可开关：低饱和配色、隐藏右侧栏、清空或锁定标签标题与图标、净化搜索热门、默认/一键/点空白收起回答与评论、右键回顶、展开问题描述、置顶发布时间、信息流类型标签、直达问题、按用户与噪音档位及关键词过滤、按类别屏蔽视频/文章/想法/话题/盐选/相关搜索/热榜杂项。设置可 JSON 导入导出。始终生效：关登录弹窗、原图、站外直链、点浮层关评论、去掉搜索高亮链接。基于 XIU2「知乎增强」2.2.15（GPL-3.0），无远程外部脚本。
 // @description:zh-CN 用于知乎网页。可开关：低饱和配色、隐藏右侧栏、清空或锁定标签标题与图标、净化搜索热门、默认/一键/点空白收起回答与评论、右键回顶、展开问题描述、置顶发布时间、信息流类型标签、直达问题、按用户与噪音档位及关键词过滤、按类别屏蔽视频/文章/想法/话题/盐选/相关搜索/热榜杂项。设置可 JSON 导入导出。始终生效：关登录弹窗、原图、站外直链、点浮层关评论、去掉搜索高亮链接。基于 XIU2「知乎增强」2.2.15（GPL-3.0），无远程外部脚本。
@@ -128,12 +128,14 @@ const MENU_ITEMS = [
 
 const cache = Object.create(null);
 const menuCommandIds = [];
+let noiseIndex = null;
 
 /* GM_setValue 跟脚本安装 ID 绑定，卸载重装会丢。再备份到知乎域名 localStorage。 */
 const SETTINGS_BACKUP_KEY = 'zhihu-enhancement-plus:settings:v1';
 const SETTINGS_GM_FLAG = 'zhihu_plus_persist_v1';
 const SETTINGS_KIND = 'zhihu-enhancement-plus-settings';
-const SETTINGS_EXTRA_KEYS = ['menu_kw_pack_v1', 'noise_lexicon_v1'];
+const LEXICON_KEY = 'noise_lexicon_v1';
+const SETTINGS_EXTRA_KEYS = ['menu_kw_pack_v1', LEXICON_KEY];
 
 function pageLocalStorage() {
     try {
@@ -160,13 +162,45 @@ function settingsKnownKeys() {
     return keys;
 }
 
+function plainJson(value) {
+    return JSON.parse(JSON.stringify(value));
+}
+
+function snapshotLexicon() {
+    try {
+        return plainJson(getActiveLexicon());
+    } catch (err) {
+        const saved = GM_getValue(LEXICON_KEY);
+        return saved != null ? plainJson(saved) : null;
+    }
+}
+
+function normalizeImportedLexicon(value) {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return value;
+    const touched = new Set(value.touched || []);
+    if (value.cats && typeof value.cats === 'object') {
+        for (const id of Object.keys(value.cats)) touched.add('cat:' + id);
+    }
+    if (value.emotion) touched.add('emotion');
+    if (value.controversy) touched.add('controversy');
+    if (value.clickbait) touched.add('clickbait');
+    if (value.value) touched.add('value');
+    return Object.assign({}, value, { touched: [...touched] });
+}
+
 function snapshotSettings() {
     const values = {};
-    for (const item of MENU_ITEMS) values[item.key] = GM_getValue(item.key);
+    for (const item of MENU_ITEMS) {
+        if (item.kind === 'group' || item.kind === 'lexicon') continue;
+        values[item.key] = GM_getValue(item.key);
+    }
     for (const key of SETTINGS_EXTRA_KEYS) {
+        if (key === LEXICON_KEY) continue;
         const value = GM_getValue(key);
         if (value != null) values[key] = value;
     }
+    const lexicon = snapshotLexicon();
+    if (lexicon) values[LEXICON_KEY] = lexicon;
     const script = (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version) || '';
     return { v: 1, kind: SETTINGS_KIND, script, t: Date.now(), values };
 }
@@ -181,7 +215,7 @@ function writeSettingsBackup() {
 
 function isValidSettingValue(key, value) {
     if (key === 'menu_kw_pack_v1') return typeof value === 'boolean';
-    if (key === 'noise_lexicon_v1') return !!(value && typeof value === 'object' && !Array.isArray(value));
+    if (key === LEXICON_KEY) return !!(value && typeof value === 'object' && !Array.isArray(value));
     const item = MENU_ITEMS.find(x => x.key === key);
     if (!item) return false;
     if (item.kind === 'users' || item.kind === 'keywords') {
@@ -210,11 +244,15 @@ function applyImportedSettings(values) {
     let n = 0;
     for (const [key, value] of Object.entries(values)) {
         if (!known.has(key) || !isValidSettingValue(key, value)) continue;
-        cache[key] = value;
-        GM_setValue(key, value);
+        const next = key === LEXICON_KEY ? normalizeImportedLexicon(value) : value;
+        cache[key] = next;
+        GM_setValue(key, next);
         n++;
     }
-    if (n) writeSettingsBackup();
+    if (n) {
+        noiseIndex = null;
+        writeSettingsBackup();
+    }
     return n;
 }
 
@@ -648,7 +686,7 @@ function openSettingsIoDialog() {
     <div class="zhihuE_IoHead">
       <div>
         <h3 class="zhihuE_IoTitle">导入 / 导出 JSON</h3>
-        <p class="zhihuE_IoTips">包含全部开关、屏蔽用户/关键词和噪音词库。导入会覆盖当前配置并刷新页面。</p>
+        <p class="zhihuE_IoTips">包含全部开关、屏蔽用户/关键词，以及完整噪音词库（<code>noise_lexicon_v1</code>：分类词、排除词、权重）。导入会覆盖当前配置并刷新页面。</p>
       </div>
       <button type="button" class="zhihuE_IoClose" aria-label="关闭">×</button>
     </div>
@@ -2030,9 +2068,6 @@ const NOISE_VALUE = Object.assign(
     noiseWords(6, ['技术', '科学', '医学', '学术', '利率', '公司业绩'])
 );
 
-let noiseIndex = null;
-const LEXICON_KEY = 'noise_lexicon_v1';
-
 function cloneWords(map) {
     return Object.assign(Object.create(null), map || {});
 }
@@ -2089,6 +2124,8 @@ function saveLexicon(data) {
     noiseIndex = null;
     writeSettingsBackup();
 }
+
+writeSettingsBackup();
 
 function touchLexicon(data, token) {
     const set = new Set(data.touched || []);
