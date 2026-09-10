@@ -6,6 +6,8 @@ Chrome 扩展（Manifest V3）：噪音评分过滤（结巴分词整词匹配�
 
 互联网内容噪音屏蔽的论文精读清单（DOI / 开放 PDF）：[docs/content-noise-readings.md](docs/content-noise-readings.md)。
 
+隐私政策：[docs/privacy.md](docs/privacy.md)。商店上架素材说明：[store/README.md](store/README.md)。
+
 ## 工作流
 
 ```mermaid

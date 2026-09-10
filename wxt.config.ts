@@ -20,8 +20,18 @@ export default defineConfig({
     version: EXT_VERSION,
     permissions: ['storage'],
     host_permissions: ['*://*.zhihu.com/*'],
+    icons: {
+      '16': 'icons/icon-16.png',
+      '48': 'icons/icon-48.png',
+      '128': 'icons/icon-128.png',
+    },
     action: {
       default_title: '知乎增强优化',
+      default_icon: {
+        '16': 'icons/icon-16.png',
+        '48': 'icons/icon-48.png',
+        '128': 'icons/icon-128.png',
+      },
     },
     options_ui: {
       open_in_tab: true,
