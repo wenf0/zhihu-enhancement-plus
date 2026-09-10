@@ -433,6 +433,14 @@ export function App() {
             </button>
           ))}
         </nav>
+        <a
+          href="https://github.com/wenf0/zhihu-enhancement-plus/issues"
+          target="_blank"
+          rel="noreferrer"
+          className="mt-4 text-xs text-zinc-400 transition hover:text-zinc-700"
+        >
+          反馈 / Issue
+        </a>
       </aside>
       <main className="flex-1 p-8">
         {notice && (
