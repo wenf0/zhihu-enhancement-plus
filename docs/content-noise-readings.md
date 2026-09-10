@@ -315,7 +315,7 @@
 
 ## 7. 深度学习：能用什么、不该塞进脚本的是什么
 
-本项目是油猴脚本，分数必须能解释。分词用 **jieba-rs WASM**（`jieba-wasm` 2.4.0，安装时用带 SRI 的 `@resource` 拉词典），不把 BERT 塞进页面替换现有公式。
+本项目是 Chrome 扩展，分数必须能解释。分词用 **jieba-rs WASM**（`jieba-wasm` 2.4.0，词典打进扩展包），不把 BERT 塞进页面替换现有公式。
 深度学习更适合做**离线扩词、标定权重、少样本残差**。
 
 对实现的含义：词库继续当主模型；深度模型只在仓库工具链或可选本地头上帮忙。
@@ -339,7 +339,7 @@
 #### [Xenova/text2vec-base-chinese-sentence](https://huggingface.co/Xenova/text2vec-base-chinese-sentence)
 
 - 上一模型的 ONNX，给 [Transformers.js](https://github.com/huggingface/transformers.js) 用。
-- 能在浏览器算相似度，但要下整包模型，体积和可解释性都不适合进当前 user.js。扩词放离线工具链。
+- 能在浏览器算相似度，但要下整包模型，体积和可解释性都不适合进当前扩展内容脚本。扩词放离线工具链。
 
 #### [chatopera/Synonyms](https://github.com/chatopera/Synonyms)
 

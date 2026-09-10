@@ -643,7 +643,7 @@ export function App() {
             <Card>
               <CardHeader>
                 <CardTitle>导入</CardTitle>
-                <CardDescription>兼容旧油猴脚本导出的 settings JSON。</CardDescription>
+                <CardDescription>粘贴本扩展导出的 settings JSON。</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
                 <Textarea value={importDraft} onChange={e => setImportDraft(e.target.value)} placeholder="粘贴 JSON" />

@@ -9,5 +9,5 @@
     }
   },
   "include": ["src/**/*", ".wxt/**/*.d.ts"],
-  "exclude": ["legacy", "node_modules", ".output"]
+  "exclude": ["node_modules", ".output"]
 }

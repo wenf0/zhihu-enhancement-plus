@@ -1,4 +1,4 @@
-/* jieba-wasm 2.4.0 web glue (MIT, fengkx/jieba-wasm), adapted to IIFE for userscripts.
+/* jieba-wasm 2.4.0 web glue (MIT, fengkx/jieba-wasm), adapted to IIFE.
  * Official ESM uses import.meta.url; we only instantiate from bytes.
  */
 const ZhihuPlusJiebaWasm = (function () {

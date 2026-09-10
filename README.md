@@ -15,8 +15,6 @@ Chrome 扩展（Manifest V3）：噪音评分过滤（结巴分词整词匹配�
 
 设置页：工具栏图标 →「打开完整设置」，或扩展详情里的「扩展程序选项」。
 
-旧油猴脚本源码保留在 [`legacy/`](legacy/)，不再作为主产物。
-
 ## 开发
 
 现代栈：**WXT + TypeScript + React 19 + Tailwind CSS v4 + shadcn/ui**。
@@ -25,7 +23,7 @@ Chrome 扩展（Manifest V3）：噪音评分过滤（结巴分词整词匹配�
 - 打分 / 词库 / 结巴：`src/lib/noise/`
 - 设置页：`src/entrypoints/options/`（React + shadcn）
 - 弹层：`src/entrypoints/popup/`
-- 存储：`chrome.storage.local`（兼容旧油猴 JSON 备份）
+- 存储：`chrome.storage.local`
 - 结巴 WASM：`public/jieba_rs_wasm_bg.wasm`
 
 ```bash

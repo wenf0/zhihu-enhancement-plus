@@ -5,7 +5,7 @@ alwaysApply: true
 
 # 从 src 构建 Chrome 扩展
 
-本仓库主产物是 Manifest V3 扩展，不再维护油猴单文件。旧 userscript 在 `legacy/`，只作对照。
+本仓库主产物是 Manifest V3 扩展，用 WXT 从 `src/` 构建。
 
 ## 怎么改
 
@@ -20,3 +20,4 @@ alwaysApply: true
 - 不要手改 `.output/`
 - 不要从页面再拉远程业务脚本；jieba WASM 走扩展包内 `public/jieba_rs_wasm_bg.wasm`
 - 不要在 content script 里挂 React/shadcn（设置页可以）
+- 不要再引入油猴 / userscript 单文件产物
