@@ -213,7 +213,99 @@
 | 降权优于一刀切 | Li et al. 2026 |
 | 按意图过滤，而不是只删 | Bonsai 2026；Lyngs 2019 |
 | 为何情绪/对立占满信息流 | Crockett 2017；Brady et al. 2017 / 2020 / 2021 |
+| 知乎关键词屏蔽（无打分） | [XIU2/UserScript](https://github.com/XIU2/UserScript)；[zhihu-custom](https://github.com/liuyubing233/zhihu-custom) |
+| 可复用情绪/褒贬词 | [vaderSentiment](https://github.com/cjhutto/vaderSentiment)；[cnsenti](https://github.com/hiDaDeng/cnsenti) / [cntext](https://github.com/hiDaDeng/cntext) |
+| 标题党代码与中文例句 | [bhargaviparanjape/clickbait](https://github.com/bhargaviparanjape/clickbait)；[lexmin0412/clickbait](https://github.com/lexmin0412/clickbait) |
 
 刻意没收进清单的：平台反垃圾/反作弊工程博客、假新闻传播（Vosoughi et al. 2018 等）、过滤泡（Pariser）。那些相邻，但优化目标不是「降低注意力噪音」。
+
+---
+
+## 6. GitHub 上能对上的工作
+
+论文之外，仓库里能直接点开的多半是**扁平关键词屏蔽**、**情感词典**、或**标题党数据集**。
+带权重、分类、排除词、价值白名单，再打连续分并降权/隐藏的中文注意力噪音词库，目前没看到可替换 `noise_lexicon_v1` 的现成库。
+能搬的是方法和候选词，不是整表。
+
+### 知乎客户端过滤（产品近邻）
+
+#### [XIU2/UserScript](https://github.com/XIU2/UserScript)
+
+- 本项目上游。关键词用 `|` 分隔，标题/评论命中即屏蔽。
+- 没有分类档、权重、排除词、降权。用户名单是扁平列表，可当「别人在挡什么」的对照，不能当评分词库。
+
+#### [liuyubing233/zhihu-custom](https://github.com/liuyubing233/zhihu-custom)
+
+- 标题词 / 内容词两套名单；过滤后打「不感兴趣」。
+- 盐选账号、视频、低赞是规则屏蔽。词表 UI 和「不感兴趣」反馈值得看，同样没有连续分。
+
+#### [liuyubing233/zhihu-custom-mobile](https://github.com/liuyubing233/zhihu-custom-mobile)
+
+- 上一仓库的移动版，功能更窄，仍是规则隐藏。
+
+#### [知乎标题关键词屏蔽](https://greasyfork.org/scripts/574423)（Greasy Fork）
+
+- 只滤问题标题。自称 inspired by 知乎增强。体量很小，说明「关键词一刀切」这条线还在被人反复重写。
+
+### 词典打分（方法近，本体不同）
+
+这些测的是情绪正负或 7 类基本情绪，不是「八卦 / 对立 / 种草 vs 芯片 / 论文」。
+
+#### [cjhutto/vaderSentiment](https://github.com/cjhutto/vaderSentiment)
+
+- 对应上文 Hutto & Gilbert 2014。词带强度，再加否定、程度、饱和。
+- 词本身是英文，不能灌进知乎。可对的是计分结构，不是词表。
+
+#### [hiDaDeng/cnsenti](https://github.com/hiDaDeng/cnsenti) → 后续 [hiDaDeng/cntext](https://github.com/hiDaDeng/cntext)
+
+- 默认 HowNet 正负 + 大连理工情感词汇本体（好/乐/哀/怒/惧/恶/惊，带强度）。
+- 适合补 `NOISE_EMOTION`，补不了「塌房 / 普信 / 种草」。
+- 大连理工本体约 2.7 万词；发表论文要注意他们的使用协议。简介见 [计算传播学笔记](https://chengjun.github.io/mybook/11-2-emotion-dict.html)。
+
+#### NTUSD / 清华褒贬义 / HowNet 合集
+
+- 各类 `SentimentAnalysisDictionary` 镜像，例如 [zerahuang/SentimentAnalysisDictionary](https://github.com/zerahuang/SentimentAnalysisDictionary)。
+- 同样是褒贬，不是主题噪音。
+
+若要从开源词库扩本项目：优先抽「惊 / 怒 / 恶」和夸张程度词去喂情绪、标题党；分类词仍需本地维护。
+
+### 标题党代码、语料、拦截列表
+
+#### [bhargaviparanjape/clickbait](https://github.com/bhargaviparanjape/clickbait)
+
+- Stop Clickbait（ASONAM 2016）的代码和英文标题语料，含 hyperbolic word / n-gram。
+- 扩展形态和这边最像，语言不对。
+
+#### Webis Clickbait Challenge
+
+- 数据入口：[webis.de/data](https://webis.de/data.html)、[Webis-Clickbait-22](https://webis.de/data/webis-clickbait-22.html)
+- 代码归档：[mam10eks/clickbait-spoiling-archive](https://github.com/mam10eks/clickbait-spoiling-archive)
+- 英文 Twitter / Facebook 标注，以及后来的「剧透标题党」任务。可对连续强度，不可对中文词。
+
+#### [lexmin0412/clickbait](https://github.com/lexmin0412/clickbait)
+
+- 中文标题党例句收集（主要来自掘金）。
+- 能给 `NOISE_CLICKBAIT` 提供候选，不是带权重的词库。
+
+#### [cpeterso/clickbait-blocklist](https://github.com/cpeterso/clickbait-blocklist)
+
+- uBlock 规则，按站点/选择器挡标题党版位，不按文本打分。
+
+#### [rahulkapoor90/This-is-Clickbait](https://github.com/rahulkapoor90/This-is-Clickbait)
+
+- Chrome 扩展，标 Facebook 帖是否标题党。用户端干预，词表/模型是英文。
+
+#### [pietervanheijningen/clickbait-remover-for-youtube](https://github.com/pietervanheijningen/clickbait-remover-for-youtube)
+
+- 改 YouTube 缩略图和标题，走视觉诱饵，不是主题词库。
+
+### 和 `noise_lexicon_v1` 的差距
+
+| | 常见 GitHub 项目 | 本仓库 |
+| --- | --- | --- |
+| 单位 | 词命中 → 删 | 多特征加权 → 0–100 分 |
+| 词表 | 用户自填扁平名单，或情感正负 | L1/L2/L3 主题 + 排除词 + 价值白名单 |
+| 动作 | 隐藏 / 不感兴趣 | 保留 / 降权 / 隐藏 |
+| 语言 | 英文标题党，或中文褒贬 | 中文注意力噪音（塌房、普信、种草、盐选） |
 
 最后更新：2026-09-10。
