@@ -1,0 +1,37 @@
+---
+description: Prefer the best design; do not preserve old-version or migration compatibility
+alwaysApply: true
+---
+
+# 不兼容旧版本，按最优方式实现
+
+本仓库是个人维护的扩展，**不必**迁就已安装用户的旧数据、旧字段、旧导出格式。
+
+## 要做
+
+- 直接改成当前最好的数据结构和 API
+- 默认值、设置项、存储 key 以「现在该怎样」为准
+- 删除过时功能时，连同旧 key、旧迁移分支、兼容解析一并删干净
+- 破坏性变更用版本号体现即可，不写多代兼容层
+
+## 不要做
+
+- 不要为「老用户 storage 里还是 false / 旧 JSON」加一次性 migration（除非当前任务明确要求）
+- 不要保留 `@deprecated` 别名、双格式解析、fallback 旧 kind
+- 不要在注释或代码里堆「兼容油猴 / 兼容 v1」逻辑，除非该路径仍是主路径
+
+## 例子
+
+```ts
+// ❌ BAD：为旧关键词备份单独开一条导入分支并长期保留
+if (data.kind === 'zhihu-enhancement-plus-keywords-backup') { /* … */ }
+
+// ✅ GOOD：只支持当前口味 / 设置导出格式；旧文件让用户自己转换或丢掉
+```
+
+```ts
+// ❌ BAD：loadSettings 里用 flag 把三项强制改成新默认
+if (!merged[BLOCK_TYPE_DEFAULTS_V213]) { /* patch old installs */ }
+
+// ✅ GOOD：改 MENU_ITEMS.def；新装与「恢复默认」自然生效
+```
