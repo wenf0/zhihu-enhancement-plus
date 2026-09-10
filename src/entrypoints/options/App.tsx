@@ -24,6 +24,7 @@ import {
   serializeTasteBackup,
   tasteExportFilename,
 } from '@/lib/taste-io';
+import { buildCategoryDislikeStats, hasCategoryDislikeSignal, type CategoryDislikeStat } from '@/lib/taste-stats';
 
 /** 与 src/lib/noise/taste.ts 的 TASTE_LEARNED_RANGE 保持一致 */
 const LEARNED_DELTA_RANGE = [-8, 12] as const;
@@ -270,6 +271,50 @@ function UserTags({
   );
 }
 
+function CategoryDislikeBars({ rows }: { rows: CategoryDislikeStat[] }) {
+  if (!hasCategoryDislikeSignal(rows)) {
+    return (
+      <p className="text-sm text-zinc-500">
+        在信息流点「不感兴趣」后，这里会按噪音分类汇总你更不想看的类别。
+      </p>
+    );
+  }
+
+  const ranked = rows.filter(row => row.score > 0);
+  const maxScore = Math.max(...ranked.map(row => row.score), 1);
+
+  return (
+    <div className="space-y-3">
+      {ranked.map(row => {
+        const width = Math.max(6, Math.round((row.score / maxScore) * 100));
+        return (
+          <div key={row.id} className="space-y-1">
+            <div className="flex items-baseline justify-between gap-3 text-sm">
+              <div className="min-w-0 truncate">
+                <span className="font-medium text-zinc-800">{row.name}</span>
+                <span className="ml-2 text-xs text-zinc-400">L{row.level} · 基准 {row.c}</span>
+              </div>
+              <div className="shrink-0 tabular-nums text-zinc-600">
+                {row.score}
+                <span className="ml-2 text-xs text-zinc-400">
+                  类 {formatDelta(row.catDelta)} · 词 +{row.wordDelta}
+                </span>
+              </div>
+            </div>
+            <div className="h-2.5 overflow-hidden rounded-full bg-zinc-100">
+              <div
+                className="h-full rounded-full bg-zinc-800 transition-[width]"
+                style={{ width: `${width}%` }}
+                title={`踩 ${row.dislike} · 赞 ${row.like}`}
+              />
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 type Pane = 'appearance' | 'reading' | 'filter' | 'users' | 'lexicon' | 'taste' | 'backup';
 
 const NAV: Array<{ id: Pane; title: string; desc: string }> = [
@@ -322,6 +367,10 @@ export function App() {
   const learnedList = useMemo(
     () => sortLearnedEntries(settings.taste.learned || {}),
     [settings.taste.learned],
+  );
+  const categoryDislikeStats = useMemo(
+    () => buildCategoryDislikeStats(settings.taste, settings.lexicon),
+    [settings.taste, settings.lexicon],
   );
 
   const patchLearned = (mutate: (learned: Record<string, TasteEntry>) => void) => {
@@ -552,6 +601,17 @@ export function App() {
                     导出口味
                   </Button>
                 </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>不想看的类别</CardTitle>
+                <CardDescription>
+                  按口味学习汇总：分类增量 + 命中该分类词表的正向词增量。条越长越不想看。
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <CategoryDislikeBars rows={categoryDislikeStats} />
               </CardContent>
             </Card>
             <Card>
