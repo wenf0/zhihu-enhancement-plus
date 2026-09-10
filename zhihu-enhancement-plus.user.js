@@ -3,7 +3,7 @@
 // @name:zh-CN   知乎增强优化
 // @name:zh-TW   知乎增強優化
 // @name:en      Zhihu Enhancement Plus
-// @version      1.7.29
+// @version      1.7.30
 // @author       local (based on X.I.U / 知乎增强 2.2.15)
 // @description  用于知乎网页。可开关：低饱和配色、隐藏右侧栏、清空或锁定标签标题与图标、净化搜索热门、默认/一键/点空白收起回答与评论、右键回顶、展开问题描述、置顶发布时间、信息流类型标签、直达问题、按用户与噪音评分（可显示得分、可过滤）及关键词、按类别屏蔽视频/文章/想法/话题/盐选/相关搜索/热榜杂项。设置可 JSON 导入导出。始终生效：关登录弹窗、原图、站外直链、点浮层关评论、去掉搜索高亮链接。基于 XIU2「知乎增强」2.2.15（GPL-3.0），无远程外部脚本。
 // @description:zh-CN 用于知乎网页。可开关：低饱和配色、隐藏右侧栏、清空或锁定标签标题与图标、净化搜索热门、默认/一键/点空白收起回答与评论、右键回顶、展开问题描述、置顶发布时间、信息流类型标签、直达问题、按用户与噪音评分（可显示得分、可过滤）及关键词、按类别屏蔽视频/文章/想法/话题/盐选/相关搜索/热榜杂项。设置可 JSON 导入导出。始终生效：关登录弹窗、原图、站外直链、点浮层关评论、去掉搜索高亮链接。基于 XIU2「知乎增强」2.2.15（GPL-3.0），无远程外部脚本。
@@ -2263,7 +2263,7 @@ function scoreText(raw) {
     if (!raw) {
         return {
             final: 0, K: 0, C: 0, E: 0, S: 0, B: 0, V: 0, kRaw: 0,
-            hits: { words: [], emotion: [], controversy: [], clickbait: [], value: [] },
+            hits: { words: [], custom: [], emotion: [], controversy: [], clickbait: [], value: [] },
             winningCat: '', exclude: '', cFallback: false, customHit: false
         };
     }
@@ -2310,9 +2310,11 @@ function scoreText(raw) {
     }
 
     let customHit = false;
+    const customHits = [];
     for (const word of idx.custom) {
         if (!word || !text.includes(word)) continue;
         customHit = true;
+        customHits.push({ word, w: NOISE_CUSTOM_K, cat: '自定义', source: 'custom' });
         if (!wordHits.some(item => item.word === word)) {
             kRaw += NOISE_CUSTOM_K;
             wordHits.push({ word, w: NOISE_CUSTOM_K, cat: '自定义', source: 'custom' });
@@ -2361,7 +2363,7 @@ function scoreText(raw) {
     if (customHit) final = Math.max(final, NOISE_HIDE);
     return {
         final, K, C: bestC, E, S, B, V, kRaw,
-        hits: { words: wordHits, emotion, controversy, clickbait, value },
+        hits: { words: wordHits, custom: customHits, emotion, controversy, clickbait, value },
         winningCat, exclude, cFallback, customHit
     };
 }
@@ -2454,6 +2456,18 @@ function noisePartRows(parts) {
     });
 }
 
+function mergeNoiseHits(a, b) {
+    const out = [];
+    const seen = new Set();
+    for (const item of [...(a || []), ...(b || [])]) {
+        const key = String(item.word || item).toLowerCase();
+        if (!key || seen.has(key)) continue;
+        seen.add(key);
+        out.push(item.word != null ? item : { word: item });
+    }
+    return out;
+}
+
 function noiseHitChips(list, fmt) {
     if (!list || !list.length) return '<span class="zhihuE_NxEmpty">无</span>';
     const max = 36;
@@ -2471,12 +2485,14 @@ function noiseExplainHtml(title, body, result, href) {
     const rows = noisePartRows(titleScore);
     const w = NOISE_WEIGHTS;
     const n = x => (Math.round(x * 10) / 10).toFixed(1);
-    const hits = titleScore.hits || { words: [], emotion: [], controversy: [], clickbait: [], value: [] };
+    const hits = titleScore.hits || { words: [], custom: [], emotion: [], controversy: [], clickbait: [], value: [] };
+    const customHits = mergeNoiseHits(hits.custom, bodyScore.hits && bodyScore.hits.custom);
+    const catHits = (hits.words || []).filter(item => item.source !== 'custom');
     const notes = [];
     if (titleScore.winningCat) notes.push(`分类取「${titleScore.winningCat}」`);
     if (titleScore.exclude) notes.push(`排除词「${titleScore.exclude}」使 C ×0.35`);
     if (titleScore.cFallback) notes.push('无关键词但情绪和标题党偏高，C 保底 42');
-    if (titleScore.customHit || bodyScore.customHit) notes.push('命中自定义词，分数提到隐藏线');
+    if (customHits.length) notes.push(`命中自定义词「${customHits.map(item => item.word).join('、')}」，分数提到隐藏线`);
     if (!filterOn) notes.push('过滤已关闭，信息流只打分不处理');
     const bar = row => {
         const pct = Math.max(0, Math.min(100, row.v));
@@ -2511,7 +2527,8 @@ function noiseExplainHtml(title, body, result, href) {
             <div class="zhihuE_NxRows">${rows.map(bar).join('')}</div>
         </div>
         <div class="zhihuE_NxHits">
-            <div class="zhihuE_NxBlock"><span>关键词</span><div>${noiseHitChips(hits.words, chip)}</div></div>
+            <div class="zhihuE_NxBlock"><span>自定义</span><div>${noiseHitChips(customHits, chip)}</div></div>
+            <div class="zhihuE_NxBlock"><span>关键词</span><div>${noiseHitChips(catHits, chip)}</div></div>
             <div class="zhihuE_NxBlock"><span>情绪</span><div>${noiseHitChips(hits.emotion, chip)}</div></div>
             <div class="zhihuE_NxBlock"><span>争议</span><div>${noiseHitChips(hits.controversy.map(word => ({ word })), chip)}</div></div>
             <div class="zhihuE_NxBlock"><span>标题党</span><div>${noiseHitChips(hits.clickbait.map(word => ({ word })), chip)}</div></div>
