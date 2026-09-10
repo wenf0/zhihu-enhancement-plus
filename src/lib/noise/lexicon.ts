@@ -2,6 +2,7 @@
 import { getSavedLexicon, saveLexicon as persistLexicon } from '../storage';
 import { runtime } from '../content/state';
 import { noiseWords } from './jieba';
+import { normalizeLexicon } from '../lexicon-io';
 
 export const NOISE_CATEGORIES = [
     {
@@ -123,49 +124,27 @@ export function defaultLexicon() {
             excludes: (cat.excludes || []).slice()
         };
     }
-    return {
-        touched: [],
+    return normalizeLexicon({
         cats,
         emotion: cloneWords(NOISE_EMOTION),
         controversy: NOISE_CONTROVERSY.slice(),
         clickbait: NOISE_CLICKBAIT.slice(),
         value: cloneWords(NOISE_VALUE)
-    };
+    });
 }
 
+/** storage 有完整词库则用之；否则内置默认。不做旧版 touched 增量合并。 */
 export function getActiveLexicon() {
-    const base = defaultLexicon();
     const saved = getSavedLexicon();
-    if (!saved || typeof saved !== 'object') return base;
-    const touched = new Set(saved.touched || []);
-    for (const id of Object.keys(base.cats)) {
-        if (!touched.has('cat:' + id) || !saved.cats || !saved.cats[id]) continue;
-        const src = saved.cats[id];
-        base.cats[id] = {
-            id,
-            name: src.name || base.cats[id].name,
-            level: src.level || base.cats[id].level,
-            c: typeof src.c === 'number' ? src.c : base.cats[id].c,
-            words: src.words && typeof src.words === 'object' ? cloneWords(src.words) : base.cats[id].words,
-            excludes: Array.isArray(src.excludes) ? src.excludes.slice() : base.cats[id].excludes
-        };
+    if (saved && typeof saved === 'object') {
+        const normalized = normalizeLexicon(saved);
+        if (normalized && Object.keys(normalized.cats).length) return normalized;
     }
-    if (touched.has('emotion') && saved.emotion) base.emotion = cloneWords(saved.emotion);
-    if (touched.has('controversy') && Array.isArray(saved.controversy)) base.controversy = saved.controversy.slice();
-    if (touched.has('clickbait') && Array.isArray(saved.clickbait)) base.clickbait = saved.clickbait.slice();
-    if (touched.has('value') && saved.value) base.value = cloneWords(saved.value);
-    base.touched = [...touched];
-    return base;
+    return defaultLexicon();
 }
 
 export async function saveLexicon(data) {
     runtime.noiseIndex = null;
-    await persistLexicon(data);
+    const normalized = normalizeLexicon(data) || defaultLexicon();
+    await persistLexicon(normalized);
 }
-
-export function touchLexicon(data, token) {
-    const set = new Set(data.touched || []);
-    set.add(token);
-    data.touched = [...set];
-}
-

@@ -27,13 +27,13 @@ import { downloadJsonFile, parseWords, uniqueWords } from '@/lib/utils';
 import { settingsExportFilename } from '@/lib/storage';
 import { useSettings } from '@/lib/use-settings';
 import { EXT_VERSION } from '@/lib/version';
-import { NOISE_CATEGORIES } from '@/lib/noise/lexicon';
 import {
   parseTasteImport,
   serializeTasteBackup,
   tasteExportFilename,
 } from '@/lib/taste-io';
 import { buildCategoryDislikeStats, hasCategoryDislikeSignal, type CategoryDislikeStat } from '@/lib/taste-stats';
+import { LexiconPane } from './LexiconPane';
 
 /** 与 src/lib/noise/taste.ts 的 TASTE_LEARNED_RANGE 保持一致 */
 const LEARNED_DELTA_RANGE = [-8, 12] as const;
@@ -379,11 +379,9 @@ export function App() {
   const [userDraft, setUserDraft] = useState('');
   const [importDraft, setImportDraft] = useState('');
   const [notice, setNotice] = useState('');
-  const [catId, setCatId] = useState(NOISE_CATEGORIES[0]?.id || 'celebrity');
   const [tasteDraft, setTasteDraft] = useState('');
   const [tasteImportDraft, setTasteImportDraft] = useState('');
 
-  const cat = useMemo(() => settings.lexicon?.cats[catId], [settings.lexicon, catId]);
   const learnedList = useMemo(
     () => sortLearnedEntries(settings.taste.learned || {}),
     [settings.taste.learned],
@@ -550,30 +548,11 @@ export function App() {
         )}
 
         {pane === 'lexicon' && settings.lexicon && (
-          <section className="space-y-4">
-            <h2 className="text-2xl font-semibold">噪音词库</h2>
-            <div className="flex flex-wrap gap-2">
-              {NOISE_CATEGORIES.map(item => (
-                <Button key={item.id} size="sm" variant={catId === item.id ? 'default' : 'outline'} onClick={() => setCatId(item.id)}>
-                  {item.name}
-                </Button>
-              ))}
-            </div>
-            {cat && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>{cat.name}</CardTitle>
-                  <CardDescription>L{cat.level} · 分类分 {cat.c} · {Object.keys(cat.words).length} 词</CardDescription>
-                </CardHeader>
-                <CardContent className="flex flex-wrap gap-2">
-                  {Object.entries(cat.words).map(([word, weight]) => (
-                    <Badge key={word}>{word} · {weight}</Badge>
-                  ))}
-                </CardContent>
-              </Card>
-            )}
-            <p className="text-sm text-zinc-500">完整词库编辑仍可从备份 JSON 导入；页面上先按分类查看当前生效词。</p>
-          </section>
+          <LexiconPane
+            lexicon={settings.lexicon}
+            onSave={data => settings.updateLexicon(data)}
+            onReset={() => settings.resetLexicon()}
+          />
         )}
 
         {pane === 'taste' && (

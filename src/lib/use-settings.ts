@@ -12,7 +12,7 @@ import {
 } from './storage';
 import { MENU_ITEMS } from './defaults';
 import type { FilterMode, SettingsValues, TastePrefs, LexiconData } from './types';
-import { getActiveLexicon, saveLexicon } from './noise/lexicon';
+import { getActiveLexicon, saveLexicon, defaultLexicon } from './noise/lexicon';
 
 export function useSettings() {
   const [ready, setReady] = useState(false);
@@ -71,7 +71,12 @@ export function useSettings() {
 
   const updateLexicon = useCallback(async (data: LexiconData) => {
     await saveLexicon(data);
-    setLexicon(data);
+    setLexicon(getActiveLexicon());
+  }, []);
+
+  const resetLexicon = useCallback(async () => {
+    await saveLexicon(defaultLexicon());
+    setLexicon(getActiveLexicon());
   }, []);
 
   const users = useMemo(
@@ -108,6 +113,7 @@ export function useSettings() {
     updateTaste,
     resetTaste,
     updateLexicon,
+    resetLexicon,
     exportText,
     importText,
     resetAll,

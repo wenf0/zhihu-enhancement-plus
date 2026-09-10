@@ -35,7 +35,6 @@ export interface LexiconCat {
 }
 
 export interface LexiconData {
-  touched: string[];
   cats: Record<string, LexiconCat>;
   emotion: Record<string, number>;
   controversy: string[];
