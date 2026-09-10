@@ -6,6 +6,31 @@ Chrome 扩展（Manifest V3）：噪音评分过滤（结巴分词整词匹配�
 
 互联网内容噪音屏蔽的论文精读清单（DOI / 开放 PDF）：[docs/content-noise-readings.md](docs/content-noise-readings.md)。
 
+## 工作流
+
+```mermaid
+flowchart TD
+  A[打开知乎页面] --> B[Content Script<br/>document_start]
+  B --> C[loadSettings<br/>storage → 内存缓存]
+  C --> D[boot]
+  D --> E[页面壳层<br/>侧栏 / 低饱和 / 标题 / 登录]
+  D --> F[DOM 就绪 → start 按路由]
+  F --> G[阅读增强<br/>收起 · 标签 · 直达 · 展开题干]
+  F --> H[屏蔽<br/>用户 · 类型 · 盐选 · 热榜]
+  F --> I[噪音管道<br/>分词 → 打分 → 过滤 / 徽章]
+  I --> J[口味反馈<br/>喜欢 / 不感兴趣 → 回写权重]
+  B --> K[watchSettings]
+  K --> L[syncUi + invalidateNoise]
+  L -.-> G
+  L -.-> I
+```
+
+- **启动**：读 `storage.local` → `boot()` → DOM 就绪后按首页 / 热榜 / 问题等路由挂功能  
+- **三条线**：阅读（收起 / 标签 / 直达）、屏蔽（用户 / 类型）、噪音（分词打分 + 口味回写）  
+- **改开关**：选项页只写 storage；页面端 `watchSettings` 热更新，虚线表示回灌到阅读 / 噪音
+
+主路径：`src/entrypoints/content.ts` → `src/lib/content/boot.ts`。
+
 ## 安装
 
 1. `npm install && npm run build`
