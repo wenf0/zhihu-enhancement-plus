@@ -411,7 +411,7 @@ export function App() {
     return <div className="p-10 text-sm text-zinc-500">正在读取 chrome.storage…</div>;
   }
 
-  const filter = (settings.values.menu_blockKeywords || 'hide') as FilterMode;
+  const filter = (settings.values.menu_blockKeywords || 'off') as FilterMode;
 
   return (
     <div className="mx-auto flex min-h-screen max-w-6xl">
@@ -466,12 +466,12 @@ export function App() {
             <Card>
               <CardHeader>
                 <CardTitle>噪音过滤强度</CardTitle>
-                <CardDescription>关闭只打分；仅降权会变淡；隐藏会移出信息流。</CardDescription>
+                <CardDescription>只打分不改信息流；仅降权会变淡；隐藏会移出信息流。</CardDescription>
               </CardHeader>
               <CardContent className="flex gap-2">
                 {(['off', 'demote', 'hide'] as FilterMode[]).map(mode => (
                   <Button key={mode} variant={filter === mode ? 'default' : 'outline'} onClick={() => void settings.setFilter(mode)}>
-                    {mode === 'off' ? '关闭' : mode === 'demote' ? '仅降权' : '隐藏'}
+                    {mode === 'off' ? '只打分' : mode === 'demote' ? '仅降权' : '隐藏'}
                   </Button>
                 ))}
               </CardContent>

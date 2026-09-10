@@ -106,7 +106,7 @@ export function noiseExplainHtml(title, body, result, href) {
     if (titleScore.winningCat) notes.push(`分类取「${titleScore.winningCat}」`);
     if (titleScore.exclude) notes.push(`排除词「${titleScore.exclude}」使 C ×0.35`);
     if (titleScore.cFallback) notes.push('无词命中但情绪和标题党偏高，C 保底 42');
-    if (mode === 'off') notes.push('过滤已关闭，信息流只打分不处理');
+    if (mode === 'off') notes.push('过滤为只打分，信息流不降权、不隐藏');
     else if (mode === 'demote') notes.push('过滤为仅降权，不会移出信息流');
     const learnedHits = mergeNoiseHits(hits.learned, bodyScore.hits && bodyScore.hits.learned);
     if (tasteEnabled() && getTastePrefs().clicks) notes.push('分数已叠加本地「喜欢 / 不感兴趣」增量（词库对照 + 结巴新词）');

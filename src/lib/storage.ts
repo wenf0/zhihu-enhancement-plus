@@ -101,7 +101,7 @@ export function watchSettings(onChange: () => void) {
 export function normalizeFilterMode(value: unknown): FilterMode {
   if (value === 'off' || value === 'demote' || value === 'hide') return value;
   if (value === false) return 'off';
-  return 'hide';
+  return 'off';
 }
 
 export function readFilterMode(): FilterMode {
