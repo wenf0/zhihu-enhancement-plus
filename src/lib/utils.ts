@@ -51,11 +51,19 @@ export function eachMatch(root: ParentNode | Element | null, selector: string, h
 }
 
 export function injectStyle(id: string, css: string) {
-  if (document.getElementById(id)) return;
+  const existing = document.getElementById(id);
+  if (existing) {
+    if (existing.textContent !== css) existing.textContent = css;
+    return;
+  }
   const el = document.createElement('style');
   el.id = id;
   el.textContent = css;
   (document.head || document.documentElement).appendChild(el);
+}
+
+export function removeStyle(id: string) {
+  document.getElementById(id)?.remove();
 }
 
 export function getXpath(xpath: string, contextNode?: Node | null, doc = document) {

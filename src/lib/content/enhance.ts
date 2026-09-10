@@ -1,13 +1,16 @@
 // @ts-nocheck
 import { menuValue } from '../storage';
-import { injectStyle, observeTree, forAddedElements, onReadyNodes, getUTC8, qs, qsa, eachMatch, on, getXpath, page } from '../utils';
+import { injectStyle, removeStyle, observeTree, forAddedElements, onReadyNodes, getUTC8, qs, qsa, eachMatch, on, getXpath, page } from '../utils';
 
 /* -------------------------------------------------------------------------- */
 /* 界面增强                                                                   */
 /* -------------------------------------------------------------------------- */
 
 export function fullWidthLayout() {
-    if (!menuValue('menu_fullWidth')) return;
+    if (!menuValue('menu_fullWidth')) {
+        removeStyle('zhihu-plus-full-width');
+        return;
+    }
     injectStyle('zhihu-plus-full-width', `
         .RightSideBar,
         .Question-sideColumn,
@@ -60,7 +63,10 @@ export function fullWidthLayout() {
 }
 
 export function lowProfileMode() {
-    if (!menuValue('menu_lowProfile')) return;
+    if (!menuValue('menu_lowProfile')) {
+        removeStyle('zhihu-plus-low-profile');
+        return;
+    }
     injectStyle('zhihu-plus-low-profile', `
         a { color: #888 !important; }
         a:hover { color: #999 !important; }
@@ -148,7 +154,10 @@ export function removeHighlightLink() {
 }
 
 export function addTypeTips() {
-    if (!menuValue('menu_typeTips')) return;
+    if (!menuValue('menu_typeTips')) {
+        removeStyle('zhihu-plus-type-tips');
+        return;
+    }
     const margin = location.pathname === '/search' ? '2' : '4';
     const style = `font-weight: bold;font-size: 13px;padding: 1px 4px 0;border-radius: 2px;display: inline-block;vertical-align: top;margin: ${margin}px 4px 0 0;`;
     injectStyle('zhihu-plus-type-tips', `/* 区分问题文章 */
@@ -159,14 +168,21 @@ export function addTypeTips() {
 .ArticleItem .ContentItem-title a::before {content:'文章';color: #2196F3;background-color: #2196F333;${style}}`);
 }
 
+let toQuestionBound = false;
+
 export function addToQuestion() {
-    if (!menuValue('menu_toQuestion')) return;
+    if (!menuValue('menu_toQuestion')) {
+        removeStyle('zhihu-plus-to-question');
+        qsa('a.zhihu_e_toQuestion').forEach(el => el.remove());
+        return;
+    }
     const css = location.pathname === '/search'
         ? `a.zhihu_e_toQuestion {font-size: 13px !important;font-weight: normal !important;padding: 1px 6px 0 !important;border-radius: 2px !important;display: inline-block !important;vertical-align: top !important;height: 20.67px !important;line-height: 20.67px !important;margin-top: 2px !important;}`
         : `a.zhihu_e_toQuestion {font-size: 13px !important;font-weight: normal !important;padding: 1px 6px 0 !important;border-radius: 2px !important;display: inline-block !important;vertical-align: top !important;margin-top: 4px !important;}`;
     injectStyle('zhihu-plus-to-question', css);
 
     const decorate = titleA => {
+        if (!menuValue('menu_toQuestion')) return;
         if (!titleA || titleA.parentElement.querySelector('a.zhihu_e_toQuestion')) return;
         if (titleA.textContent.includes('?')) titleA.innerHTML = titleA.innerHTML.replace('?', '？');
         if (!/answer\/\d+/.test(titleA.href)) return;
@@ -179,10 +195,16 @@ export function addToQuestion() {
     if (location.pathname === '/search') onReadyNodes(titleSel, decorate);
     else qsa(titleSel).forEach(decorate);
 
+    if (toQuestionBound) return;
+    toQuestionBound = true;
     observeTree(mutations => {
+        if (!menuValue('menu_toQuestion')) return;
         forAddedElements(mutations, target => eachMatch(target, titleSel, decorate));
     });
-    on(window, 'urlchange', () => onReadyNodes(titleSel, decorate));
+    on(window, 'urlchange', () => {
+        if (!menuValue('menu_toQuestion')) return;
+        onReadyNodes(titleSel, decorate);
+    });
 }
 
 export function questionRichTextMore() {
@@ -291,7 +313,10 @@ export function blankTitleAndFavicon() {
 }
 
 export function cleanSearch() {
-    if (!menuValue('menu_cleanSearch')) return;
+    if (!menuValue('menu_cleanSearch')) {
+        removeStyle('zhihu-plus-clean-search');
+        return;
+    }
     bindEmptySearchPlaceholder();
     injectStyle('zhihu-plus-clean-search', '.AutoComplete-group > .SearchBar-label:not(.SearchBar-label--history), .AutoComplete-group > [id^="AutoComplete2-topSearch-"], .AutoComplete-group > [id^="AutoComplete3-topSearch-"] {display: none !important;}');
 }

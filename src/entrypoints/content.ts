@@ -1,6 +1,6 @@
-import { boot } from '@/lib/content/boot';
+import { boot, syncUiFromSettings } from '@/lib/content/boot';
 import { invalidateNoise } from '@/lib/content/state';
-import { loadSettings } from '@/lib/storage';
+import { loadSettings, watchSettings } from '@/lib/storage';
 
 export default defineContentScript({
   matches: ['*://www.zhihu.com/*', '*://zhuanlan.zhihu.com/*'],
@@ -8,8 +8,9 @@ export default defineContentScript({
   async main() {
     await loadSettings();
     boot();
-    browser.storage.onChanged.addListener(() => {
+    watchSettings(() => {
       invalidateNoise();
+      syncUiFromSettings();
     });
   },
 });

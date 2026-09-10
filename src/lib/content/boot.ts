@@ -1,9 +1,10 @@
 // @ts-nocheck
 import { menuValue } from '../storage';
-import { page, addUrlChangeEvent, injectStyle } from '../utils';
+import { page, addUrlChangeEvent, injectStyle, removeStyle } from '../utils';
 import { ensureJieba } from '../noise/jieba';
 import {
-    collapsedAnswer, collapsedNowAnswer, defaultCollapsedAnswer, closeFloatingComments, backToTop
+    collapsedAnswer, defaultCollapsedAnswer, closeFloatingComments,
+    bindSideGestures
 } from './collapse';
 import { blockUsers } from './block-users';
 import { blockKeywords } from './noise-ui';
@@ -19,16 +20,32 @@ import {
 /* 路由                                                                       */
 /* -------------------------------------------------------------------------- */
 
+/** 设置变更后同步可逆 UI（CSS / 按钮 / 手势开关读缓存）。 */
+export function syncUiFromSettings() {
+    fullWidthLayout();
+    lowProfileMode();
+    cleanSearch();
+    addTypeTips();
+    addToQuestion();
+    collapsedAnswer();
+    defaultCollapsedAnswer();
+    bindSideGestures();
+    if (!menuValue('menu_blockTypeVideo')) removeStyle('zhihu-plus-hide-zvideo-tab');
+    else if (page().isHome || page().isFollow || page().isHot) {
+        injectStyle('zhihu-plus-hide-zvideo-tab', `.Card .ZVideoItem-video, nav.TopstoryTabs > a[aria-controls="Topstory-zvideo"] {display: none !important;}`);
+    }
+}
+
 export function boot() {
     ensureJieba();
     addUrlChangeEvent();
+    bindSideGestures();
 
     window.addEventListener('urlchange', () => {
         const p = page();
         if (p.isQuestion && !p.isQuestionWaiting && !p.isAnswer) {
             setTimeout(() => {
-                collapsedNowAnswer('.QuestionPage');
-                collapsedNowAnswer('.Question-main');
+                collapsedAnswer();
                 questionRichTextMore();
                 blockUsers('question');
                 blockYanXuan();
@@ -38,12 +55,16 @@ export function boot() {
                 blockUsers('index');
                 blockKeywords('index');
                 blockType();
+                collapsedAnswer();
             }, 500);
         } else if (p.isHot) {
             setTimeout(() => {
                 blockKeywords('index');
                 blockHotOther();
+                collapsedAnswer();
             }, 500);
+        } else {
+            setTimeout(() => collapsedAnswer(), 300);
         }
     });
 
@@ -74,8 +95,6 @@ export function start() {
 
     if (p.isQuestion) {
         if (!p.isQuestionWaiting) {
-            collapsedNowAnswer('.QuestionPage');
-            collapsedNowAnswer('.Question-main');
             questionRichTextMore();
             blockUsers('question');
             blockYanXuan();
@@ -89,8 +108,6 @@ export function start() {
     }
 
     if (p.isSearch) {
-        collapsedNowAnswer('main div');
-        collapsedNowAnswer('.Search-container');
         watchTopTime('.ContentItem.AnswerItem, .ContentItem.ArticleItem', 'SearchItem-meta');
         addTypeTips();
         addToQuestion();
@@ -102,7 +119,6 @@ export function start() {
 
     if (p.isTopic) {
         if (p.pathname.includes('/hot') || p.href.includes('/top-answers')) {
-            collapsedNowAnswer('main.App-main');
             watchTopTime('.ContentItem.AnswerItem, .ContentItem.ArticleItem', 'ContentItem-meta');
             addTypeTips();
             addToQuestion();
@@ -113,8 +129,6 @@ export function start() {
     }
 
     if (p.isZhuanlan) {
-        backToTop('article.Post-Main.Post-NormalMain');
-        backToTop('div.Post-Sub.Post-NormalSub');
         setTimeout(topTimePost, 300);
         blockUsers();
         return;
@@ -123,7 +137,6 @@ export function start() {
     if (p.isColumn) {
         setTimeout(() => {
             collapsedAnswer();
-            collapsedNowAnswer('main div');
             watchTopTime('.ContentItem.AnswerItem, .ContentItem.ArticleItem', 'ContentItem-meta');
             blockUsers();
         }, 300);
@@ -135,8 +148,6 @@ export function start() {
             addTypeTips();
             addToQuestion();
         }
-        collapsedNowAnswer('main div');
-        collapsedNowAnswer('.Profile-main');
         watchTopTime('.ContentItem.AnswerItem, .ContentItem.ArticleItem', 'ContentItem-meta');
         blockUsers('people');
         blockKeywords('people');
@@ -146,8 +157,6 @@ export function start() {
     if (p.isCollection) {
         addTypeTips();
         addToQuestion();
-        collapsedNowAnswer('main');
-        collapsedNowAnswer('.CollectionsDetailPage');
         watchTopTime('.ContentItem.AnswerItem, .ContentItem.ArticleItem', 'ContentItem-meta');
         blockKeywords('collection');
         return;
@@ -157,8 +166,6 @@ export function start() {
     if (menuValue('menu_blockTypeVideo')) {
         injectStyle('zhihu-plus-hide-zvideo-tab', `.Card .ZVideoItem-video, nav.TopstoryTabs > a[aria-controls="Topstory-zvideo"] {display: none !important;}`);
     }
-    collapsedNowAnswer('main div');
-    collapsedNowAnswer('.Topstory-container');
     watchTopTime('.TopstoryItem', 'ContentItem-meta');
     addTypeTips();
     addToQuestion();
