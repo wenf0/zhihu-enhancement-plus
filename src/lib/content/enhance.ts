@@ -153,20 +153,81 @@ export function removeHighlightLink() {
     document.querySelectorAll('span > a[data-za-not-track-link][href^="https://www.zhihu.com/search?q="]').forEach(replaceLink);
 }
 
+const TYPE_TIP_CLASS = 'zhihu_e_typeTip';
+
+function typeTipKind(titleEl) {
+    const item = titleEl.closest('.AnswerItem, .TopstoryQuestionAskItem, .ZVideoItem, .ZvideoItem, .PinItem, .ArticleItem');
+    if (!item) return null;
+    if (item.classList.contains('AnswerItem')) return { text: '问题', mod: 'question' };
+    if (item.classList.contains('TopstoryQuestionAskItem')) return { text: '问题', mod: 'questionAsk' };
+    if (item.classList.contains('ZVideoItem') || item.classList.contains('ZvideoItem')) return { text: '视频', mod: 'video' };
+    if (item.classList.contains('PinItem')) return { text: '想法', mod: 'pin' };
+    if (item.classList.contains('ArticleItem')) return { text: '文章', mod: 'article' };
+    return null;
+}
+
+function clearTypeTips() {
+    removeStyle('zhihu-plus-type-tips');
+    qsa(`.${TYPE_TIP_CLASS}`).forEach(el => el.remove());
+}
+
+function decorateTypeTip(titleEl) {
+    if (!menuValue('menu_typeTips')) return;
+    if (!titleEl || titleEl.querySelector(`.${TYPE_TIP_CLASS}`)) return;
+    const kind = typeTipKind(titleEl);
+    if (!kind) return;
+    const tip = document.createElement('span');
+    tip.className = `${TYPE_TIP_CLASS} ${TYPE_TIP_CLASS}--${kind.mod}`;
+    tip.textContent = kind.text;
+    tip.setAttribute('aria-hidden', 'true');
+    titleEl.insertAdjacentElement('afterbegin', tip);
+}
+
+let typeTipsBound = false;
+
 export function addTypeTips() {
     if (!menuValue('menu_typeTips')) {
-        removeStyle('zhihu-plus-type-tips');
+        clearTypeTips();
         return;
     }
-    const margin = location.pathname === '/search' ? '2' : '4';
-    const style = `font-weight: bold;font-size: 13px;padding: 1px 4px 0;border-radius: 2px;display: inline-block;vertical-align: top;margin: ${margin}px 4px 0 0;`;
-    // 挂在标题容器上，避免和「直达问题」同为 a 时互相抢 ::before / 视觉绑死
+    const marginY = location.pathname === '/search' ? '2' : '4';
     injectStyle('zhihu-plus-type-tips', `/* 区分问题文章 */
-.AnswerItem .ContentItem-title::before {content:'问题';color: #f68b83;background-color: #f68b8333;${style}}
-.TopstoryQuestionAskItem .ContentItem-title::before {content:'问题';color: #ff5a4e;background-color: #ff5a4e33;${style}}
-.ZVideoItem .ContentItem-title::before, .ZvideoItem .ContentItem-title::before {content:'视频';color: #00BCD4;background-color: #00BCD433;${style}}
-.PinItem .ContentItem-title::before {content:'想法';color: #4CAF50;background-color: #4CAF5033;${style}}
-.ArticleItem .ContentItem-title::before {content:'文章';color: #2196F3;background-color: #2196F333;${style}}`);
+.${TYPE_TIP_CLASS} {
+  font-weight: bold;
+  font-size: 13px;
+  padding: 1px 4px 0;
+  border-radius: 2px;
+  display: inline-block;
+  vertical-align: top;
+  margin: ${marginY}px 8px 0 0;
+  line-height: 1.4;
+  pointer-events: none;
+  user-select: none;
+}
+.${TYPE_TIP_CLASS}--question { color: #f68b83; background-color: #f68b8333; }
+.${TYPE_TIP_CLASS}--questionAsk { color: #ff5a4e; background-color: #ff5a4e33; }
+.${TYPE_TIP_CLASS}--video { color: #00BCD4; background-color: #00BCD433; }
+.${TYPE_TIP_CLASS}--pin { color: #4CAF50; background-color: #4CAF5033; }
+.${TYPE_TIP_CLASS}--article { color: #2196F3; background-color: #2196F333; }
+`);
+
+    const titleSel = 'h2.ContentItem-title';
+    if (location.pathname === '/search') onReadyNodes(titleSel, decorateTypeTip);
+    else qsa(titleSel).forEach(decorateTypeTip);
+
+    if (typeTipsBound) return;
+    typeTipsBound = true;
+    observeTree(mutations => {
+        if (!menuValue('menu_typeTips')) return;
+        forAddedElements(mutations, target => eachMatch(target, titleSel, decorateTypeTip));
+    });
+    on(window, 'urlchange', () => {
+        if (!menuValue('menu_typeTips')) {
+            clearTypeTips();
+            return;
+        }
+        onReadyNodes(titleSel, decorateTypeTip);
+    });
 }
 
 let toQuestionBound = false;
@@ -178,8 +239,8 @@ export function addToQuestion() {
         return;
     }
     const css = location.pathname === '/search'
-        ? `a.zhihu_e_toQuestion {font-size: 13px !important;font-weight: normal !important;padding: 1px 6px 0 !important;border-radius: 2px !important;display: inline-block !important;vertical-align: top !important;height: 20.67px !important;line-height: 20.67px !important;margin-top: 2px !important;margin-left: 6px !important;}`
-        : `a.zhihu_e_toQuestion {font-size: 13px !important;font-weight: normal !important;padding: 1px 6px 0 !important;border-radius: 2px !important;display: inline-block !important;vertical-align: top !important;margin-top: 4px !important;margin-left: 6px !important;}`;
+        ? `a.zhihu_e_toQuestion {font-size: 13px !important;font-weight: normal !important;padding: 1px 6px 0 !important;border-radius: 2px !important;display: inline-block !important;vertical-align: top !important;height: 20.67px !important;line-height: 20.67px !important;margin-top: 2px !important;margin-left: 8px !important;}`
+        : `a.zhihu_e_toQuestion {font-size: 13px !important;font-weight: normal !important;padding: 1px 6px 0 !important;border-radius: 2px !important;display: inline-block !important;vertical-align: top !important;margin-top: 4px !important;margin-left: 8px !important;}`;
     injectStyle('zhihu-plus-to-question', css);
 
     const decorate = titleA => {
