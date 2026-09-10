@@ -21,7 +21,7 @@ import { EXT_VERSION } from '@/lib/version';
 import { NOISE_CATEGORIES } from '@/lib/noise/lexicon';
 
 /** 与 src/lib/noise/taste.ts 的 TASTE_LEARNED_RANGE 保持一致 */
-const LEARNED_DELTA_RANGE = [-10, 10] as const;
+const LEARNED_DELTA_RANGE = [-8, 12] as const;
 
 function clampLearnedDelta(n: number) {
   return Math.max(LEARNED_DELTA_RANGE[0], Math.min(LEARNED_DELTA_RANGE[1], n));
@@ -439,7 +439,7 @@ export function App() {
                 <p>已记录 {settings.taste.clicks} 次喜欢 / 不感兴趣。</p>
                 <p className="text-sm text-zinc-500">
                   噪音词 {Object.keys(settings.taste.words).length} · 分类 {Object.keys(settings.taste.cats).length} · 新词 {learnedList.length}
-                  {' · '}点击标签可改词、调权或删除
+                  {' · '}点击标签可改词、调权或删除；不喜欢略强于喜欢，重复点击增量会减弱
                 </p>
                 <div className="flex gap-2">
                   <Input
