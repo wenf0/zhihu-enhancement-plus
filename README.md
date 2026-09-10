@@ -33,12 +33,27 @@ flowchart TD
 
 ## 安装
 
+### 从源码（开发）
+
 1. `npm install && npm run build`
 2. Chrome 打开 `chrome://extensions`
 3. 打开「开发者模式」
 4. 「加载已解压的扩展程序」，选仓库里的 `.output/chrome-mv3`
 
 设置页：工具栏图标 →「打开完整设置」，或扩展详情里的「扩展程序选项」。
+
+### 从 GitHub Release（推荐给使用者）
+
+打版本 tag 后，Actions 会自动 `npm run zip` 并把包挂到 [Releases](../../releases)：
+
+```bash
+# 1. 版本号与 src/lib/version.ts、package.json 对齐
+# 2. 提交并推送 main
+git tag v2.3.0
+git push origin v2.3.0
+```
+
+在 Releases 下载 `zhihu-enhancement-plus-*-chrome.zip`，解压后用「加载已解压的扩展程序」选解压目录（或把 zip 交给 Chrome 商店上传）。
 
 ## 开发
 
@@ -50,12 +65,14 @@ flowchart TD
 - 弹层：`src/entrypoints/popup/`
 - 存储：`chrome.storage.local`
 - 结巴 WASM：`public/jieba_rs_wasm_bg.wasm`
+- 发版：`.github/workflows/release.yml`（push `v*` tag → Release + zip）
 
 ```bash
 npm install
 npm run dev      # 开发模式，自动装进浏览器
 npm run build    # 产出 .output/chrome-mv3
+npm run zip      # 产出 .output/*-chrome.zip
 npm run typecheck
 ```
 
-版本号只改 `src/lib/version.ts`。
+版本号只改 `src/lib/version.ts`（并同步 `package.json`）。
