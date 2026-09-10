@@ -1,16 +1,18 @@
 ---
-description: 改完代码后自动提交并推送到 origin，不必等用户再说一次「提交推送」
+description: 改完代码后自动 commit；push 前先问一声
 alwaysApply: true
 ---
 
-# 改完即提交推送
+# 改完即提交，推送先问
 
-本仓库覆盖「未明确要求就不 commit」的默认习惯。完成用户要求的代码修改后，**立刻** commit 并 `git push` 到当前分支的远程，不要再问。
+本仓库覆盖「未明确要求就不 commit」的默认习惯。完成用户要求的代码修改后，**立刻** commit，不要再问。
+
+**不要**每次立刻 `git push`。commit 成功后先回报哈希，再问要不要推到远程；用户说推再 push。
 
 ## 何时做
 
 - 用户脚本、规则、README、LICENSE 等应入库的文件有实际改动
-- 一次任务收尾时：改完、自检完，就提交推送
+- 一次任务收尾时：改完、自检完，就提交
 
 ## 何时不做
 
@@ -23,7 +25,7 @@ alwaysApply: true
 1. 并行看 `git status`、`git diff`、`git log` 近期说明
 2. 扩展有行为变化时，先 bump `src/lib/version.ts`，再 `npm run build`
 3. `git add` 相关文件；commit 用 HEREDOC，英文 1–2 句写清 **why**，风格对齐近期 log
-4. `git push -u origin HEAD`（已跟踪则普通 push）
-5. 用 `git status` 确认干净，并回报提交哈希
+4. 用 `git status` 确认工作区干净，回报提交哈希
+5. 询问是否 `git push`；只有用户同意（或本轮明确要求推送）才执行 `git push -u origin HEAD`（已跟踪则普通 push）
 
 不要 `--force` 推 `main`，不要 `--no-verify`，不要改 git config。
