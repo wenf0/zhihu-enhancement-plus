@@ -1,0 +1,9 @@
+{
+  "name": "zhihu-enhancement-plus",
+  "private": true,
+  "description": "Pack src/ into the Tampermonkey userscript",
+  "scripts": {
+    "pack": "node scripts/pack.mjs",
+    "pack:check": "node scripts/pack.mjs --check"
+  }
+}

@@ -10,3 +10,18 @@
 
 - Greasy Fork：https://greasyfork.org/zh-CN/scripts/595014-知乎增强优化
 - GitHub：https://github.com/wenf0/zhihu-enhancement-plus
+
+## 开发
+
+油猴只能装一个文件，所以仓库里同时保留拆开的源码和打包结果：
+
+- 源码：`src/`（按功能拆文件）
+- 结巴 WASM glue：`vendor/jieba-rs-wasm-glue.js`
+- 安装 / 更新用：根目录 `zhihu-enhancement-plus.user.js`
+
+```bash
+node scripts/pack.mjs          # 拼回 user.js
+node scripts/pack.mjs --check  # 检查打包结果是否过期
+```
+
+拼接顺序见 `scripts/sources.mjs`。不要在源码里用 `import` / `export`，打包只是按顺序拼接。

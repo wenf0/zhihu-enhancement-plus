@@ -1,0 +1,19 @@
+---
+description: 改 src 后必须打包回 userscript
+alwaysApply: true
+---
+
+# 从 src 打包 userscript
+
+油猴只能安装根目录的 `zhihu-enhancement-plus.user.js`。逻辑源码在 `src/`，结巴 glue 在 `vendor/jieba-rs-wasm-glue.js`。
+
+## 怎么改
+
+- 改功能时编辑 `src/*.js`（以及需要时的 `src/meta.js` 头），不要手改打包后的 `zhihu-enhancement-plus.user.js`
+- 改完立刻执行 `node scripts/pack.mjs`（或 `npm run pack`），再 `node scripts/pack.mjs --check`
+- 提交时源码和打包结果一起入库；`pack:check` 失败不要推
+
+## 不要
+
+- 不要把源码改成 ESM `import`/`export`（打包是按顺序拼接，运行时仍是一份脚本）
+- 不要从页面再拉远程业务脚本；jieba WASM 继续走现有 `@resource`

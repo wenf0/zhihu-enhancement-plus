@@ -41,6 +41,7 @@
  * 基于 XIU2「知乎增强」2.2.15 的本地优化版。
  * 主要改动：配置对象化、统一路由、合并高频轮询为节流观察器、修正 observer 循环里误用 return 等问题。
  * 噪音评分用 jieba-wasm 2.4.0（jieba-rs WASM）整词匹配；词典经 @resource / GM_xmlhttpRequest 加载。
+ * 源码在 src/，改完后执行 `node scripts/pack.mjs` 生成根目录的 zhihu-enhancement-plus.user.js。
  */
 
 /* -------------------------------------------------------------------------- */
