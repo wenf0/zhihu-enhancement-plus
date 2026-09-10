@@ -6,6 +6,15 @@ import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
+import {
   APPEARANCE_KEYS,
   BLOCK_TYPE_KEYS,
   FILTER_TOGGLE_KEYS,
@@ -280,37 +289,47 @@ function CategoryDislikeBars({ rows }: { rows: CategoryDislikeStat[] }) {
     );
   }
 
-  const ranked = rows.filter(row => row.score > 0);
-  const maxScore = Math.max(...ranked.map(row => row.score), 1);
+  const data = rows.filter(row => row.score > 0);
+  const height = Math.max(220, data.length * 36 + 48);
 
   return (
-    <div className="space-y-3">
-      {ranked.map(row => {
-        const width = Math.max(6, Math.round((row.score / maxScore) * 100));
-        return (
-          <div key={row.id} className="space-y-1">
-            <div className="flex items-baseline justify-between gap-3 text-sm">
-              <div className="min-w-0 truncate">
-                <span className="font-medium text-zinc-800">{row.name}</span>
-                <span className="ml-2 text-xs text-zinc-400">L{row.level} · 基准 {row.c}</span>
-              </div>
-              <div className="shrink-0 tabular-nums text-zinc-600">
-                {row.score}
-                <span className="ml-2 text-xs text-zinc-400">
-                  类 {formatDelta(row.catDelta)} · 词 +{row.wordDelta}
-                </span>
-              </div>
-            </div>
-            <div className="h-2.5 overflow-hidden rounded-full bg-zinc-100">
-              <div
-                className="h-full rounded-full bg-zinc-800 transition-[width]"
-                style={{ width: `${width}%` }}
-                title={`踩 ${row.dislike} · 赞 ${row.like}`}
-              />
-            </div>
-          </div>
-        );
-      })}
+    <div className="w-full" style={{ height }}>
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart
+          layout="vertical"
+          data={data}
+          margin={{ top: 8, right: 16, bottom: 8, left: 8 }}
+        >
+          <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e4e4e7" />
+          <XAxis type="number" allowDecimals={false} tick={{ fill: '#71717a', fontSize: 12 }} />
+          <YAxis
+            type="category"
+            dataKey="name"
+            width={88}
+            tick={{ fill: '#3f3f46', fontSize: 12 }}
+          />
+          <Tooltip
+            cursor={{ fill: '#f4f4f5' }}
+            content={({ active, payload }) => {
+              if (!active || !payload?.length) return null;
+              const row = payload[0]?.payload as CategoryDislikeStat;
+              if (!row) return null;
+              return (
+                <div className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs shadow-sm">
+                  <p className="font-medium text-zinc-900">{row.name}</p>
+                  <p className="mt-1 text-zinc-600">厌恶强度 {row.score}</p>
+                  <p className="text-zinc-500">
+                    分类 {formatDelta(row.catDelta)} · 词 +{row.wordDelta} · L{row.level} · 基准 {row.c}
+                  </p>
+                  <p className="text-zinc-500">踩 {row.dislike} · 赞 {row.like}</p>
+                </div>
+              );
+            }}
+          />
+          <Bar dataKey="catPart" stackId="dislike" fill="#18181b" name="分类增量" radius={[0, 0, 0, 0]} barSize={18} />
+          <Bar dataKey="wordDelta" stackId="dislike" fill="#a1a1aa" name="词增量" radius={[0, 4, 4, 0]} barSize={18} />
+        </BarChart>
+      </ResponsiveContainer>
     </div>
   );
 }
@@ -607,7 +626,7 @@ export function App() {
               <CardHeader>
                 <CardTitle>不想看的类别</CardTitle>
                 <CardDescription>
-                  按口味学习汇总：分类增量 + 命中该分类词表的正向词增量。条越长越不想看。
+                  横向条越长越不想看。深色为分类口味增量，灰色为落入该分类词表的词增量（含口味新词）。
                 </CardDescription>
               </CardHeader>
               <CardContent>

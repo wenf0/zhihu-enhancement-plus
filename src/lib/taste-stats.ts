@@ -6,6 +6,8 @@ export interface CategoryDislikeStat {
   level: number;
   c: number;
   score: number;
+  /** max(0, catDelta)，供堆叠条使用 */
+  catPart: number;
   catDelta: number;
   wordDelta: number;
   like: number;
@@ -24,9 +26,15 @@ function entryDislike(entry: TasteEntry | undefined) {
   return entry ? Math.max(0, Number(entry.dislike) || 0) : 0;
 }
 
+function wordInCat(words: Record<string, number>, word: string) {
+  if (Object.prototype.hasOwnProperty.call(words, word)) return true;
+  const key = word.toLowerCase();
+  return Object.keys(words).some(w => w.toLowerCase() === key);
+}
+
 /**
  * 按「不想看」强度汇总各噪音分类。
- * score = max(0, 分类口味 delta) + 落在该分类词表中的词正 delta 之和。
+ * score = max(0, 分类口味 delta) + 落在该分类词表中的词正 delta（taste.words + taste.learned）。
  */
 export function buildCategoryDislikeStats(
   taste: TastePrefs | null | undefined,
@@ -34,7 +42,7 @@ export function buildCategoryDislikeStats(
 ): CategoryDislikeStat[] {
   const cats = lexicon?.cats || {};
   const tasteCats = taste?.cats || {};
-  const tasteWords = taste?.words || {};
+  const wordMaps = [taste?.words || {}, taste?.learned || {}];
   const rows: CategoryDislikeStat[] = [];
 
   for (const cat of Object.values(cats)) {
@@ -45,25 +53,29 @@ export function buildCategoryDislikeStats(
     let like = entryLike(catEntry);
     let dislike = entryDislike(catEntry);
     const words = cat.words || {};
+    const seen = new Set<string>();
 
-    for (const [word, entry] of Object.entries(tasteWords)) {
-      const key = word.toLowerCase();
-      const hit = Object.prototype.hasOwnProperty.call(words, word)
-        || Object.keys(words).some(w => w.toLowerCase() === key);
-      if (!hit) continue;
-      const d = entryDelta(entry);
-      if (d > 0) wordDelta += d;
-      like += entryLike(entry);
-      dislike += entryDislike(entry);
+    for (const map of wordMaps) {
+      for (const [word, entry] of Object.entries(map)) {
+        const low = word.toLowerCase();
+        if (seen.has(low) || !wordInCat(words, word)) continue;
+        seen.add(low);
+        const d = entryDelta(entry);
+        if (d > 0) wordDelta += d;
+        like += entryLike(entry);
+        dislike += entryDislike(entry);
+      }
     }
 
-    const score = Math.max(0, catDelta) + wordDelta;
+    const catPart = Math.max(0, catDelta);
+    const score = catPart + wordDelta;
     rows.push({
       id: cat.id,
       name: cat.name || cat.id,
       level: Number(cat.level) || 0,
       c: Number(cat.c) || 0,
       score,
+      catPart,
       catDelta,
       wordDelta,
       like,
