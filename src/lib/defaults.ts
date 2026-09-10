@@ -6,23 +6,6 @@ export const DEFAULT_BLOCK_USERS = [
   '盐选作者小管家', '盐选博物馆', '盐选点金', '盐选测评室', '盐选科技前沿', '盐选会员精品',
 ];
 
-export const DEFAULT_BLOCK_KEYWORDS = [
-  '长鑫科技', '地铁安检', '张凌赫', '上海地铁', '俄罗斯', '小红书',
-  '《崩坏星穹铁道》', '《鸣潮》', '曲婉婷', '邹市明', '理想汽车', '闲鱼',
-  '拉丁舞', '问界', '国内暗网', '理想L9livis', '王师傅和小毛毛', '流萤',
-  '鞠婧祎', '周淑怡', '多益网络', '崩老头', '袁隆平', '世界杯氛围淡淡',
-  '成龙', '战锤40K', '《绝区零》', '比亚迪', '李小璐', '大量空座',
-  '沈逸', '崩坏：星穹铁道', '恋与深空', '世界杯的热度', '布达拉宫', '开心麻花',
-  '监护人', '红牛', '社保', '韩红', 'A股股市', '靠谱外卖',
-  '张桂梅', '高圆圆', '粉丝', '赵丽颖', '三角洲行动', '鹅腿阿姨',
-  '影视飓风', '田曦薇',
-  '男', '女', '父亲', '母亲', '大龄剩女', '男性', '女性', 'coser', '儿子', '体育生',
-  '女儿', '迪士尼', '盲盒', '奶茶', '漫展', '小孩', '结婚', '生娃', '华为',
-  '大龄女', '大妈', '单亲', '女生', '美女', '女神', '小姐姐', '男子', '女演员',
-  '健身房', 'JK', '身材', '985', '211', '小米', '妈', '妈妈', '生物爹', '原生家庭',
-  '今日俄罗斯',
-];
-
 export const MENU_ITEMS: MenuItem[] = [
   { key: 'menu_lowProfile', label: '低饱和模式', tip: '把链接、按钮、关注等改成灰调，页面更素、少抢眼。', def: true },
   { key: 'menu_fullWidth', label: '隐藏右侧栏', tip: '去掉推荐关注、相关问题等侧栏，主栏居中加宽。', def: true },
@@ -43,9 +26,8 @@ export const MENU_ITEMS: MenuItem[] = [
   { key: 'menu_customBlockUsers', label: '编辑屏蔽用户', tip: '自定义屏蔽用户', def: DEFAULT_BLOCK_USERS, kind: 'users' },
   { key: 'menu_noiseScore', label: '噪音评分', tip: '给信息流打噪音分。过滤和显示得分都要先开这项。', def: true },
   { key: 'menu_blockKeywords', label: '噪音过滤', tip: '关闭只打分；仅降权会变淡；隐藏会移出信息流并可复查。', def: 'hide', kind: 'filter' },
-  { key: 'menu_noiseBadge', label: '显示噪音得分', tip: '每条内容显示模型分，0 分不标。规则隐藏不改这个数字。', def: true },
+  { key: 'menu_noiseBadge', label: '显示噪音得分', tip: '每条内容显示模型分，0 分不标。', def: true },
   { key: 'menu_noiseTaste', label: '喜欢 / 不感兴趣', tip: '对卡片分词后对照词库，回写权重；多次出现的新实词也会学进去。', def: true },
-  { key: 'menu_customBlockKeywords', label: '编辑屏蔽关键词', tip: '每条词可开关，并设隐藏 / 降权 / 加权。预置词默认开着。', def: DEFAULT_BLOCK_KEYWORDS, kind: 'keywords' },
   {
     key: 'menu_noiseLevel',
     label: '噪音过滤档位',

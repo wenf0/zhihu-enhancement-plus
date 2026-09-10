@@ -1,8 +1,8 @@
 // @ts-nocheck
 import { runtime } from '../content/state';
-import { CUSTOM_LEVELS, NOISE_WEIGHTS, NOISE_HIDE, NOISE_DEMOTE } from './const';
+import { NOISE_WEIGHTS, NOISE_HIDE, NOISE_DEMOTE } from './const';
 import { getActiveLexicon } from './lexicon';
-import { menuValue, activeKeywordEntries } from '../storage';
+import { menuValue } from '../storage';
 import { getTastePrefs, tasteDelta, tasteEnabled, TASTE_LEARNED_MIN } from './taste';
 import {
     noiseHas, noiseTokenSet, jiebaTagTokens, canLearnJiebaToken, cutNoiseTokens, syncJiebaUserDict,
@@ -34,11 +34,6 @@ export function compileNoiseIndex() {
             words
         });
     }
-    const custom = activeKeywordEntries().map(item => ({
-        k: String(item.word).toLowerCase(),
-        word: item.word,
-        level: CUSTOM_LEVELS[item.level] ? item.level : 'weight'
-    }));
     const toPairs = map => Object.keys(map).map(k => ({ k: k.toLowerCase(), w: map[k] }));
     const emotion = toPairs(lex.emotion);
     const controversy = (lex.controversy || []).map(x => String(x).toLowerCase());
@@ -58,7 +53,6 @@ export function compileNoiseIndex() {
     for (const cat of cats) {
         for (const item of cat.words) putNoise(item.k, cat.id);
     }
-    for (const item of custom) putNoise(item.k, '');
     for (const item of emotion) putNoise(item.k, '');
     for (const word of controversy) putNoise(word, '');
     for (const word of clickbait) putNoise(word, '');
@@ -68,7 +62,6 @@ export function compileNoiseIndex() {
     }
     runtime.noiseIndex = {
         cats,
-        custom,
         emotion,
         controversy,
         clickbait,
@@ -87,9 +80,8 @@ export function scoreText(raw) {
     if (!raw) {
         return {
             final: 0, K: 0, C: 0, E: 0, S: 0, B: 0, V: 0, kRaw: 0,
-            hits: { words: [], custom: [], cats: [], emotion: [], controversy: [], clickbait: [], value: [], learned: [] },
-            winningCat: '', winningCatId: '', exclude: '', cFallback: false, customHit: false, customFloor: 0,
-            rule: { action: '', words: [] }
+            hits: { words: [], cats: [], emotion: [], controversy: [], clickbait: [], value: [], learned: [] },
+            winningCat: '', winningCatId: '', exclude: '', cFallback: false
         };
     }
     const text = String(raw).toLowerCase();
@@ -142,24 +134,6 @@ export function scoreText(raw) {
             catHits.push({ word: cat.name, w: c, level: cat.level, exclude: hitEx });
         }
     }
-
-    let customHit = false;
-    let customFloor = 0;
-    const customHits = [];
-    for (const item of idx.custom) {
-        const word = item && item.k;
-        if (!word || !has(word)) continue;
-        const spec = CUSTOM_LEVELS[item.level] || CUSTOM_LEVELS.weight;
-        customHit = true;
-        customFloor = Math.max(customFloor, spec.floor);
-        const w = spec.k + (prefs ? tasteDelta(prefs.words, word) : 0);
-        customHits.push({ word: item.word || word, w, level: spec.id, cat: '自定义', source: 'custom' });
-        if (!wordHits.some(hit => hit.word === word || hit.word === item.word)) {
-            kRaw += Math.max(0, w);
-            wordHits.push({ word: item.word || word, w, level: spec.id, cat: '自定义', source: 'custom' });
-        }
-    }
-    const rule = noiseRuleFromHits(customHits);
 
     const learnedHits = [];
     if (prefs && prefs.learned) {
@@ -231,42 +205,20 @@ export function scoreText(raw) {
     const final = Math.max(0, Math.min(100, noise - NOISE_WEIGHTS.v * V));
     return {
         final, K, C: bestC, E, S, B, V, kRaw,
-        hits: { words: wordHits, custom: customHits, cats: catHits, emotion, controversy, clickbait, value, learned: learnedHits },
-        winningCat, winningCatId, exclude, cFallback, customHit, customFloor, rule
+        hits: { words: wordHits, cats: catHits, emotion, controversy, clickbait, value, learned: learnedHits },
+        winningCat, winningCatId, exclude, cFallback
     };
-}
-
-export function noiseRuleFromHits(hits) {
-    let action = '';
-    for (const item of hits || []) {
-        if (item.level === 'hide') action = 'hide';
-        else if (item.level === 'demote' && action !== 'hide') action = 'demote';
-    }
-    return { action, words: hits || [] };
-}
-
-export function mergeNoiseRules(a, b) {
-    const words = [...((a && a.words) || []), ...((b && b.words) || [])];
-    const action = (a && a.action) === 'hide' || (b && b.action) === 'hide'
-        ? 'hide'
-        : (a && a.action) === 'demote' || (b && b.action) === 'demote'
-            ? 'demote'
-            : '';
-    return { action, words };
 }
 
 export function scoreFeedNoise(title, body) {
     const titleScore = scoreText(title);
     const bodyScore = scoreText(String(body || '').slice(0, 280));
     const final = Math.max(titleScore.final, titleScore.final * 0.72 + bodyScore.final * 0.28);
-    const rule = mergeNoiseRules(titleScore.rule, bodyScore.rule);
-    return { final, titleScore, bodyScore, rule };
+    return { final, titleScore, bodyScore };
 }
 
-export function noiseVerdict(score, rule) {
-    if (rule && rule.action === 'hide') return { id: 'hide', name: '规则隐藏' };
+export function noiseVerdict(score) {
     if (score >= NOISE_HIDE) return { id: 'hide', name: '会隐藏' };
-    if (rule && rule.action === 'demote') return { id: 'demote', name: '规则降权' };
     if (score >= NOISE_DEMOTE) return { id: 'demote', name: '会降权' };
     return { id: 'keep', name: '会保留' };
 }

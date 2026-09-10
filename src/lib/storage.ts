@@ -1,32 +1,22 @@
 import {
-  CUSTOM_LEVEL_IDS,
-  KEYWORDS_LEVEL_KEY,
-  KEYWORDS_LEVELS_KEY,
-  KEYWORDS_OFF_KEY,
-  KW_PACK_KEY,
   LEXICON_KEY,
+  REMOVED_KEYWORD_KEYS,
   SETTINGS_KIND,
   TASTE_KEY,
   USERS_OFF_KEY,
-  type CustomLevelId,
   type FilterMode,
-  type KeywordEntry,
   type LexiconData,
   type SettingsSnapshot,
   type SettingsValues,
   type TastePrefs,
 } from './types';
-import { DEFAULT_BLOCK_KEYWORDS, DEFAULT_BLOCK_USERS, MENU_ITEMS } from './defaults';
+import { DEFAULT_BLOCK_USERS, MENU_ITEMS } from './defaults';
 import { EXT_VERSION } from './version';
 
 export const EXTRA_KEYS = [
-  KW_PACK_KEY,
   LEXICON_KEY,
   TASTE_KEY,
   USERS_OFF_KEY,
-  KEYWORDS_OFF_KEY,
-  KEYWORDS_LEVEL_KEY,
-  KEYWORDS_LEVELS_KEY,
 ];
 
 const cache: SettingsValues = Object.create(null);
@@ -51,11 +41,7 @@ export function defaultSettings(): SettingsValues {
     if (item.kind === 'group' || item.kind === 'lexicon') continue;
     values[item.key] = item.def;
   }
-  values[KW_PACK_KEY] = true;
   values[USERS_OFF_KEY] = [];
-  values[KEYWORDS_OFF_KEY] = [];
-  values[KEYWORDS_LEVEL_KEY] = 'hide';
-  values[KEYWORDS_LEVELS_KEY] = {};
   values[LEXICON_KEY] = null;
   values[TASTE_KEY] = emptyTastePrefs();
   return values;
@@ -75,20 +61,12 @@ export async function loadSettings(): Promise<SettingsValues> {
   const stored = await browser.storage.local.get(null);
   const defaults = defaultSettings();
   const merged: SettingsValues = { ...defaults, ...stored };
-  if (!merged[KW_PACK_KEY]) {
-    const current = merged.menu_customBlockKeywords;
-    if (current == null || (Array.isArray(current) && current.length === 0)) {
-      merged.menu_customBlockKeywords = DEFAULT_BLOCK_KEYWORDS;
-    }
-    merged[KW_PACK_KEY] = true;
-  }
   if (merged.menu_noiseScore == null) merged.menu_noiseScore = true;
   merged.menu_blockKeywords = normalizeFilterMode(merged.menu_blockKeywords);
-  merged.menu_customBlockKeywords = normalizeKeywordList(
-    merged.menu_customBlockKeywords,
-    merged,
-  );
+  for (const key of REMOVED_KEYWORD_KEYS) delete merged[key];
   writeCache(merged);
+  const stale = REMOVED_KEYWORD_KEYS.filter(key => key in stored);
+  if (stale.length) void browser.storage.local.remove([...stale]);
   return merged;
 }
 
@@ -103,11 +81,8 @@ export function menuSet(key: string, value: unknown) {
 }
 
 export function writeListOff(storageKey: string, off: Set<string>) {
-  const key = storageKey === 'menu_customBlockUsers' ? USERS_OFF_KEY
-    : storageKey === 'menu_customBlockKeywords' ? KEYWORDS_OFF_KEY
-      : '';
-  if (!key) return;
-  menuSet(key, [...off]);
+  if (storageKey !== 'menu_customBlockUsers') return;
+  menuSet(USERS_OFF_KEY, [...off]);
 }
 
 export async function setSettings(values: SettingsValues) {
@@ -133,88 +108,10 @@ export function readFilterMode(): FilterMode {
   return normalizeFilterMode(menuValue('menu_blockKeywords'));
 }
 
-export function normalizeCustomLevel(value: unknown): CustomLevelId | '' {
-  return CUSTOM_LEVEL_IDS.includes(value as CustomLevelId) ? (value as CustomLevelId) : '';
-}
-
-export function readCustomDefaultLevel(values: SettingsValues = cache): CustomLevelId {
-  return normalizeCustomLevel(values[KEYWORDS_LEVEL_KEY]) || 'hide';
-}
-
-export function readCustomLevelMap(values: SettingsValues = cache): Record<string, CustomLevelId> {
-  const raw = values[KEYWORDS_LEVELS_KEY];
-  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
-  const out: Record<string, CustomLevelId> = {};
-  for (const [word, level] of Object.entries(raw as Record<string, unknown>)) {
-    const lv = normalizeCustomLevel(level);
-    if (word && lv) out[word] = lv;
-  }
-  return out;
-}
-
-export function customLevelFor(word: string, fallback: CustomLevelId, values: SettingsValues = cache) {
-  const map = readCustomLevelMap(values);
-  if (map[word]) return map[word];
-  const low = String(word || '').toLowerCase();
-  for (const [key, level] of Object.entries(map)) {
-    if (key.toLowerCase() === low) return level;
-  }
-  return fallback || readCustomDefaultLevel(values);
-}
-
-export function defaultKeywordLevel(word: string, fallback?: CustomLevelId, values: SettingsValues = cache): CustomLevelId {
-  if (String(word || '').length < 2) return 'weight';
-  return normalizeCustomLevel(fallback) || readCustomDefaultLevel(values);
-}
-
 export function readListOff(storageKey: string, values: SettingsValues = cache): Set<string> {
-  const key = storageKey === 'menu_customBlockUsers' ? USERS_OFF_KEY
-    : storageKey === 'menu_customBlockKeywords' ? KEYWORDS_OFF_KEY
-      : '';
+  const key = storageKey === 'menu_customBlockUsers' ? USERS_OFF_KEY : '';
   const raw = key ? values[key] : [];
   return new Set(Array.isArray(raw) ? raw : []);
-}
-
-export function normalizeKeywordList(raw: unknown, values: SettingsValues = cache): KeywordEntry[] {
-  const fallback = readCustomDefaultLevel(values);
-  const off = readListOff('menu_customBlockKeywords', values);
-  const list = Array.isArray(raw) ? raw : [];
-  const out: KeywordEntry[] = [];
-  const seen = new Set<string>();
-  for (const item of list) {
-    let word = '';
-    let on = true;
-    let level: CustomLevelId | '' = '';
-    if (typeof item === 'string') {
-      word = item;
-      on = !off.has(word);
-      level = customLevelFor(word, defaultKeywordLevel(word, fallback, values), values);
-    } else if (item && typeof item === 'object' && typeof (item as KeywordEntry).word === 'string') {
-      const row = item as KeywordEntry;
-      word = row.word;
-      on = row.on !== false;
-      level = normalizeCustomLevel(row.level) || defaultKeywordLevel(word, fallback, values);
-    }
-    const key = word.toLowerCase();
-    if (!word || seen.has(key)) continue;
-    seen.add(key);
-    out.push({
-      word,
-      on,
-      level: CUSTOM_LEVEL_IDS.includes(level as CustomLevelId)
-        ? (level as CustomLevelId)
-        : defaultKeywordLevel(word, fallback, values),
-    });
-  }
-  return out;
-}
-
-export function readKeywordEntries(): KeywordEntry[] {
-  return normalizeKeywordList(menuValue('menu_customBlockKeywords'));
-}
-
-export function activeKeywordEntries(): KeywordEntry[] {
-  return readKeywordEntries().filter(item => item.on && item.word);
 }
 
 export function activeListValues(storageKey: string): string[] {
@@ -225,10 +122,6 @@ export function activeListValues(storageKey: string): string[] {
 
 export function isPackedListItem(storageKey: string, word: string) {
   if (storageKey === 'menu_customBlockUsers') return DEFAULT_BLOCK_USERS.includes(word);
-  if (storageKey === 'menu_customBlockKeywords') {
-    const k = String(word).toLowerCase();
-    return DEFAULT_BLOCK_KEYWORDS.some(x => x.toLowerCase() === k);
-  }
   return false;
 }
 
@@ -265,26 +158,17 @@ export function parseSettingsJson(text: string): SettingsValues {
 }
 
 export function isValidSettingValue(key: string, value: unknown) {
-  if (key === KW_PACK_KEY) return typeof value === 'boolean';
   if (key === LEXICON_KEY) return !!(value && typeof value === 'object' && !Array.isArray(value));
   if (key === TASTE_KEY) {
     return !!(value && typeof value === 'object' && !Array.isArray(value)
       && (value as TastePrefs).words && typeof (value as TastePrefs).words === 'object');
   }
-  if (key === USERS_OFF_KEY || key === KEYWORDS_OFF_KEY) {
+  if (key === USERS_OFF_KEY) {
     return Array.isArray(value) && value.every(x => typeof x === 'string');
-  }
-  if (key === KEYWORDS_LEVEL_KEY) return CUSTOM_LEVEL_IDS.includes(value as CustomLevelId);
-  if (key === KEYWORDS_LEVELS_KEY) {
-    return !!(value && typeof value === 'object' && !Array.isArray(value)
-      && Object.values(value as Record<string, unknown>).every(x => CUSTOM_LEVEL_IDS.includes(x as CustomLevelId)));
   }
   const item = MENU_ITEMS.find(x => x.key === key);
   if (!item) return false;
   if (item.kind === 'users') return Array.isArray(value) && value.every(x => typeof x === 'string');
-  if (item.kind === 'keywords') {
-    return Array.isArray(value) && value.every(x => typeof x === 'string' || (x && typeof (x as KeywordEntry).word === 'string'));
-  }
   if (item.kind === 'filter') return value === 'off' || value === 'demote' || value === 'hide' || typeof value === 'boolean';
   if (item.kind === 'group' || item.kind === 'lexicon') return typeof value === 'string';
   return typeof value === 'boolean';

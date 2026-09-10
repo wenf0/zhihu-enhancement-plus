@@ -4,19 +4,15 @@ import {
   defaultSettings,
   getTastePrefs,
   loadSettings,
-  menuValue,
-  normalizeKeywordList,
   parseSettingsJson,
-  readCustomDefaultLevel,
   saveTastePrefs,
   setSetting,
   snapshotSettings,
+  emptyTastePrefs,
 } from './storage';
 import { MENU_ITEMS } from './defaults';
-import type { CustomLevelId, FilterMode, KeywordEntry, SettingsValues, TastePrefs } from './types';
-import { emptyTastePrefs } from './storage';
+import type { FilterMode, SettingsValues, TastePrefs, LexiconData } from './types';
 import { getActiveLexicon, saveLexicon } from './noise/lexicon';
-import type { LexiconData } from './types';
 
 export function useSettings() {
   const [ready, setReady] = useState(false);
@@ -62,16 +58,6 @@ export function useSettings() {
     setValues(prev => ({ ...prev, menu_customBlockUsers: users }));
   }, []);
 
-  const setKeywords = useCallback(async (list: KeywordEntry[]) => {
-    await setSetting('menu_customBlockKeywords', list);
-    setValues(prev => ({ ...prev, menu_customBlockKeywords: list }));
-  }, []);
-
-  const setDefaultLevel = useCallback(async (level: CustomLevelId) => {
-    await setSetting('menu_customBlockKeywordsLevel', level);
-    setValues(prev => ({ ...prev, menu_customBlockKeywordsLevel: level }));
-  }, []);
-
   const updateTaste = useCallback(async (next: TastePrefs) => {
     await saveTastePrefs(next);
     setTaste(next);
@@ -87,11 +73,6 @@ export function useSettings() {
     await saveLexicon(data);
     setLexicon(data);
   }, []);
-
-  const keywords = useMemo(
-    () => normalizeKeywordList(values.menu_customBlockKeywords || menuValue('menu_customBlockKeywords'), values),
-    [values],
-  );
 
   const users = useMemo(
     () => (Array.isArray(values.menu_customBlockUsers) ? values.menu_customBlockUsers as string[] : []),
@@ -119,15 +100,11 @@ export function useSettings() {
     values,
     lexicon,
     taste,
-    keywords,
     users,
     items: MENU_ITEMS,
-    defaultLevel: readCustomDefaultLevel(values),
     setBool,
     setFilter,
     setUsers,
-    setKeywords,
-    setDefaultLevel,
     updateTaste,
     resetTaste,
     updateLexicon,

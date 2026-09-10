@@ -1,6 +1,5 @@
 export type FilterMode = 'off' | 'demote' | 'hide';
-export type CustomLevelId = 'hide' | 'demote' | 'weight';
-export type MenuKind = 'users' | 'keywords' | 'filter' | 'group' | 'lexicon' | 'hidden';
+export type MenuKind = 'users' | 'filter' | 'group' | 'lexicon' | 'hidden';
 
 export interface MenuItem {
   key: string;
@@ -9,12 +8,6 @@ export interface MenuItem {
   def: boolean | string | string[];
   kind?: MenuKind;
   children?: string[];
-}
-
-export interface KeywordEntry {
-  word: string;
-  on: boolean;
-  level: CustomLevelId;
 }
 
 export interface TasteEntry {
@@ -66,13 +59,12 @@ export const SETTINGS_KIND = 'zhihu-enhancement-plus-settings';
 export const LEXICON_KEY = 'noise_lexicon_v1';
 export const TASTE_KEY = 'noise_taste_v1';
 export const USERS_OFF_KEY = 'menu_customBlockUsersOff';
-export const KEYWORDS_OFF_KEY = 'menu_customBlockKeywordsOff';
-export const KEYWORDS_LEVEL_KEY = 'menu_customBlockKeywordsLevel';
-export const KEYWORDS_LEVELS_KEY = 'menu_customBlockKeywordsLevels';
-export const KW_PACK_KEY = 'menu_kw_pack_v1';
-export const CUSTOM_LEVEL_IDS: CustomLevelId[] = ['hide', 'demote', 'weight'];
-export const CUSTOM_LEVEL_LABELS: Record<CustomLevelId, string> = {
-  hide: '隐藏',
-  demote: '降权',
-  weight: '加权',
-};
+
+/** 已移除的自定义关键词相关 key，加载时清掉本地残留 */
+export const REMOVED_KEYWORD_KEYS = [
+  'menu_customBlockKeywords',
+  'menu_customBlockKeywordsOff',
+  'menu_customBlockKeywordsLevel',
+  'menu_customBlockKeywordsLevels',
+  'menu_kw_pack_v1',
+] as const;

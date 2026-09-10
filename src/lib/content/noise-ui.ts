@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { runtime } from './state';
-import { NOISE_HIDE, NOISE_DEMOTE, NOISE_WEIGHTS, CUSTOM_LEVELS } from '../noise/const';
+import { NOISE_HIDE, NOISE_DEMOTE, NOISE_WEIGHTS } from '../noise/const';
 import { menuValue, readFilterMode } from '../storage';
 import { escapeHtml, injectStyle, observeTree, forAddedElements, notify } from '../utils';
 import { ensureJieba, jiebaReady, jiebaUnavailable } from '../noise/jieba';
@@ -91,31 +91,21 @@ export function noiseHitChips(list, fmt) {
 }
 
 export function noiseExplainHtml(title, body, result, href) {
-    const { final, titleScore, bodyScore, rule } = result;
-    const verdict = noiseVerdict(final, rule);
+    const { final, titleScore, bodyScore } = result;
+    const verdict = noiseVerdict(final);
     const mixed = titleScore.final * 0.72 + bodyScore.final * 0.28;
     const used = final === titleScore.final ? 'title' : 'mix';
     const mode = readFilterMode();
     const rows = noisePartRows(titleScore);
     const w = NOISE_WEIGHTS;
     const n = x => (Math.round(x * 10) / 10).toFixed(1);
-    const hits = titleScore.hits || { words: [], custom: [], cats: [], emotion: [], controversy: [], clickbait: [], value: [] };
-    const customHits = mergeNoiseHits(hits.custom, bodyScore.hits && bodyScore.hits.custom);
+    const hits = titleScore.hits || { words: [], cats: [], emotion: [], controversy: [], clickbait: [], value: [] };
     const classHits = mergeNoiseHits(hits.cats, bodyScore.hits && bodyScore.hits.cats);
-    const catHits = (hits.words || []).filter(item => item.source !== 'custom');
+    const catHits = hits.words || [];
     const notes = [];
     if (titleScore.winningCat) notes.push(`分类取「${titleScore.winningCat}」`);
     if (titleScore.exclude) notes.push(`排除词「${titleScore.exclude}」使 C ×0.35`);
-    if (titleScore.cFallback) notes.push('无关键词但情绪和标题党偏高，C 保底 42');
-    if (customHits.length) {
-        const names = customHits.map(item => {
-            const label = (CUSTOM_LEVELS[item.level] || CUSTOM_LEVELS.weight).name;
-            return `${item.word}（${label}）`;
-        }).join('、');
-        notes.push(rule && rule.action
-            ? `自定义规则「${names}」，分数仍是模型分`
-            : `命中自定义词「${names}」，只加权`);
-    }
+    if (titleScore.cFallback) notes.push('无词命中但情绪和标题党偏高，C 保底 42');
     if (mode === 'off') notes.push('过滤已关闭，信息流只打分不处理');
     else if (mode === 'demote') notes.push('过滤为仅降权，不会移出信息流');
     const learnedHits = mergeNoiseHits(hits.learned, bodyScore.hits && bodyScore.hits.learned);
@@ -133,9 +123,9 @@ export function noiseExplainHtml(title, body, result, href) {
         </div>`;
     };
     const chip = item => {
-        const tag = item.level && CUSTOM_LEVELS[item.level]
-            ? CUSTOM_LEVELS[item.level].name
-            : (item.cat && item.source !== 'custom' ? item.cat : (item.w != null ? (item.w % 1 ? item.w.toFixed(1) : item.w) : ''));
+        const tag = item.cat
+            ? item.cat
+            : (item.w != null ? (item.w % 1 ? item.w.toFixed(1) : item.w) : '');
         return `<span class="zhihuE_NxChip"><em>${escapeHtml(item.word)}</em>${tag !== '' ? `<b>${escapeHtml(String(tag))}</b>` : ''}</span>`;
     };
     const classChip = item => {
@@ -164,9 +154,8 @@ export function noiseExplainHtml(title, body, result, href) {
             <div class="zhihuE_NxRows">${rows.map(bar).join('')}</div>
         </div>
         <div class="zhihuE_NxHits">
-            <div class="zhihuE_NxBlock"><span>自定义</span><div>${noiseHitChips(customHits, chip)}</div></div>
             <div class="zhihuE_NxBlock"><span>分类</span><div>${noiseHitChips(classHits, classChip)}</div></div>
-            <div class="zhihuE_NxBlock"><span>关键词</span><div>${noiseHitChips(catHits, chip)}</div></div>
+            <div class="zhihuE_NxBlock"><span>词命中</span><div>${noiseHitChips(catHits, chip)}</div></div>
             <div class="zhihuE_NxBlock"><span>情绪</span><div>${noiseHitChips(hits.emotion, chip)}</div></div>
             <div class="zhihuE_NxBlock"><span>争议</span><div>${noiseHitChips(hits.controversy.map(word => ({ word })), chip)}</div></div>
             <div class="zhihuE_NxBlock"><span>标题党</span><div>${noiseHitChips(hits.clickbait.map(word => ({ word })), chip)}</div></div>
@@ -420,11 +409,7 @@ export function renderNoiseTray() {
 
 export function fillNoiseTrayPanel(panel) {
     panel.innerHTML = `<h4>已过滤 ${hiddenNoiseItems.length} 条</h4>` + hiddenNoiseItems.map((item, index) => {
-        const why = item.why || (item.rule && item.rule.action === 'hide'
-            ? '规则隐藏'
-            : item.rule && item.rule.action === 'demote'
-                ? '规则降权'
-                : '分数隐藏');
+        const why = item.why || '分数隐藏';
         const title = item.title || '（无标题）';
         return `<button type="button" data-hidden="${index}"><b>${item.score}</b>${escapeHtml(title.slice(0, 42))}<div style="margin-top:4px;font-size:12px;color:#8a8a8a;">${why}</div></button>`;
     }).join('');
@@ -455,25 +440,23 @@ export function applyNoiseToCard(card, titleCss) {
     if (card.dataset.zhihuPlusNoise) resetNoiseCardVisual(card);
     const { title, body } = cardNoiseText(card, titleCss);
     if (!title && !body) return;
-    const { final, rule } = scoreFeedNoise(title, body);
+    const { final } = scoreFeedNoise(title, body);
     const rounded = Math.round(final);
     const tasteKey = tasteEnabled() ? tasteCardKey(card, titleCss) : '';
     const tasteAction = tasteKey ? (getTastePrefs().actions[tasteKey] || '') : '';
     card.dataset.zhihuPlusNoise = String(rounded);
     card.dataset.zhihuPlusTasteGen = gen;
     const mode = readFilterMode();
-    const hideByRule = rule && rule.action === 'hide';
-    const demoteByRule = rule && (rule.action === 'demote' || rule.action === 'hide');
     const hideByTaste = tasteAction === 'dislike';
     const keepByTaste = tasteAction === 'like';
-    const hide = !keepByTaste && (hideByTaste || (mode === 'hide' && (hideByRule || final >= NOISE_HIDE)));
-    const demote = !keepByTaste && !hide && (mode === 'hide' || mode === 'demote') && (demoteByRule || final >= NOISE_DEMOTE);
+    const hide = !keepByTaste && (hideByTaste || (mode === 'hide' && final >= NOISE_HIDE));
+    const demote = !keepByTaste && !hide && (mode === 'hide' || mode === 'demote') && final >= NOISE_DEMOTE;
     if (hide) {
         card.classList.add('zhihu-plus-noise-hide');
         card.hidden = true;
         card.style.display = 'none';
         hiddenNoiseItems.push({
-            card, titleCss, title, score: rounded, rule,
+            card, titleCss, title, score: rounded,
             why: hideByTaste ? '不感兴趣' : ''
         });
         renderNoiseTray();
@@ -576,9 +559,8 @@ export function blockKeywordsComment() {
         const score = scoreText(content.textContent || '');
         const mode = readFilterMode();
         content.dataset.zhihuPlusNoise = String(Math.round(score.final));
-        const hide = mode === 'hide' && ((score.rule && score.rule.action === 'hide') || score.final >= NOISE_HIDE);
-        const demote = !hide && (mode === 'hide' || mode === 'demote')
-            && ((score.rule && score.rule.action) || score.final >= NOISE_DEMOTE);
+        const hide = mode === 'hide' && score.final >= NOISE_HIDE;
+        const demote = !hide && (mode === 'hide' || mode === 'demote') && score.final >= NOISE_DEMOTE;
         if (hide) {
             content.textContent = '[该评论已降噪]';
         } else if (demote) {

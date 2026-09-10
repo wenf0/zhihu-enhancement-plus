@@ -56,7 +56,6 @@ export function syncJiebaUserDict() {
   };
   const idx = runtime.noiseIndex as {
     cats?: Array<{ words: Array<{ k: string }>; excludes: string[] }>;
-    custom?: Array<{ k: string }>;
     emotion?: Array<{ k: string }>;
     controversy?: string[];
     clickbait?: string[];
@@ -67,7 +66,6 @@ export function syncJiebaUserDict() {
     for (const item of cat.words) add(item.k);
     for (const ex of cat.excludes) add(ex);
   }
-  for (const item of idx.custom || []) add(item.k);
   for (const item of idx.emotion || []) add(item.k);
   for (const word of idx.controversy || []) add(word);
   for (const word of idx.clickbait || []) add(word);

@@ -13,7 +13,7 @@ import {
   NOISE_LEVEL_KEYS,
   READING_KEYS,
 } from '@/lib/defaults';
-import { CUSTOM_LEVEL_IDS, CUSTOM_LEVEL_LABELS, type FilterMode, type TasteEntry, type TastePrefs } from '@/lib/types';
+import { type FilterMode, type TasteEntry, type TastePrefs } from '@/lib/types';
 import { downloadJsonFile, parseWords, uniqueWords } from '@/lib/utils';
 import { settingsExportFilename } from '@/lib/storage';
 import { useSettings } from '@/lib/use-settings';
@@ -169,13 +169,12 @@ function LearnedWordTags({
   );
 }
 
-type Pane = 'appearance' | 'reading' | 'filter' | 'keywords' | 'users' | 'lexicon' | 'taste' | 'backup';
+type Pane = 'appearance' | 'reading' | 'filter' | 'users' | 'lexicon' | 'taste' | 'backup';
 
 const NAV: Array<{ id: Pane; title: string; desc: string }> = [
   { id: 'appearance', title: '外观', desc: '配色、侧栏、标签页' },
   { id: 'reading', title: '阅读', desc: '收起、时间、标签' },
   { id: 'filter', title: '过滤', desc: '噪音档位与类别' },
-  { id: 'keywords', title: '关键词', desc: '自定义屏蔽词' },
   { id: 'users', title: '用户', desc: '屏蔽名单' },
   { id: 'lexicon', title: '词库', desc: '分类词与权重' },
   { id: 'taste', title: '口味', desc: '喜欢 / 不感兴趣' },
@@ -212,7 +211,6 @@ export function App() {
   const settings = useSettings();
   const [pane, setPane] = useState<Pane>('appearance');
   const [userDraft, setUserDraft] = useState('');
-  const [kwDraft, setKwDraft] = useState('');
   const [importDraft, setImportDraft] = useState('');
   const [notice, setNotice] = useState('');
   const [catId, setCatId] = useState(NOISE_CATEGORIES[0]?.id || 'celebrity');
@@ -310,71 +308,6 @@ export function App() {
                 <ToggleList keys={BLOCK_TYPE_KEYS} values={settings.values} setBool={settings.setBool} />
               </CardContent>
             </Card>
-          </section>
-        )}
-
-        {pane === 'keywords' && (
-          <section className="space-y-4">
-            <h2 className="text-2xl font-semibold">自定义关键词</h2>
-            <Card>
-              <CardContent className="space-y-3">
-                <div className="flex flex-wrap gap-2">
-                  {CUSTOM_LEVEL_IDS.map(level => (
-                    <Button
-                      key={level}
-                      size="sm"
-                      variant={settings.defaultLevel === level ? 'default' : 'outline'}
-                      onClick={() => void settings.setDefaultLevel(level)}
-                    >
-                      默认 {CUSTOM_LEVEL_LABELS[level]}
-                    </Button>
-                  ))}
-                </div>
-                <div className="flex gap-2">
-                  <Input value={kwDraft} onChange={e => setKwDraft(e.target.value)} placeholder="添加词，逗号或换行分隔" />
-                  <Button onClick={() => {
-                    const added = uniqueWords(parseWords(kwDraft));
-                    if (!added.length) return;
-                    const next = [...settings.keywords];
-                    for (const word of added) {
-                      if (next.some(x => x.word.toLowerCase() === word.toLowerCase())) continue;
-                      next.push({ word, on: true, level: settings.defaultLevel });
-                    }
-                    void settings.setKeywords(next);
-                    setKwDraft('');
-                  }}>添加</Button>
-                </div>
-              </CardContent>
-            </Card>
-            <div className="space-y-2">
-              {settings.keywords.map((item, index) => (
-                <Card key={item.word + index}>
-                  <CardContent className="flex flex-wrap items-center gap-3 py-3">
-                    <Switch checked={item.on} onCheckedChange={on => {
-                      const next = settings.keywords.map((row, i) => i === index ? { ...row, on } : row);
-                      void settings.setKeywords(next);
-                    }} />
-                    <div className="min-w-0 flex-1 font-medium">{item.word}</div>
-                    {CUSTOM_LEVEL_IDS.map(level => (
-                      <Button
-                        key={level}
-                        size="sm"
-                        variant={item.level === level ? 'default' : 'ghost'}
-                        onClick={() => {
-                          const next = settings.keywords.map((row, i) => i === index ? { ...row, level } : row);
-                          void settings.setKeywords(next);
-                        }}
-                      >
-                        {CUSTOM_LEVEL_LABELS[level]}
-                      </Button>
-                    ))}
-                    <Button size="sm" variant="ghost" onClick={() => {
-                      void settings.setKeywords(settings.keywords.filter((_, i) => i !== index));
-                    }}>删除</Button>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
           </section>
         )}
 
