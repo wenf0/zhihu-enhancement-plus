@@ -104,9 +104,10 @@ export function lowProfileMode() {
         }
 
         .zhihu_e_toQuestion {
-            color: #888 !important;
+            color: #666 !important;
             text-decoration: none !important;
-            background-color: #8882 !important;
+            background: #f4f4f5 !important;
+            border-color: rgba(0,0,0,.08) !important;
         }
 
         .ContentItem-action { color: #888 !important; }
@@ -199,7 +200,7 @@ h2.ContentItem-title > div[itemtype*="Question"] {
   align-items: center !important;
   gap: 8px !important;
   min-width: 0 !important;
-  flex: 1 1 auto !important;
+  flex: 0 1 auto !important;
   max-width: 100% !important;
   margin: 0 !important;
   padding: 0 !important;
@@ -240,30 +241,40 @@ a.zhihu_e_toQuestion {
   flex: 0 0 auto !important;
   align-self: center !important;
   height: 22px !important;
-  padding: 0 10px !important;
+  padding: 0 8px !important;
   margin: 0 !important;
-  border: 0 !important;
+  border: 1px solid rgba(0,0,0,.08) !important;
   border-radius: 999px !important;
-  font-size: 12px !important;
-  font-weight: 600 !important;
-  line-height: 22px !important;
-  letter-spacing: 0.02em !important;
+  background: #f4f4f5 !important;
+  color: #666 !important;
+  font: 11px/22px -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif !important;
+  font-weight: 400 !important;
+  letter-spacing: 0 !important;
   text-decoration: none !important;
   white-space: nowrap !important;
   vertical-align: middle !important;
   box-shadow: none !important;
   background-image: none !important;
+  text-shadow: none !important;
   position: relative !important;
   top: 0 !important;
   transform: none !important;
+  cursor: default !important;
 }
 a.zhihu_e_toQuestion {
-  color: #5b6abf !important;
-  background-color: #5b6abf1f !important;
+  cursor: pointer !important;
 }
-a.zhihu_e_toQuestion:hover {
-  color: #3f4fa8 !important;
-  background-color: #5b6abf33 !important;
+a.zhihu_e_toQuestion:hover,
+.${TYPE_TIP_CLASS}:hover {
+  border-color: #bbb !important;
+  color: #1d1d1f !important;
+  background: #f4f4f5 !important;
+}
+[data-theme="dark"] .${TYPE_TIP_CLASS},
+[data-theme="dark"] a.zhihu_e_toQuestion {
+  background: #343a44 !important;
+  border-color: #3c434d !important;
+  color: #c5ced8 !important;
 }
 h2.ContentItem-title .zhihu-plus-taste {
   display: inline-flex !important;
@@ -303,13 +314,7 @@ export function addTypeTips() {
         clearTypeTips();
         return;
     }
-    injectStyle('zhihu-plus-type-tips', `
-.${TYPE_TIP_CLASS}--question { color: #e85d4c !important; background-color: #e85d4c1f !important; }
-.${TYPE_TIP_CLASS}--questionAsk { color: #e23b2e !important; background-color: #e23b2e1f !important; }
-.${TYPE_TIP_CLASS}--video { color: #0aa2b8 !important; background-color: #0aa2b81f !important; }
-.${TYPE_TIP_CLASS}--pin { color: #2f9e44 !important; background-color: #2f9e441f !important; }
-.${TYPE_TIP_CLASS}--article { color: #1b7fd1 !important; background-color: #1b7fd11f !important; }
-`);
+    injectStyle('zhihu-plus-type-tips', `/* 类型 tip 颜色已统一到 title-chrome 低调灰 */`);
 
     const titleSel = 'h2.ContentItem-title';
     if (location.pathname === '/search') onReadyNodes(titleSel, decorateTypeTip);

@@ -282,7 +282,11 @@ export function paintTasteBar(card, titleCss) {
         bar.className = 'zhihu-plus-taste';
         bar.innerHTML = '<button type="button" data-taste="like">喜欢</button><button type="button" data-taste="dislike">不感兴趣</button>';
         const host = anchor && (anchor.closest('h2') || anchor.parentElement);
-        if (host) host.appendChild(bar);
+        const qWrap = host && host.querySelector
+            ? host.querySelector('div[itemprop="zhihu:question"], div[itemtype*="Question"]')
+            : null;
+        if (qWrap) qWrap.appendChild(bar);
+        else if (host) host.appendChild(bar);
         else {
             ensureCardPosition(card);
             card.insertAdjacentElement('afterbegin', bar);
