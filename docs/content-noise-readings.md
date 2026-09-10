@@ -315,8 +315,8 @@
 
 ## 7. 深度学习：能用什么、不该塞进脚本的是什么
 
-本项目是油猴脚本，声明**无远程外部脚本**，分数还必须能解释。
-深度学习更适合做**离线扩词、标定权重、少样本残差**，不适合把 BERT 塞进页面替换现有公式。
+本项目是油猴脚本，分数必须能解释。分词用 **jieba-rs WASM**（`jieba-wasm` 2.4.0，安装时用带 SRI 的 `@resource` 拉词典），不把 BERT 塞进页面替换现有公式。
+深度学习更适合做**离线扩词、标定权重、少样本残差**。
 
 对实现的含义：词库继续当主模型；深度模型只在仓库工具链或可选本地头上帮忙。
 
@@ -339,7 +339,7 @@
 #### [Xenova/text2vec-base-chinese-sentence](https://huggingface.co/Xenova/text2vec-base-chinese-sentence)
 
 - 上一模型的 ONNX，给 [Transformers.js](https://github.com/huggingface/transformers.js) 用。
-- 能在浏览器算相似度，但要下模型，和「无远程脚本」冲突；若做，只能整包进扩展，不该进当前 user.js。
+- 能在浏览器算相似度，但要下整包模型，体积和可解释性都不适合进当前 user.js。扩词放离线工具链。
 
 #### [chatopera/Synonyms](https://github.com/chatopera/Synonyms)
 
@@ -358,7 +358,7 @@
 
 #### Liu, T., Yu, K., Wang, L., Zhang, X., Zhou, H., & Wu, X. (2022). Clickbait detection on WeChat.
 
-见第 3 节。语义 + 句法图。提醒：中文诱饵叠在短标题里，只靠 `includes` 会漏结构型标题党。
+见第 3 节。语义 + 句法图。提醒：中文诱饵叠在短标题里，只靠子串 `includes` 会误伤（「男」命中「男性」）并漏结构型标题党。线上已改结巴整词匹配。
 
 #### Zheng, J., Yu, K., & Wu, X. (2021). A deep model based on lure and similarity for adaptive clickbait detection. *Knowledge-Based Systems*, 214, 106714.
 
@@ -379,7 +379,7 @@
 
 #### [huggingface/transformers.js](https://github.com/huggingface/transformers.js)
 
-- 浏览器 ONNX。和「无远程外部脚本、可解释分数」两条约束打架。
+- 浏览器 ONNX。和「可解释分数、脚本体积」两条约束打架。
 - 若以后做独立扩展，可以当可选「语义模式」：词库分 + 本地小模型残差。不要替换 K/C/E/S/B/V。
 
 最后更新：2026-09-10。

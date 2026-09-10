@@ -3,12 +3,12 @@
 // @name:zh-CN   知乎增强优化
 // @name:zh-TW   知乎增強優化
 // @name:en      Zhihu Enhancement Plus
-// @version      1.9.0
+// @version      1.10.0
 // @author       local (based on X.I.U / 知乎增强 2.2.15)
-// @description  用于知乎网页。可开关：低饱和配色、隐藏右侧栏、清空或锁定标签标题与图标、净化搜索热门、默认/一键/点空白收起回答与评论、右键回顶、展开问题描述、置顶发布时间、信息流类型标签、直达问题、按用户与噪音评分（可显示得分、可过滤、喜欢/不感兴趣回写权重）及关键词、按类别屏蔽视频/文章/想法/话题/盐选/相关搜索/热榜杂项。设置可 JSON 导入导出。始终生效：关登录弹窗、原图、站外直链、点浮层关评论、去掉搜索高亮链接。基于 XIU2「知乎增强」2.2.15（GPL-3.0），无远程外部脚本。
-// @description:zh-CN 用于知乎网页。可开关：低饱和配色、隐藏右侧栏、清空或锁定标签标题与图标、净化搜索热门、默认/一键/点空白收起回答与评论、右键回顶、展开问题描述、置顶发布时间、信息流类型标签、直达问题、按用户与噪音评分（可显示得分、可过滤、喜欢/不感兴趣回写权重）及关键词、按类别屏蔽视频/文章/想法/话题/盐选/相关搜索/热榜杂项。设置可 JSON 导入导出。始终生效：关登录弹窗、原图、站外直链、点浮层关评论、去掉搜索高亮链接。基于 XIU2「知乎增强」2.2.15（GPL-3.0），无远程外部脚本。
-// @description:zh-TW 用於知乎網頁。可開關：低飽和配色、隱藏右側欄、清空或鎖定分頁標題與圖示、淨化搜尋熱門、預設/一鍵/點空白收起回答與評論、右鍵回頂、展開問題描述、置頂發布時間、資訊流類型標籤、直達問題、按使用者與噪音評分（可顯示得分、可過濾、喜歡/不感興趣回寫權重）及關鍵詞、按類別屏蔽影片/文章/想法/話題/鹽選/相關搜尋/熱榜雜項。設定可 JSON 匯入匯出。始終生效：關登入彈窗、原圖、站外直連、點浮層關評論、去掉搜尋高亮連結。基於 XIU2「知乎增強」2.2.15（GPL-3.0），無遠端外部腳本。
-// @description:en For Zhihu. Toggles: desaturated UI, hide sidebar, blank/lock tab title, clean search hot terms, collapse answers (default/one-click/side), right-click to top, expand question, pin time, type labels, jump to question, score/show/filter noise, like/dislike to retune weights, filter by user/keywords, hide video/article/pin/topic/Yanxuan/related search/hot extras. JSON import/export. Always: close login modal, original images, unwrap outbound links, overlay closes comments, strip search highlight links. From XIU2 (GPL-3.0); no remote scripts.
+// @description  用于知乎网页。可开关：低饱和配色、隐藏右侧栏、清空或锁定标签标题与图标、净化搜索热门、默认/一键/点空白收起回答与评论、右键回顶、展开问题描述、置顶发布时间、信息流类型标签、直达问题、按用户与噪音评分（可显示得分、可过滤、喜欢/不感兴趣回写权重）及关键词、按类别屏蔽视频/文章/想法/话题/盐选/相关搜索/热榜杂项。设置可 JSON 导入导出。始终生效：关登录弹窗、原图、站外直链、点浮层关评论、去掉搜索高亮链接。基于 XIU2「知乎增强」2.2.15（GPL-3.0）。噪音评分用结巴分词（jieba-rs WASM）。
+// @description:zh-CN 用于知乎网页。可开关：低饱和配色、隐藏右侧栏、清空或锁定标签标题与图标、净化搜索热门、默认/一键/点空白收起回答与评论、右键回顶、展开问题描述、置顶发布时间、信息流类型标签、直达问题、按用户与噪音评分（可显示得分、可过滤、喜欢/不感兴趣回写权重）及关键词、按类别屏蔽视频/文章/想法/话题/盐选/相关搜索/热榜杂项。设置可 JSON 导入导出。始终生效：关登录弹窗、原图、站外直链、点浮层关评论、去掉搜索高亮链接。基于 XIU2「知乎增强」2.2.15（GPL-3.0）。噪音评分用结巴分词（jieba-rs WASM）。
+// @description:zh-TW 用於知乎網頁。可開關：低飽和配色、隱藏右側欄、清空或鎖定分頁標題與圖示、淨化搜尋熱門、預設/一鍵/點空白收起回答與評論、右鍵回頂、展開問題描述、置頂發布時間、資訊流類型標籤、直達問題、按使用者與噪音評分（可顯示得分、可過濾、喜歡/不感興趣回寫權重）及關鍵詞、按類別屏蔽影片/文章/想法/話題/鹽選/相關搜尋/熱榜雜項。設定可 JSON 匯入匯出。始終生效：關登入彈窗、原圖、站外直連、點浮層關評論、去掉搜尋高亮連結。基於 XIU2「知乎增強」2.2.15（GPL-3.0）。噪音評分用結巴分詞（jieba-rs WASM）。
+// @description:en For Zhihu. Toggles: desaturated UI, hide sidebar, blank/lock tab title, clean search hot terms, collapse answers (default/one-click/side), right-click to top, expand question, pin time, type labels, jump to question, score/show/filter noise, like/dislike to retune weights, filter by user/keywords, hide video/article/pin/topic/Yanxuan/related search/hot extras. JSON import/export. Always: close login modal, original images, unwrap outbound links, overlay closes comments, strip search highlight links. From XIU2 (GPL-3.0). Noise scoring uses jieba-rs WASM.
 // @match        *://www.zhihu.com/*
 // @match        *://zhuanlan.zhihu.com/*
 // @exclude      https://www.zhihu.com/signin*
@@ -20,8 +20,11 @@
 // @grant        GM_setValue
 // @grant        GM_notification
 // @grant        GM_info
+// @grant        GM_getResourceURL
 // @grant        window.onurlchange
 // @connect      www.zhihu.com
+// @connect      cdn.jsdelivr.net
+// @resource     jiebaWasm https://cdn.jsdelivr.net/npm/jieba-wasm@2.4.0/pkg/web/jieba_rs_wasm_bg.wasm#sha256=f285288e12b2fee4966e2f766cb30cc465637d8679af7006269dfa25871adbf5
 // @sandbox      JavaScript
 // @license      GPL-3.0 License
 // @run-at       document-end
@@ -37,6 +40,7 @@
 /**
  * 基于 XIU2「知乎增强」2.2.15 的本地优化版。
  * 主要改动：配置对象化、统一路由、合并高频轮询为节流观察器、修正 observer 循环里误用 return 等问题。
+ * 噪音评分用 jieba-wasm 2.4.0（jieba-rs WASM）整词匹配；词典经 @resource / GM_xmlhttpRequest 加载。
  */
 
 /* -------------------------------------------------------------------------- */
@@ -756,14 +760,14 @@ function settingsNoiseFormulaHtml() {
         <div class="zhihuE_FxKicker">评分公式</div>
         <div class="zhihuE_FxMain">分数 = clamp(${n(w.k)}K + ${n(w.c)}C + ${n(w.e)}E + ${n(w.s)}S + ${n(w.b)}B − ${n(w.v)}V, 0, 100)</div>
         <div class="zhihuE_FxGrid">
-            <div class="zhihuE_FxItem"><b>K</b>关键词饱和<span>K = 100(1 − e<sup>−k/20</sup>)。k 为命中词权重和。自定义词按级别加权：隐藏 +${CUSTOM_LEVELS.hide.k}，降权 +${CUSTOM_LEVELS.demote.k}，加权 +${CUSTOM_LEVELS.weight.k}。隐藏/降权是规则，不改写这个分数。分类单字仅在已有长词命中时计 0.35。</span></div>
+            <div class="zhihuE_FxItem"><b>K</b>关键词饱和<span>K = 100(1 − e<sup>−k/20</sup>)。k 为命中词权重和。自定义词按级别加权：隐藏 +${CUSTOM_LEVELS.hide.k}，降权 +${CUSTOM_LEVELS.demote.k}，加权 +${CUSTOM_LEVELS.weight.k}。隐藏/降权是规则，不改写这个分数。分类单字仅在已有长词命中时计 0.35。词命中走结巴整词；连续词可拼成多字词（如「理想」+「汽车」）。「男」不会命中「男性」。</span></div>
             <div class="zhihuE_FxItem"><b>C</b>分类系数<span>取命中档位的最大 c。该分类有排除词则 ×0.35。无关键词但 E+B ≥ 16 时，C 至少为 42。</span></div>
             <div class="zhihuE_FxItem"><b>E</b>情绪<span>命中情绪词的权重和，上限 25。</span></div>
             <div class="zhihuE_FxItem"><b>S</b>争议<span>6 × 争议词命中数，上限 30。</span></div>
             <div class="zhihuE_FxItem"><b>B</b>标题党<span>5 × 标题党词命中数，上限 25。</span></div>
             <div class="zhihuE_FxItem"><b>V</b>价值<span>白名单权重和，上限 50，从总分里减去。</span></div>
         </div>
-        <p class="zhihuE_FxNote">信息流卡片取 max(标题分, 0.72×标题 + 0.28×摘要)。模型分 ${NOISE_DEMOTE}–${NOISE_HIDE} 降权，${NOISE_HIDE} 及以上隐藏。自定义词的「隐藏 / 降权」作为规则另外执行，分数保持模型分。开启「喜欢 / 不感兴趣」后，命中词和分类会叠加本地口味增量，不改词库原文。</p>
+        <p class="zhihuE_FxNote">关键词经 jieba-rs 分词后再匹配。信息流卡片取 max(标题分, 0.72×标题 + 0.28×摘要)。模型分 ${NOISE_DEMOTE}–${NOISE_HIDE} 降权，${NOISE_HIDE} 及以上隐藏。自定义词的「隐藏 / 降权」作为规则另外执行，分数保持模型分。开启「喜欢 / 不感兴趣」后，命中词和分类会叠加本地口味增量，不改词库原文。</p>
     </div>`;
 }
 
@@ -807,6 +811,13 @@ function mountNoiseTestPane(container) {
             gridEl.innerHTML = '';
             hintEl.textContent = '';
             board.className = 'zhihuE_TsBoard';
+            return;
+        }
+        if (!jiebaReady && !jiebaUnavailable) {
+            scoreEl.textContent = '…';
+            verdictEl.textContent = '结巴分词加载中';
+            hintEl.textContent = '首次会下载 jieba-rs 词典（约 4MB），之后用本地缓存。';
+            ensureJieba().then(run);
             return;
         }
         const { final, titleScore, bodyScore, rule } = scoreFeedNoise(title, body);
@@ -855,7 +866,7 @@ function mountKeywordEditor(container) {
     let filter = '';
     let defaultLevel = readCustomDefaultLevel();
     container.insertAdjacentHTML('beforeend', `<div class="zhihuE_ListMount">
-        <p class="zhihuE_StPaneTips">预置词默认开着，可关掉。点级别切换隐藏 / 降权 / 加权。隐藏和降权是规则，不改模型分；加权只加分。单字默认加权。</p>
+        <p class="zhihuE_StPaneTips">预置词默认开着，可关掉。点级别切换隐藏 / 降权 / 加权。隐藏和降权是规则，不改模型分；加权只加分。单字默认加权。匹配走结巴整词，「男」不会命中「男性」。</p>
         <div class="zhihuE_KwBar">
             <span class="zhihuE_KwBarLabel">新词默认</span>
             <div class="zhihuE_KwSeg">${CUSTOM_LEVEL_IDS.map(id =>
@@ -2510,6 +2521,568 @@ const CUSTOM_LEVELS = {
     weight: { id: 'weight', name: '加权', k: 12, floor: 0 }
 };
 
+/* jieba-wasm 2.4.0 web glue (MIT, fengkx/jieba-wasm), adapted to IIFE for userscripts.
+ * Official ESM uses import.meta.url; we only instantiate from bytes.
+ */
+var ZhihuPlusJiebaWasm = (function () {
+let wasm;
+
+let cachedUint8ArrayMemory0 = null;
+
+function getUint8ArrayMemory0() {
+    if (cachedUint8ArrayMemory0 === null || cachedUint8ArrayMemory0.byteLength === 0) {
+        cachedUint8ArrayMemory0 = new Uint8Array(wasm.memory.buffer);
+    }
+    return cachedUint8ArrayMemory0;
+}
+
+let cachedTextDecoder = (typeof TextDecoder !== 'undefined' ? new TextDecoder('utf-8', { ignoreBOM: true, fatal: true }) : { decode: () => { throw Error('TextDecoder not available') } } );
+
+if (typeof TextDecoder !== 'undefined') { cachedTextDecoder.decode(); };
+
+const MAX_SAFARI_DECODE_BYTES = 2146435072;
+let numBytesDecoded = 0;
+function decodeText(ptr, len) {
+    numBytesDecoded += len;
+    if (numBytesDecoded >= MAX_SAFARI_DECODE_BYTES) {
+        cachedTextDecoder = (typeof TextDecoder !== 'undefined' ? new TextDecoder('utf-8', { ignoreBOM: true, fatal: true }) : { decode: () => { throw Error('TextDecoder not available') } } );
+        cachedTextDecoder.decode();
+        numBytesDecoded = len;
+    }
+    return cachedTextDecoder.decode(getUint8ArrayMemory0().subarray(ptr, ptr + len));
+}
+
+function getStringFromWasm0(ptr, len) {
+    ptr = ptr >>> 0;
+    return decodeText(ptr, len);
+}
+
+function debugString(val) {
+    // primitive types
+    const type = typeof val;
+    if (type == 'number' || type == 'boolean' || val == null) {
+        return  `${val}`;
+    }
+    if (type == 'string') {
+        return `"${val}"`;
+    }
+    if (type == 'symbol') {
+        const description = val.description;
+        if (description == null) {
+            return 'Symbol';
+        } else {
+            return `Symbol(${description})`;
+        }
+    }
+    if (type == 'function') {
+        const name = val.name;
+        if (typeof name == 'string' && name.length > 0) {
+            return `Function(${name})`;
+        } else {
+            return 'Function';
+        }
+    }
+    // objects
+    if (Array.isArray(val)) {
+        const length = val.length;
+        let debug = '[';
+        if (length > 0) {
+            debug += debugString(val[0]);
+        }
+        for(let i = 1; i < length; i++) {
+            debug += ', ' + debugString(val[i]);
+        }
+        debug += ']';
+        return debug;
+    }
+    // Test for built-in
+    const builtInMatches = /\[object ([^\]]+)\]/.exec(toString.call(val));
+    let className;
+    if (builtInMatches && builtInMatches.length > 1) {
+        className = builtInMatches[1];
+    } else {
+        // Failed to match the standard '[object ClassName]'
+        return toString.call(val);
+    }
+    if (className == 'Object') {
+        // we're a user defined class or Object
+        // JSON.stringify avoids problems with cycles, and is generally much
+        // easier than looping through ownProperties of `val`.
+        try {
+            return 'Object(' + JSON.stringify(val) + ')';
+        } catch (_) {
+            return 'Object';
+        }
+    }
+    // errors
+    if (val instanceof Error) {
+        return `${val.name}: ${val.message}\n${val.stack}`;
+    }
+    // TODO we could test for more things here, like `Set`s and `Map`s.
+    return className;
+}
+
+let WASM_VECTOR_LEN = 0;
+
+const cachedTextEncoder = (typeof TextEncoder !== 'undefined' ? new TextEncoder('utf-8') : { encode: () => { throw Error('TextEncoder not available') } } );
+
+const encodeString = (typeof cachedTextEncoder.encodeInto === 'function'
+    ? function (arg, view) {
+    return cachedTextEncoder.encodeInto(arg, view);
+}
+    : function (arg, view) {
+    const buf = cachedTextEncoder.encode(arg);
+    view.set(buf);
+    return {
+        read: arg.length,
+        written: buf.length
+    };
+});
+
+function passStringToWasm0(arg, malloc, realloc) {
+
+    if (realloc === undefined) {
+        const buf = cachedTextEncoder.encode(arg);
+        const ptr = malloc(buf.length, 1) >>> 0;
+        getUint8ArrayMemory0().subarray(ptr, ptr + buf.length).set(buf);
+        WASM_VECTOR_LEN = buf.length;
+        return ptr;
+    }
+
+    let len = arg.length;
+    let ptr = malloc(len, 1) >>> 0;
+
+    const mem = getUint8ArrayMemory0();
+
+    let offset = 0;
+
+    for (; offset < len; offset++) {
+        const code = arg.charCodeAt(offset);
+        if (code > 0x7F) break;
+        mem[ptr + offset] = code;
+    }
+
+    if (offset !== len) {
+        if (offset !== 0) {
+            arg = arg.slice(offset);
+        }
+        ptr = realloc(ptr, len, len = offset + arg.length * 3, 1) >>> 0;
+        const view = getUint8ArrayMemory0().subarray(ptr + offset, ptr + len);
+        const ret = encodeString(arg, view);
+
+        offset += ret.written;
+        ptr = realloc(ptr, len, offset, 1) >>> 0;
+    }
+
+    WASM_VECTOR_LEN = offset;
+    return ptr;
+}
+
+let cachedDataViewMemory0 = null;
+
+function getDataViewMemory0() {
+    if (cachedDataViewMemory0 === null || cachedDataViewMemory0.buffer.detached === true || (cachedDataViewMemory0.buffer.detached === undefined && cachedDataViewMemory0.buffer !== wasm.memory.buffer)) {
+        cachedDataViewMemory0 = new DataView(wasm.memory.buffer);
+    }
+    return cachedDataViewMemory0;
+}
+
+function isLikeNone(x) {
+    return x === undefined || x === null;
+}
+
+function getArrayJsValueFromWasm0(ptr, len) {
+    ptr = ptr >>> 0;
+    const mem = getDataViewMemory0();
+    const result = [];
+    for (let i = ptr; i < ptr + 4 * len; i += 4) {
+        result.push(wasm.__wbindgen_export_2.get(mem.getUint32(i, true)));
+    }
+    wasm.__externref_drop_slice(ptr, len);
+    return result;
+}
+/**
+ * @param {string} text
+ * @param {boolean | null} [hmm]
+ * @returns {string[]}
+ */
+function cut(text, hmm) {
+    const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len0 = WASM_VECTOR_LEN;
+    const ret = wasm.cut(ptr0, len0, isLikeNone(hmm) ? 0xFFFFFF : hmm ? 1 : 0);
+    var v2 = getArrayJsValueFromWasm0(ret[0], ret[1]).slice();
+    wasm.__wbindgen_free(ret[0], ret[1] * 4, 4);
+    return v2;
+}
+
+/**
+ * @param {string} text
+ * @returns {string[]}
+ */
+function cut_all(text) {
+    const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len0 = WASM_VECTOR_LEN;
+    const ret = wasm.cut_all(ptr0, len0);
+    var v2 = getArrayJsValueFromWasm0(ret[0], ret[1]).slice();
+    wasm.__wbindgen_free(ret[0], ret[1] * 4, 4);
+    return v2;
+}
+
+/**
+ * @param {string} text
+ * @param {boolean | null} [hmm]
+ * @returns {string[]}
+ */
+function cut_for_search(text, hmm) {
+    const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len0 = WASM_VECTOR_LEN;
+    const ret = wasm.cut_for_search(ptr0, len0, isLikeNone(hmm) ? 0xFFFFFF : hmm ? 1 : 0);
+    var v2 = getArrayJsValueFromWasm0(ret[0], ret[1]).slice();
+    wasm.__wbindgen_free(ret[0], ret[1] * 4, 4);
+    return v2;
+}
+
+function takeFromExternrefTable0(idx) {
+    const value = wasm.__wbindgen_export_2.get(idx);
+    wasm.__externref_table_dealloc(idx);
+    return value;
+}
+/**
+ * @param {string} text
+ * @param {string} mode
+ * @param {boolean | null} [hmm]
+ * @returns {Token[]}
+ */
+function tokenize(text, mode, hmm) {
+    const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len0 = WASM_VECTOR_LEN;
+    const ptr1 = passStringToWasm0(mode, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len1 = WASM_VECTOR_LEN;
+    const ret = wasm.tokenize(ptr0, len0, ptr1, len1, isLikeNone(hmm) ? 0xFFFFFF : hmm ? 1 : 0);
+    if (ret[3]) {
+        throw takeFromExternrefTable0(ret[2]);
+    }
+    var v3 = getArrayJsValueFromWasm0(ret[0], ret[1]).slice();
+    wasm.__wbindgen_free(ret[0], ret[1] * 4, 4);
+    return v3;
+}
+
+/**
+ * @param {string} word
+ * @param {number | null} [freq]
+ * @param {string | null} [tag]
+ * @returns {number}
+ */
+function add_word(word, freq, tag) {
+    const ptr0 = passStringToWasm0(word, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len0 = WASM_VECTOR_LEN;
+    var ptr1 = isLikeNone(tag) ? 0 : passStringToWasm0(tag, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    var len1 = WASM_VECTOR_LEN;
+    const ret = wasm.add_word(ptr0, len0, isLikeNone(freq) ? 0x100000001 : (freq) >>> 0, ptr1, len1);
+    return ret >>> 0;
+}
+
+/**
+ * @param {string} sentence
+ * @param {boolean | null} [hmm]
+ * @returns {Tag[]}
+ */
+function tag(sentence, hmm) {
+    const ptr0 = passStringToWasm0(sentence, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len0 = WASM_VECTOR_LEN;
+    const ret = wasm.tag(ptr0, len0, isLikeNone(hmm) ? 0xFFFFFF : hmm ? 1 : 0);
+    var v2 = getArrayJsValueFromWasm0(ret[0], ret[1]).slice();
+    wasm.__wbindgen_free(ret[0], ret[1] * 4, 4);
+    return v2;
+}
+
+/**
+ * @param {string} dict
+ */
+function with_dict(dict) {
+    const ptr0 = passStringToWasm0(dict, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len0 = WASM_VECTOR_LEN;
+    const ret = wasm.with_dict(ptr0, len0);
+    if (ret[1]) {
+        throw takeFromExternrefTable0(ret[0]);
+    }
+}
+
+const EXPECTED_RESPONSE_TYPES = new Set(['basic', 'cors', 'default']);
+
+async function __wbg_load(module, imports) {
+    if (typeof Response === 'function' && module instanceof Response) {
+        if (typeof WebAssembly.instantiateStreaming === 'function') {
+            try {
+                return await WebAssembly.instantiateStreaming(module, imports);
+
+            } catch (e) {
+                const validResponse = module.ok && EXPECTED_RESPONSE_TYPES.has(module.type);
+
+                if (validResponse && module.headers.get('Content-Type') !== 'application/wasm') {
+                    console.warn("`WebAssembly.instantiateStreaming` failed because your server does not serve Wasm with `application/wasm` MIME type. Falling back to `WebAssembly.instantiate` which is slower. Original error:\n", e);
+
+                } else {
+                    throw e;
+                }
+            }
+        }
+
+        const bytes = await module.arrayBuffer();
+        return await WebAssembly.instantiate(bytes, imports);
+
+    } else {
+        const instance = await WebAssembly.instantiate(module, imports);
+
+        if (instance instanceof WebAssembly.Instance) {
+            return { instance, module };
+
+        } else {
+            return instance;
+        }
+    }
+}
+
+function __wbg_get_imports() {
+    const imports = {};
+    imports.wbg = {};
+    imports.wbg.__wbg_Error_0497d5bdba9362e5 = function(arg0, arg1) {
+        const ret = Error(getStringFromWasm0(arg0, arg1));
+        return ret;
+    };
+    imports.wbg.__wbg_new_07b483f72211fd66 = function() {
+        const ret = new Object();
+        return ret;
+    };
+    imports.wbg.__wbg_set_3f1d0b984ed272ed = function(arg0, arg1, arg2) {
+        arg0[arg1] = arg2;
+    };
+    imports.wbg.__wbindgen_bigint_from_u64 = function(arg0) {
+        const ret = BigInt.asUintN(64, arg0);
+        return ret;
+    };
+    imports.wbg.__wbindgen_debug_string = function(arg0, arg1) {
+        const ret = debugString(arg1);
+        const ptr1 = passStringToWasm0(ret, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len1 = WASM_VECTOR_LEN;
+        getDataViewMemory0().setInt32(arg0 + 4 * 1, len1, true);
+        getDataViewMemory0().setInt32(arg0 + 4 * 0, ptr1, true);
+    };
+    imports.wbg.__wbindgen_init_externref_table = function() {
+        const table = wasm.__wbindgen_export_2;
+        const offset = table.grow(4);
+        table.set(0, undefined);
+        table.set(offset + 0, undefined);
+        table.set(offset + 1, null);
+        table.set(offset + 2, true);
+        table.set(offset + 3, false);
+        ;
+    };
+    imports.wbg.__wbindgen_number_new = function(arg0) {
+        const ret = arg0;
+        return ret;
+    };
+    imports.wbg.__wbindgen_string_new = function(arg0, arg1) {
+        const ret = getStringFromWasm0(arg0, arg1);
+        return ret;
+    };
+    imports.wbg.__wbindgen_throw = function(arg0, arg1) {
+        throw new Error(getStringFromWasm0(arg0, arg1));
+    };
+
+    return imports;
+}
+
+function __wbg_init_memory(imports, memory) {
+
+}
+
+function __wbg_finalize_init(instance, module) {
+    wasm = instance.exports;
+    __wbg_init.__wbindgen_wasm_module = module;
+    cachedDataViewMemory0 = null;
+    cachedUint8ArrayMemory0 = null;
+
+
+    wasm.__wbindgen_start();
+    return wasm;
+}
+
+function initSync(module) {
+    if (wasm !== undefined) return wasm;
+
+
+    if (typeof module !== 'undefined') {
+        if (Object.getPrototypeOf(module) === Object.prototype) {
+            ({module} = module)
+        } else {
+            console.warn('using deprecated parameters for `initSync()`; pass a single object instead')
+        }
+    }
+
+    const imports = __wbg_get_imports();
+
+    __wbg_init_memory(imports);
+
+    if (!(module instanceof WebAssembly.Module)) {
+        module = new WebAssembly.Module(module);
+    }
+
+    const instance = new WebAssembly.Instance(module, imports);
+
+    return __wbg_finalize_init(instance, module);
+}
+
+async function __wbg_init(module_or_path) {
+    if (wasm !== undefined) return wasm;
+
+
+    if (typeof module_or_path !== 'undefined') {
+        if (Object.getPrototypeOf(module_or_path) === Object.prototype) {
+            ({module_or_path} = module_or_path)
+        } else {
+            console.warn('using deprecated parameters for the initialization function; pass a single object instead')
+        }
+    }
+
+    if (typeof module_or_path === 'undefined') {
+        throw new Error('jieba wasm bytes required');
+    }
+    const imports = __wbg_get_imports();
+
+    if (typeof module_or_path === 'string' || (typeof Request === 'function' && module_or_path instanceof Request) || (typeof URL === 'function' && module_or_path instanceof URL)) {
+        module_or_path = fetch(module_or_path);
+    }
+
+    __wbg_init_memory(imports);
+
+    const { instance, module } = await __wbg_load(await module_or_path, imports);
+
+    return __wbg_finalize_init(instance, module);
+}
+
+
+    return { cut: cut, add_word: add_word, initSync: initSync, init: __wbg_init };
+})();
+
+const JIEBA_WASM_URL = 'https://cdn.jsdelivr.net/npm/jieba-wasm@2.4.0/pkg/web/jieba_rs_wasm_bg.wasm';
+let jiebaReady = false;
+let jiebaUnavailable = false;
+let jiebaPromise = null;
+const jiebaTokenCache = new Map();
+const jiebaDictSeen = new Set();
+
+function gmFetchBuffer(url) {
+    return new Promise((resolve, reject) => {
+        GM_xmlhttpRequest({
+            method: 'GET',
+            url,
+            responseType: 'arraybuffer',
+            timeout: 120000,
+            onload(res) {
+                if (res.status >= 200 && res.status < 300 && res.response) resolve(res.response);
+                else reject(new Error('jieba wasm HTTP ' + res.status));
+            },
+            onerror() { reject(new Error('jieba wasm network')); },
+            ontimeout() { reject(new Error('jieba wasm timeout')); }
+        });
+    });
+}
+
+async function loadJiebaWasmBytes() {
+    try {
+        if (typeof GM_getResourceURL === 'function') {
+            const href = GM_getResourceURL('jiebaWasm');
+            if (href && !/^https?:/i.test(href)) {
+                const res = await fetch(href);
+                if (res.ok) return await res.arrayBuffer();
+            }
+        }
+    } catch (_) { /* fall through to GM_xhr */ }
+    return gmFetchBuffer(JIEBA_WASM_URL);
+}
+
+function ensureJieba() {
+    if (jiebaReady) return Promise.resolve(true);
+    if (jiebaUnavailable) return Promise.resolve(false);
+    if (jiebaPromise) return jiebaPromise;
+    jiebaPromise = (async () => {
+        if (typeof ZhihuPlusJiebaWasm === 'undefined') throw new Error('jieba glue missing');
+        const bytes = await loadJiebaWasmBytes();
+        ZhihuPlusJiebaWasm.initSync({ module: bytes });
+        jiebaReady = true;
+        jiebaTokenCache.clear();
+        if (noiseIndex) syncJiebaUserDict();
+        return true;
+    })().catch(err => {
+        console.warn('[知乎增强] 结巴分词加载失败，改用边界匹配', err);
+        jiebaUnavailable = true;
+        jiebaPromise = null;
+        return false;
+    });
+    return jiebaPromise;
+}
+
+function syncJiebaUserDict() {
+    if (!jiebaReady || typeof ZhihuPlusJiebaWasm === 'undefined') return;
+    const add = word => {
+        const t = String(word || '').trim();
+        if (t.length < 2 || jiebaDictSeen.has(t)) return;
+        jiebaDictSeen.add(t);
+        try { ZhihuPlusJiebaWasm.add_word(t, 20000, 'n'); } catch (_) {}
+    };
+    const idx = noiseIndex;
+    if (!idx) return;
+    for (const cat of idx.cats) {
+        for (const item of cat.words) add(item.k);
+        for (const ex of cat.excludes) add(ex);
+    }
+    for (const item of idx.custom) add(item.k);
+    for (const item of idx.emotion) add(item.k);
+    for (const word of idx.controversy) add(word);
+    for (const word of idx.clickbait) add(word);
+    for (const item of idx.value) add(item.k);
+    jiebaTokenCache.clear();
+}
+
+function cutNoiseTokens(text) {
+    if (!jiebaReady) return null;
+    let cached = jiebaTokenCache.get(text);
+    if (!cached) {
+        cached = ZhihuPlusJiebaWasm.cut(text, true)
+            .map(tok => String(tok).toLowerCase())
+            .filter(tok => tok && !/^\s+$/.test(tok));
+        if (jiebaTokenCache.size > 400) jiebaTokenCache.clear();
+        jiebaTokenCache.set(text, cached);
+    }
+    return cached;
+}
+
+function noiseHasFallback(text, term) {
+    if (term.length >= 2) return text.includes(term);
+    const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const re = new RegExp('(?:^|[^\\u4e00-\\u9fff])' + escaped + '(?:[^\\u4e00-\\u9fff]|$)');
+    return re.test(text);
+}
+
+function noiseHas(text, term) {
+    const t = String(term || '').toLowerCase();
+    if (!t || !text) return false;
+    const tokens = cutNoiseTokens(text);
+    if (!tokens) return noiseHasFallback(text, t);
+    if (tokens.includes(t)) return true;
+    if (t.length < 2) return false;
+    for (let i = 0; i < tokens.length; i++) {
+        let acc = '';
+        for (let j = i; j < tokens.length; j++) {
+            acc += tokens[j];
+            if (acc === t) return true;
+            if (acc.length >= t.length) break;
+        }
+    }
+    return false;
+}
+
 function noiseWords(weight, list) {
     const out = Object.create(null);
     for (const word of list) out[word] = weight;
@@ -2825,6 +3398,8 @@ function compileNoiseIndex() {
         clickbait: (lex.clickbait || []).map(x => String(x).toLowerCase()),
         value: toPairs(lex.value)
     };
+    jiebaTokenCache.clear();
+    syncJiebaUserDict();
     return noiseIndex;
 }
 
@@ -2840,6 +3415,7 @@ function scoreText(raw) {
     const text = String(raw).toLowerCase();
     const idx = compileNoiseIndex();
     const prefs = tasteEnabled() ? getTastePrefs() : null;
+    const has = term => noiseHas(text, term);
     let kRaw = 0;
     let bestC = 0;
     let winningCat = '';
@@ -2854,7 +3430,7 @@ function scoreText(raw) {
         const local = [];
         for (const item of cat.words) {
             if (item.len < 2) continue;
-            if (text.includes(item.k)) {
+            if (has(item.k)) {
                 longHits += 1;
                 const w = Math.max(0, item.w + (prefs ? tasteDelta(prefs.words, item.k) : 0));
                 catW += w;
@@ -2864,14 +3440,14 @@ function scoreText(raw) {
         if (longHits) {
             for (const item of cat.words) {
                 if (item.len >= 2) continue;
-                if (text.includes(item.k)) {
+                if (has(item.k)) {
                     const w = Math.max(0, item.w * 0.35 + (prefs ? tasteDelta(prefs.words, item.k) : 0));
                     catW += w;
                     local.push({ word: item.k, w, cat: cat.name, source: 'char' });
                 }
             }
             let c = cat.c + (prefs ? tasteDelta(prefs.cats, cat.id) : 0);
-            const hitEx = cat.excludes.find(ex => text.includes(ex)) || '';
+            const hitEx = cat.excludes.find(ex => has(ex)) || '';
             if (hitEx) c *= 0.35;
             c = Math.max(0, c);
             if (c > bestC) {
@@ -2891,11 +3467,11 @@ function scoreText(raw) {
     const customHits = [];
     for (const item of idx.custom) {
         const word = item && item.k;
-        if (!word || !text.includes(word)) continue;
+        if (!word || !has(word)) continue;
         const spec = CUSTOM_LEVELS[item.level] || CUSTOM_LEVELS.weight;
         customHit = true;
         customFloor = Math.max(customFloor, spec.floor);
-        const w = spec.k + (prefs ? tasteDelta(prefs.words, k) : 0);
+        const w = spec.k + (prefs ? tasteDelta(prefs.words, word) : 0);
         customHits.push({ word: item.word || word, w, level: spec.id, cat: '自定义', source: 'custom' });
         if (!wordHits.some(hit => hit.word === word || hit.word === item.word)) {
             kRaw += Math.max(0, w);
@@ -2909,7 +3485,7 @@ function scoreText(raw) {
     const emotion = [];
     let eSum = 0;
     for (const item of idx.emotion) {
-        if (text.includes(item.k)) {
+        if (has(item.k)) {
             const w = Math.max(0, item.w + (prefs ? tasteDelta(prefs.words, item.k) : 0));
             eSum += w;
             emotion.push({ word: item.k, w });
@@ -2920,7 +3496,7 @@ function scoreText(raw) {
     const controversy = [];
     let sRaw = 0;
     for (const word of idx.controversy) {
-        if (text.includes(word)) {
+        if (has(word)) {
             controversy.push(word);
             sRaw += Math.max(0, 6 + (prefs ? tasteDelta(prefs.words, word) : 0));
         }
@@ -2930,7 +3506,7 @@ function scoreText(raw) {
     const clickbait = [];
     let bRaw = 0;
     for (const word of idx.clickbait) {
-        if (text.includes(word)) {
+        if (has(word)) {
             clickbait.push(word);
             bRaw += Math.max(0, 5 + (prefs ? tasteDelta(prefs.words, word) : 0));
         }
@@ -2940,7 +3516,7 @@ function scoreText(raw) {
     const value = [];
     let V = 0;
     for (const item of idx.value) {
-        if (text.includes(item.k)) {
+        if (has(item.k)) {
             const w = Math.max(0, item.w + (prefs ? tasteDelta(prefs.value, item.k) : 0));
             V += w;
             value.push({ word: item.k, w });
@@ -3532,6 +4108,10 @@ function applyNoiseToCard(card, titleCss) {
 
 function blockKeywords(type) {
     if (!menuValue('menu_noiseScore')) return;
+    if (!jiebaReady && !jiebaUnavailable) {
+        ensureJieba().then(() => blockKeywords(type));
+        return;
+    }
     noiseIndex = null;
     injectNoiseStyles();
     bindTasteClicks();
@@ -4199,6 +4779,7 @@ function watchTopTime(css, classs) {
 registerMenuCommand();
 
 (function boot() {
+    ensureJieba();
     if (window.onurlchange === undefined) addUrlChangeEvent();
 
     window.addEventListener('urlchange', () => {
