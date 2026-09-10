@@ -6,32 +6,35 @@ import { observeTree, forAddedElements, isElementInViewport, isElementInViewport
 /* 收起回答                                                                   */
 /* -------------------------------------------------------------------------- */
 
+/** 仅收起「新插入时已展开」的回答；不碰用户点「阅读全文」后的展开（旧逻辑会立刻再点收起，导致闪一下要点两次）。 */
+function tryCollapseExpandedRichContent(rich) {
+    if (!(rich instanceof Element) || rich.hasAttribute('script-collapsed')) return;
+    const button = rich.querySelector(
+        '.ContentItem-actions.Sticky [data-zop-retract-question], .ContentItem-rightButton[data-zop-retract-question]'
+    );
+    if (!button) return;
+    rich.setAttribute('script-collapsed', '');
+    button.click();
+}
+
+function collapseExpandedInSubtree(root) {
+    if (!(root instanceof Element)) return;
+    if (root.classList.contains('RichContent')) tryCollapseExpandedRichContent(root);
+    root.querySelectorAll('.RichContent').forEach(tryCollapseExpandedRichContent);
+}
+
+function shouldRunDefaultCollapse() {
+    const p = page();
+    return p.isQuestion && !p.isAnswer && !p.isQuestionWaiting;
+}
+
 export function getCollapsedAnswerObserver() {
     if (window._collapsedAnswerObserver) return window._collapsedAnswerObserver;
 
     const observer = new MutationObserver(mutations => {
         for (const mutation of mutations) {
-            if (mutation.target.hasAttribute && mutation.target.hasAttribute('script-collapsed')) return;
-            if (mutation.target.classList && mutation.target.classList.contains('RichContent')) {
-                for (const addedNode of mutation.addedNodes) {
-                    if (addedNode.nodeType !== Node.ELEMENT_NODE) continue;
-                    if (addedNode.className !== 'RichContent-inner') continue;
-                    if (addedNode.offsetHeight < 400) break;
-                    const button = mutation.target.querySelector('.ContentItem-actions.Sticky [data-zop-retract-question]');
-                    if (button) {
-                        mutation.target.setAttribute('script-collapsed', '');
-                        button.click();
-                        return;
-                    }
-                }
-            } else if (mutation.target.tagName === 'DIV' && !mutation.target.style.cssText && !mutation.target.className) {
-                if (mutation.target.parentElement && mutation.target.parentElement.hasAttribute('script-collapsed')) return;
-                const button = mutation.target.querySelector('.ContentItem-actions.Sticky [data-zop-retract-question]');
-                if (button) {
-                    mutation.target.parentElement.setAttribute('script-collapsed', '');
-                    button.click();
-                    return;
-                }
+            for (const added of mutation.addedNodes) {
+                collapseExpandedInSubtree(added);
             }
         }
     });
@@ -40,6 +43,7 @@ export function getCollapsedAnswerObserver() {
         if (!this._active) {
             this.observe(document, { childList: true, subtree: true });
             this._active = true;
+            document.querySelectorAll('.RichContent').forEach(tryCollapseExpandedRichContent);
         }
     };
     observer.end = function () {
@@ -48,7 +52,11 @@ export function getCollapsedAnswerObserver() {
     };
 
     window.addEventListener('urlchange', () => {
-        observer[location.href.includes('/answer/') ? 'end' : 'start']();
+        if (!menuValue('menu_defaultCollapsedAnswer')) {
+            observer.end();
+            return;
+        }
+        observer[shouldRunDefaultCollapse() ? 'start' : 'end']();
     });
     window._collapsedAnswerObserver = observer;
     return observer;
@@ -60,7 +68,8 @@ export function defaultCollapsedAnswer() {
         return;
     }
     const observer = getCollapsedAnswerObserver();
-    if (!location.href.includes('/answer/')) observer.start();
+    if (shouldRunDefaultCollapse()) observer.start();
+    else observer.end();
 }
 
 export function setCollapsedCornerStyle(css) {
