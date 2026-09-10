@@ -216,6 +216,9 @@
 | 知乎关键词屏蔽（无打分） | [XIU2/UserScript](https://github.com/XIU2/UserScript)；[zhihu-custom](https://github.com/liuyubing233/zhihu-custom) |
 | 可复用情绪/褒贬词 | [vaderSentiment](https://github.com/cjhutto/vaderSentiment)；[cnsenti](https://github.com/hiDaDeng/cnsenti) / [cntext](https://github.com/hiDaDeng/cntext) |
 | 标题党代码与中文例句 | [bhargaviparanjape/clickbait](https://github.com/bhargaviparanjape/clickbait)；[lexmin0412/clickbait](https://github.com/lexmin0412/clickbait) |
+| 离线扩词、少样本分类 | [text2vec](https://github.com/shibing624/text2vec)；SetFit 2022 |
+| 标题–正文不一致（标题党） | Liu et al. 2022；CA-CD；TTNN / BCCD |
+| 浏览器里跑小模型（一般不要进脚本） | [Transformers.js](https://github.com/huggingface/transformers.js) |
 
 刻意没收进清单的：平台反垃圾/反作弊工程博客、假新闻传播（Vosoughi et al. 2018 等）、过滤泡（Pariser）。那些相邻，但优化目标不是「降低注意力噪音」。
 
@@ -307,5 +310,76 @@
 | 词表 | 用户自填扁平名单，或情感正负 | L1/L2/L3 主题 + 排除词 + 价值白名单 |
 | 动作 | 隐藏 / 不感兴趣 | 保留 / 降权 / 隐藏 |
 | 语言 | 英文标题党，或中文褒贬 | 中文注意力噪音（塌房、普信、种草、盐选） |
+
+---
+
+## 7. 深度学习：能用什么、不该塞进脚本的是什么
+
+本项目是油猴脚本，声明**无远程外部脚本**，分数还必须能解释。
+深度学习更适合做**离线扩词、标定权重、少样本残差**，不适合把 BERT 塞进页面替换现有公式。
+
+对实现的含义：词库继续当主模型；深度模型只在仓库工具链或可选本地头上帮忙。
+
+### 少样本：用隐藏/保留样本学一个残差
+
+#### Tunstall, L., Reimers, N., Jo, U. E. S., Bates, L., Korat, D., Wasserblat, M., & Pereg, O. (2022). Efficient few-shot learning without prompts. arXiv:2209.11055.
+
+- DOI: https://doi.org/10.48550/arXiv.2209.11055
+- PDF: https://arxiv.org/pdf/2209.11055
+- 代码: https://github.com/huggingface/setfit
+- 每类大约 8 条标注就能训一个句向量分类头。用户在试算面板或复查托盘里标「这不该藏 / 这是噪音」，离线 SetFit 学 keep/demote/hide，运行时只加一个残差，词库分仍可见。
+
+### 中文句向量：离线扩词，不进页面
+
+#### [shibing624/text2vec](https://github.com/shibing624/text2vec)
+
+- 中文句向量 / 词向量，默认 [text2vec-base-chinese](https://huggingface.co/shibing624/text2vec-base-chinese)。
+- 用法：对现有分类词找近邻，生成「待审候选」（塌房 → 塌了、吃瓜群众），人工进词库。不要自动把近邻写进线上表，否则误伤会扩散。
+
+#### [Xenova/text2vec-base-chinese-sentence](https://huggingface.co/Xenova/text2vec-base-chinese-sentence)
+
+- 上一模型的 ONNX，给 [Transformers.js](https://github.com/huggingface/transformers.js) 用。
+- 能在浏览器算相似度，但要下模型，和「无远程脚本」冲突；若做，只能整包进扩展，不该进当前 user.js。
+
+#### [chatopera/Synonyms](https://github.com/chatopera/Synonyms)
+
+- 基于词向量的中文近义词。MacBERT 预训练也用它找相似词。扩 `NOISE_CLICKBAIT` / 情绪词比扩主题名人名更安全。
+
+### 中文预训练：标题党、标题–正文不一致
+
+现有公式用 `max(标题分, 0.72×标题 + 0.28×摘要)`，没有「标题很吵、正文很淡」这一项。下面几篇都说明：中文标题党经常要看标题和正文是否对得上。
+
+#### Cui, Y., Che, W., Liu, T., Qin, B., & Yang, Z. (2021). Pre-training with whole word masking for Chinese BERT. *IEEE/ACM TASLP*.
+
+- DOI: https://doi.org/10.1109/TASLP.2021.3124365
+- PDF: https://ymcui.com/pdf/chinese-bert-wwm.pdf
+- 代码: https://github.com/ymcui/Chinese-BERT-wwm
+- 同组 [MacBERT](https://github.com/ymcui/MacBERT)。离线微调「噪音 / 非噪音」或「标题党」的底座，不进脚本。
+
+#### Liu, T., Yu, K., Wang, L., Zhang, X., Zhou, H., & Wu, X. (2022). Clickbait detection on WeChat.
+
+见第 3 节。语义 + 句法图。提醒：中文诱饵叠在短标题里，只靠 `includes` 会漏结构型标题党。
+
+#### Zheng, J., Yu, K., & Wu, X. (2021). A deep model based on lure and similarity for adaptive clickbait detection. *Knowledge-Based Systems*, 214, 106714.
+
+- DOI: https://doi.org/10.1016/j.knosys.2020.106714
+- 标题诱饵 + 标题–正文相似度。可先做成规则特征，不必上 BERT：标题分高、摘要分低、重叠词少 → 加 B。
+
+#### Chen, Y., et al. CA-CD: context-aware clickbait detection using new Chinese clickbait dataset with transfer learning.
+
+- 落地页: https://www.emerald.com/dta/article/doi/10.1108/DTA-09-2022-0371
+- 标题和正文一起训。数据集比纯标题列表更接近信息流卡片。
+
+#### Liu, T., et al. (2022). Clickbait analysis and detection method on Chinese social media (TTNN / BCCD). In *BigCom 2022*.
+
+- DOI: https://doi.org/10.1109/BigCom57025.2022.00049
+- 中文新闻标题党约 7000 条；BERT+CNN。可当离线评测集，检验词库漏了哪些句式。
+
+### 浏览器推理（对照，默认不做）
+
+#### [huggingface/transformers.js](https://github.com/huggingface/transformers.js)
+
+- 浏览器 ONNX。和「无远程外部脚本、可解释分数」两条约束打架。
+- 若以后做独立扩展，可以当可选「语义模式」：词库分 + 本地小模型残差。不要替换 K/C/E/S/B/V。
 
 最后更新：2026-09-10。
