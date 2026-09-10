@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 jobs:
-  release:
+  build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -30,9 +30,65 @@ jobs:
       - name: Zip extension
         run: npm run zip
 
+      - name: Upload zip artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: chrome-extension-zip
+          path: .output/zhihu-enhancement-plus-*-chrome.zip
+          if-no-files-found: error
+
+  github-release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download zip
+        uses: actions/download-artifact@v4
+        with:
+          name: chrome-extension-zip
+          path: dist
+
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: .output/zhihu-enhancement-plus-*-chrome.zip
+          files: dist/zhihu-enhancement-plus-*-chrome.zip
           generate_release_notes: true
           fail_on_unmatched_files: true
+
+  # 需先在商店后台手动创建商品；之后靠 Secrets + 仓库变量开启自动上传并送审。
+  # 仓库变量：CHROME_WEBSTORE_UPLOAD=true
+  # Secrets：见 docs/chrome-web-store-publish.md
+  chrome-webstore:
+    needs: build
+    if: ${{ vars.CHROME_WEBSTORE_UPLOAD == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download zip
+        uses: actions/download-artifact@v4
+        with:
+          name: chrome-extension-zip
+          path: dist
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Upload and publish to Chrome Web Store
+        env:
+          EXTENSION_ID: ${{ secrets.CHROME_EXTENSION_ID }}
+          CLIENT_ID: ${{ secrets.CHROME_CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.CHROME_CLIENT_SECRET }}
+          REFRESH_TOKEN: ${{ secrets.CHROME_REFRESH_TOKEN }}
+          PUBLISHER_ID: ${{ secrets.CHROME_PUBLISHER_ID }}
+        run: |
+          set -euo pipefail
+          test -n "${EXTENSION_ID:-}"
+          test -n "${CLIENT_ID:-}"
+          test -n "${CLIENT_SECRET:-}"
+          test -n "${REFRESH_TOKEN:-}"
+          test -n "${PUBLISHER_ID:-}"
+          ZIP=$(ls dist/zhihu-enhancement-plus-*-chrome.zip | head -n1)
+          echo "Uploading $ZIP"
+          npx --yes chrome-webstore-upload-cli@4 \
+            --source "$ZIP" \
+            --extension-id "$EXTENSION_ID"

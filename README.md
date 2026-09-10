@@ -55,6 +55,10 @@ git push origin v2.3.0
 
 在 Releases 下载 `zhihu-enhancement-plus-*-chrome.zip`，解压后用「加载已解压的扩展程序」选解压目录（或把 zip 交给 Chrome 商店上传）。
 
+### 自动发布到 Chrome 网上应用店
+
+同一套 tag 流程可顺带上传商店并送审。需先手动在商店创建商品，再配置 Secrets / 变量，详见 [docs/chrome-web-store-publish.md](docs/chrome-web-store-publish.md)。
+
 ## 开发
 
 现代栈：**WXT + TypeScript + React 19 + Tailwind CSS v4 + shadcn/ui**。
@@ -65,7 +69,7 @@ git push origin v2.3.0
 - 弹层：`src/entrypoints/popup/`
 - 存储：`chrome.storage.local`
 - 结巴 WASM：`public/jieba_rs_wasm_bg.wasm`
-- 发版：`.github/workflows/release.yml`（push `v*` tag → Release + zip）
+- 发版：`.github/workflows/release.yml`（`v*` tag → GitHub Release；可选 Chrome Web Store）
 
 ```bash
 npm install
