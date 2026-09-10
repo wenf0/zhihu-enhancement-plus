@@ -20,7 +20,7 @@
 - **用途**：应用功能（提供扩展设定与词库）
 - **是否出售**：否
 - **是否用于无关目的**：否
-- **隐私政策 URL**（仓库公开后可用）：见 [docs/privacy.md](privacy.md)
+- **隐私政策 URL**（仓库公开后可用）：见 [docs/privacy.md](../docs/privacy.md)
 
 ```text
 https://github.com/wenf0/zhihu-enhancement-plus/blob/main/docs/privacy.md
