@@ -4,6 +4,8 @@
 
 基于 [XIU2/UserScript](https://github.com/XIU2/UserScript) 的「知乎增强」2.2.15，许可证为 GPL-3.0。
 
+互联网内容噪音屏蔽的论文精读清单（DOI / 开放 PDF）：[docs/content-noise-readings.md](docs/content-noise-readings.md)。
+
 ## 安装
 
 - Greasy Fork：https://greasyfork.org/zh-CN/scripts/595014-知乎增强优化
