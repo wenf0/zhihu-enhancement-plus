@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,12 +13,112 @@ import {
   NOISE_LEVEL_KEYS,
   READING_KEYS,
 } from '@/lib/defaults';
-import { CUSTOM_LEVEL_IDS, CUSTOM_LEVEL_LABELS, type FilterMode } from '@/lib/types';
+import { CUSTOM_LEVEL_IDS, CUSTOM_LEVEL_LABELS, type FilterMode, type TasteEntry, type TastePrefs } from '@/lib/types';
 import { downloadJsonFile, parseWords, uniqueWords } from '@/lib/utils';
 import { settingsExportFilename } from '@/lib/storage';
 import { useSettings } from '@/lib/use-settings';
 import { EXT_VERSION } from '@/lib/version';
 import { NOISE_CATEGORIES } from '@/lib/noise/lexicon';
+
+/** 与 src/lib/noise/taste.ts 的 TASTE_LEARNED_RANGE 保持一致 */
+const LEARNED_DELTA_RANGE = [-10, 10] as const;
+
+function clampLearnedDelta(n: number) {
+  return Math.max(LEARNED_DELTA_RANGE[0], Math.min(LEARNED_DELTA_RANGE[1], n));
+}
+
+function emptyTasteEntry(): TasteEntry {
+  return { like: 0, dislike: 0, delta: 0 };
+}
+
+function mergeTasteEntries(a: TasteEntry, b: TasteEntry): TasteEntry {
+  return {
+    like: (a.like || 0) + (b.like || 0),
+    dislike: (a.dislike || 0) + (b.dislike || 0),
+    delta: clampLearnedDelta((a.delta || 0) + (b.delta || 0)),
+  };
+}
+
+function formatDelta(n: number) {
+  return n > 0 ? `+${n}` : String(n);
+}
+
+function sortLearnedEntries(learned: Record<string, TasteEntry>) {
+  return Object.entries(learned).sort((a, b) => {
+    const da = Math.abs(a[1]?.delta || 0);
+    const db = Math.abs(b[1]?.delta || 0);
+    if (db !== da) return db - da;
+    return a[0].localeCompare(b[0], 'zh');
+  });
+}
+
+function LearnedWordRow({
+  word,
+  entry,
+  onRename,
+  onDelta,
+  onDelete,
+}: {
+  word: string;
+  entry: TasteEntry;
+  onRename: (from: string, to: string) => void;
+  onDelta: (word: string, delta: number) => void;
+  onDelete: (word: string) => void;
+}) {
+  const [draft, setDraft] = useState(word);
+
+  useEffect(() => {
+    setDraft(word);
+  }, [word]);
+
+  const commitRename = () => {
+    const next = draft.replace(/\s+/g, '').trim();
+    if (!next || next === word) {
+      setDraft(word);
+      return;
+    }
+    onRename(word, next);
+  };
+
+  return (
+    <Card>
+      <CardContent className="flex flex-wrap items-center gap-3 py-3">
+        <Input
+          className="min-w-32 flex-1"
+          value={draft}
+          onChange={e => setDraft(e.target.value)}
+          onBlur={commitRename}
+          onKeyDown={e => {
+            if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+            if (e.key === 'Escape') setDraft(word);
+          }}
+          aria-label="口味词"
+        />
+        <div className="flex items-center gap-1">
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={(entry.delta || 0) <= LEARNED_DELTA_RANGE[0]}
+            onClick={() => onDelta(word, (entry.delta || 0) - 1)}
+          >
+            −
+          </Button>
+          <span className="w-10 text-center text-sm tabular-nums text-zinc-600">{formatDelta(entry.delta || 0)}</span>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={(entry.delta || 0) >= LEARNED_DELTA_RANGE[1]}
+            onClick={() => onDelta(word, (entry.delta || 0) + 1)}
+          >
+            +
+          </Button>
+        </div>
+        <span className="text-xs text-zinc-400">赞 {entry.like || 0} · 踩 {entry.dislike || 0}</span>
+        <Button size="sm" variant="ghost" onClick={() => onDelete(word)}>删除</Button>
+      </CardContent>
+    </Card>
+  );
+}
 
 type Pane = 'appearance' | 'reading' | 'filter' | 'keywords' | 'users' | 'lexicon' | 'taste' | 'backup';
 
@@ -67,8 +167,22 @@ export function App() {
   const [importDraft, setImportDraft] = useState('');
   const [notice, setNotice] = useState('');
   const [catId, setCatId] = useState(NOISE_CATEGORIES[0]?.id || 'celebrity');
+  const [tasteDraft, setTasteDraft] = useState('');
 
   const cat = useMemo(() => settings.lexicon?.cats[catId], [settings.lexicon, catId]);
+  const learnedList = useMemo(
+    () => sortLearnedEntries(settings.taste.learned || {}),
+    [settings.taste.learned],
+  );
+
+  const patchLearned = (mutate: (learned: Record<string, TasteEntry>) => void) => {
+    const next: TastePrefs = {
+      ...settings.taste,
+      learned: { ...(settings.taste.learned || {}) },
+    };
+    mutate(next.learned);
+    void settings.updateTaste(next);
+  };
 
   if (!settings.ready) {
     return <div className="p-10 text-sm text-zinc-500">正在读取 chrome.storage…</div>;
@@ -272,15 +386,79 @@ export function App() {
           <section className="space-y-4">
             <h2 className="text-2xl font-semibold">口味学习</h2>
             <Card>
-              <CardContent className="space-y-2">
+              <CardContent className="space-y-3">
                 <p>已记录 {settings.taste.clicks} 次喜欢 / 不感兴趣。</p>
-                <p className="text-sm text-zinc-500">噪音词 {Object.keys(settings.taste.words).length} · 分类 {Object.keys(settings.taste.cats).length} · 新词 {Object.keys(settings.taste.learned).length}</p>
+                <p className="text-sm text-zinc-500">
+                  噪音词 {Object.keys(settings.taste.words).length} · 分类 {Object.keys(settings.taste.cats).length} · 新词 {learnedList.length}
+                </p>
+                <p className="text-sm text-zinc-500">分词不准时可改词名、调权重，或删掉无效词；改完立即写入本地口味。</p>
+                <div className="flex gap-2">
+                  <Input
+                    value={tasteDraft}
+                    onChange={e => setTasteDraft(e.target.value)}
+                    placeholder="手动添加词，逗号或换行分隔"
+                    onKeyDown={e => {
+                      if (e.key !== 'Enter') return;
+                      e.preventDefault();
+                      const added = uniqueWords(parseWords(tasteDraft));
+                      if (!added.length) return;
+                      patchLearned(learned => {
+                        for (const word of added) {
+                          if (learned[word]) continue;
+                          learned[word] = { ...emptyTasteEntry(), delta: -1, like: 1 };
+                        }
+                      });
+                      setTasteDraft('');
+                    }}
+                  />
+                  <Button onClick={() => {
+                    const added = uniqueWords(parseWords(tasteDraft));
+                    if (!added.length) return;
+                    patchLearned(learned => {
+                      for (const word of added) {
+                        if (learned[word]) continue;
+                        learned[word] = { ...emptyTasteEntry(), delta: -1, like: 1 };
+                      }
+                    });
+                    setTasteDraft('');
+                  }}>添加</Button>
+                </div>
                 <Button variant="outline" onClick={() => void settings.resetTaste()}>清空口味</Button>
               </CardContent>
             </Card>
-            <div className="flex flex-wrap gap-2">
-              {Object.entries(settings.taste.learned).slice(0, 40).map(([word, item]) => (
-                <Badge key={word}>{word} {item.delta > 0 ? `+${item.delta}` : item.delta}</Badge>
+            <div className="space-y-2">
+              {learnedList.length === 0 && (
+                <p className="text-sm text-zinc-500">还没有口味新词。在信息流点「喜欢 / 不感兴趣」，或上方手动添加。</p>
+              )}
+              {learnedList.map(([word, entry]) => (
+                <LearnedWordRow
+                  key={word}
+                  word={word}
+                  entry={entry}
+                  onRename={(from, to) => {
+                    patchLearned(learned => {
+                      if (!learned[from] || from === to) return;
+                      const cur = learned[from];
+                      delete learned[from];
+                      learned[to] = learned[to] ? mergeTasteEntries(learned[to], cur) : cur;
+                    });
+                  }}
+                  onDelta={(target, delta) => {
+                    patchLearned(learned => {
+                      const cur = learned[target];
+                      if (!cur) return;
+                      learned[target] = {
+                        ...cur,
+                        delta: clampLearnedDelta(delta),
+                      };
+                    });
+                  }}
+                  onDelete={target => {
+                    patchLearned(learned => {
+                      delete learned[target];
+                    });
+                  }}
+                />
               ))}
             </div>
           </section>

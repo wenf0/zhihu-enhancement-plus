@@ -72,6 +72,11 @@ export function useSettings() {
     setValues(prev => ({ ...prev, menu_customBlockKeywordsLevel: level }));
   }, []);
 
+  const updateTaste = useCallback(async (next: TastePrefs) => {
+    await saveTastePrefs(next);
+    setTaste(next);
+  }, []);
+
   const resetTaste = useCallback(async () => {
     const empty = emptyTastePrefs();
     await saveTastePrefs(empty);
@@ -123,6 +128,7 @@ export function useSettings() {
     setUsers,
     setKeywords,
     setDefaultLevel,
+    updateTaste,
     resetTaste,
     updateLexicon,
     exportText,
