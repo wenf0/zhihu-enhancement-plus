@@ -3,12 +3,12 @@
 // @name:zh-CN   知乎增强优化
 // @name:zh-TW   知乎增強優化
 // @name:en      Zhihu Enhancement Plus
-// @version      1.8.0
+// @version      1.9.0
 // @author       local (based on X.I.U / 知乎增强 2.2.15)
-// @description  用于知乎网页。可开关：低饱和配色、隐藏右侧栏、清空或锁定标签标题与图标、净化搜索热门、默认/一键/点空白收起回答与评论、右键回顶、展开问题描述、置顶发布时间、信息流类型标签、直达问题、按用户与噪音评分（可显示得分、可过滤）及关键词、按类别屏蔽视频/文章/想法/话题/盐选/相关搜索/热榜杂项。设置可 JSON 导入导出。始终生效：关登录弹窗、原图、站外直链、点浮层关评论、去掉搜索高亮链接。基于 XIU2「知乎增强」2.2.15（GPL-3.0），无远程外部脚本。
-// @description:zh-CN 用于知乎网页。可开关：低饱和配色、隐藏右侧栏、清空或锁定标签标题与图标、净化搜索热门、默认/一键/点空白收起回答与评论、右键回顶、展开问题描述、置顶发布时间、信息流类型标签、直达问题、按用户与噪音评分（可显示得分、可过滤）及关键词、按类别屏蔽视频/文章/想法/话题/盐选/相关搜索/热榜杂项。设置可 JSON 导入导出。始终生效：关登录弹窗、原图、站外直链、点浮层关评论、去掉搜索高亮链接。基于 XIU2「知乎增强」2.2.15（GPL-3.0），无远程外部脚本。
-// @description:zh-TW 用於知乎網頁。可開關：低飽和配色、隱藏右側欄、清空或鎖定分頁標題與圖示、淨化搜尋熱門、預設/一鍵/點空白收起回答與評論、右鍵回頂、展開問題描述、置頂發布時間、資訊流類型標籤、直達問題、按使用者與噪音評分（可顯示得分、可過濾）及關鍵詞、按類別屏蔽影片/文章/想法/話題/鹽選/相關搜尋/熱榜雜項。設定可 JSON 匯入匯出。始終生效：關登入彈窗、原圖、站外直連、點浮層關評論、去掉搜尋高亮連結。基於 XIU2「知乎增強」2.2.15（GPL-3.0），無遠端外部腳本。
-// @description:en For Zhihu. Toggles: desaturated UI, hide sidebar, blank/lock tab title, clean search hot terms, collapse answers (default/one-click/side), right-click to top, expand question, pin time, type labels, jump to question, score/show/filter noise, filter by user/keywords, hide video/article/pin/topic/Yanxuan/related search/hot extras. JSON import/export. Always: close login modal, original images, unwrap outbound links, overlay closes comments, strip search highlight links. From XIU2 (GPL-3.0); no remote scripts.
+// @description  用于知乎网页。可开关：低饱和配色、隐藏右侧栏、清空或锁定标签标题与图标、净化搜索热门、默认/一键/点空白收起回答与评论、右键回顶、展开问题描述、置顶发布时间、信息流类型标签、直达问题、按用户与噪音评分（可显示得分、可过滤、喜欢/不感兴趣回写权重）及关键词、按类别屏蔽视频/文章/想法/话题/盐选/相关搜索/热榜杂项。设置可 JSON 导入导出。始终生效：关登录弹窗、原图、站外直链、点浮层关评论、去掉搜索高亮链接。基于 XIU2「知乎增强」2.2.15（GPL-3.0），无远程外部脚本。
+// @description:zh-CN 用于知乎网页。可开关：低饱和配色、隐藏右侧栏、清空或锁定标签标题与图标、净化搜索热门、默认/一键/点空白收起回答与评论、右键回顶、展开问题描述、置顶发布时间、信息流类型标签、直达问题、按用户与噪音评分（可显示得分、可过滤、喜欢/不感兴趣回写权重）及关键词、按类别屏蔽视频/文章/想法/话题/盐选/相关搜索/热榜杂项。设置可 JSON 导入导出。始终生效：关登录弹窗、原图、站外直链、点浮层关评论、去掉搜索高亮链接。基于 XIU2「知乎增强」2.2.15（GPL-3.0），无远程外部脚本。
+// @description:zh-TW 用於知乎網頁。可開關：低飽和配色、隱藏右側欄、清空或鎖定分頁標題與圖示、淨化搜尋熱門、預設/一鍵/點空白收起回答與評論、右鍵回頂、展開問題描述、置頂發布時間、資訊流類型標籤、直達問題、按使用者與噪音評分（可顯示得分、可過濾、喜歡/不感興趣回寫權重）及關鍵詞、按類別屏蔽影片/文章/想法/話題/鹽選/相關搜尋/熱榜雜項。設定可 JSON 匯入匯出。始終生效：關登入彈窗、原圖、站外直連、點浮層關評論、去掉搜尋高亮連結。基於 XIU2「知乎增強」2.2.15（GPL-3.0），無遠端外部腳本。
+// @description:en For Zhihu. Toggles: desaturated UI, hide sidebar, blank/lock tab title, clean search hot terms, collapse answers (default/one-click/side), right-click to top, expand question, pin time, type labels, jump to question, score/show/filter noise, like/dislike to retune weights, filter by user/keywords, hide video/article/pin/topic/Yanxuan/related search/hot extras. JSON import/export. Always: close login modal, original images, unwrap outbound links, overlay closes comments, strip search highlight links. From XIU2 (GPL-3.0); no remote scripts.
 // @match        *://www.zhihu.com/*
 // @match        *://zhuanlan.zhihu.com/*
 // @exclude      https://www.zhihu.com/signin*
@@ -90,6 +90,7 @@ const MENU_ITEMS = [
     { key: 'menu_noiseScore',          label: '噪音评分',             tip: '给信息流打噪音分。过滤和显示得分都要先开这项。', def: true },
     { key: 'menu_blockKeywords',       label: '噪音过滤',             tip: '关闭只打分；仅降权会变淡；隐藏会移出信息流并可复查。', def: 'hide', kind: 'filter' },
     { key: 'menu_noiseBadge',          label: '显示噪音得分',         tip: '每条内容显示模型分，0 分不标。规则隐藏不改这个数字。', def: true },
+    { key: 'menu_noiseTaste',          label: '喜欢 / 不感兴趣',       tip: '卡片上点喜欢或讨厌，只回写命中的词库词和分类，慢慢贴近口味。', def: true },
     { key: 'menu_customBlockKeywords', label: '编辑屏蔽关键词',       tip: '每条词可开关，并设隐藏 / 降权 / 加权。预置词默认开着。', def: DEFAULT_BLOCK_KEYWORDS, kind: 'keywords' },
     {
         key: 'menu_noiseLevel',
@@ -131,19 +132,23 @@ const MENU_ITEMS = [
 const cache = Object.create(null);
 const menuCommandIds = [];
 let noiseIndex = null;
+let tasteCache = null;
+let noiseRescan = null;
+let noiseTasteGen = 1;
 
 /* GM_setValue 跟脚本安装 ID 绑定，卸载重装会丢。再备份到知乎域名 localStorage。 */
 const SETTINGS_BACKUP_KEY = 'zhihu-enhancement-plus:settings:v1';
 const SETTINGS_GM_FLAG = 'zhihu_plus_persist_v1';
 const SETTINGS_KIND = 'zhihu-enhancement-plus-settings';
 const LEXICON_KEY = 'noise_lexicon_v1';
+const TASTE_KEY = 'noise_taste_v1';
 const USERS_OFF_KEY = 'menu_customBlockUsersOff';
 const KEYWORDS_OFF_KEY = 'menu_customBlockKeywordsOff';
 const KEYWORDS_LEVEL_KEY = 'menu_customBlockKeywordsLevel';
 const KEYWORDS_LEVELS_KEY = 'menu_customBlockKeywordsLevels';
 const CUSTOM_LEVEL_IDS = ['hide', 'demote', 'weight'];
 const CUSTOM_LEVEL_LABELS = { hide: '隐藏', demote: '降权', weight: '加权' };
-const SETTINGS_EXTRA_KEYS = ['menu_kw_pack_v1', LEXICON_KEY, USERS_OFF_KEY, KEYWORDS_OFF_KEY, KEYWORDS_LEVEL_KEY, KEYWORDS_LEVELS_KEY];
+const SETTINGS_EXTRA_KEYS = ['menu_kw_pack_v1', LEXICON_KEY, TASTE_KEY, USERS_OFF_KEY, KEYWORDS_OFF_KEY, KEYWORDS_LEVEL_KEY, KEYWORDS_LEVELS_KEY];
 
 function pageLocalStorage() {
     try {
@@ -258,6 +263,10 @@ function writeSettingsBackup() {
 function isValidSettingValue(key, value) {
     if (key === 'menu_kw_pack_v1') return typeof value === 'boolean';
     if (key === LEXICON_KEY) return !!(value && typeof value === 'object' && !Array.isArray(value));
+    if (key === TASTE_KEY) {
+        return !!(value && typeof value === 'object' && !Array.isArray(value)
+            && value.words && typeof value.words === 'object' && !Array.isArray(value.words));
+    }
     if (key === USERS_OFF_KEY || key === KEYWORDS_OFF_KEY) {
         return Array.isArray(value) && value.every(x => typeof x === 'string');
     }
@@ -305,6 +314,7 @@ function applyImportedSettings(values) {
     }
     if (n) {
         noiseIndex = null;
+        tasteCache = null;
         writeSettingsBackup();
     }
     return n;
@@ -753,7 +763,7 @@ function settingsNoiseFormulaHtml() {
             <div class="zhihuE_FxItem"><b>B</b>标题党<span>5 × 标题党词命中数，上限 25。</span></div>
             <div class="zhihuE_FxItem"><b>V</b>价值<span>白名单权重和，上限 50，从总分里减去。</span></div>
         </div>
-        <p class="zhihuE_FxNote">信息流卡片取 max(标题分, 0.72×标题 + 0.28×摘要)。模型分 ${NOISE_DEMOTE}–${NOISE_HIDE} 降权，${NOISE_HIDE} 及以上隐藏。自定义词的「隐藏 / 降权」作为规则另外执行，分数保持模型分。</p>
+        <p class="zhihuE_FxNote">信息流卡片取 max(标题分, 0.72×标题 + 0.28×摘要)。模型分 ${NOISE_DEMOTE}–${NOISE_HIDE} 降权，${NOISE_HIDE} 及以上隐藏。自定义词的「隐藏 / 降权」作为规则另外执行，分数保持模型分。开启「喜欢 / 不感兴趣」后，命中词和分类会叠加本地口味增量，不改词库原文。</p>
     </div>`;
 }
 
@@ -1032,6 +1042,44 @@ function mountKeywordEditor(container) {
         }
     };
     render();
+}
+
+function mountTastePane(container) {
+    const prefs = getTastePrefs();
+    const lex = getActiveLexicon();
+    const rows = [];
+    for (const [word, item] of Object.entries(prefs.words || {})) {
+        rows.push({ word, kind: '噪音词', like: item.like || 0, dislike: item.dislike || 0, delta: item.delta || 0 });
+    }
+    for (const [word, item] of Object.entries(prefs.value || {})) {
+        rows.push({ word, kind: '价值词', like: item.like || 0, dislike: item.dislike || 0, delta: item.delta || 0 });
+    }
+    for (const [id, item] of Object.entries(prefs.cats || {})) {
+        const cat = lex.cats && lex.cats[id];
+        rows.push({ word: cat ? cat.name : id, kind: '分类', like: item.like || 0, dislike: item.dislike || 0, delta: item.delta || 0 });
+    }
+    rows.sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta) || (b.like + b.dislike) - (a.like + a.dislike));
+    const shown = rows.filter(row => row.delta || row.like || row.dislike);
+    const sign = n => (n > 0 ? '+' : '') + n;
+    container.insertAdjacentHTML('beforeend', `<div class="zhihuE_Taste">
+        <p class="zhihuE_StPaneTips">卡片上的「喜欢 / 不感兴趣」只回写<strong>已经命中的词库词和分类</strong>，不做全文分词，避免「的、是、一个」带偏权重。喜欢会降低噪音词、抬高价值词；不感兴趣相反，并立刻隐藏该条。再点一次同一按钮可撤销。</p>
+        <div class="zhihuE_TasteHead">
+            <p class="zhihuE_StPaneTips">已学习 ${prefs.clicks || 0} 次 · ${shown.length} 条增量</p>
+            <button type="button" class="zhihuE_IoBtn" data-taste-reset>清空口味</button>
+        </div>
+        <div class="zhihuE_TasteList">${shown.length ? shown.slice(0, 80).map(row => {
+            const cls = row.delta > 0 ? 'is-up' : row.delta < 0 ? 'is-down' : '';
+            return `<div class="zhihuE_TasteRow"><div><b>${escapeHtml(row.word)}</b><span> ${escapeHtml(row.kind)} · 喜欢 ${row.like} · 讨厌 ${row.dislike}</span></div><em class="${cls}">${sign(row.delta)}</em></div>`;
+        }).join('') : '<p class="zhihuE_StPaneTips">还没有口味增量。在信息流卡片上点「喜欢」或「不感兴趣」就会出现在这里。</p>'}</div>
+    </div>`);
+    const reset = container.querySelector('[data-taste-reset]');
+    if (reset) {
+        reset.onclick = () => {
+            saveTastePrefs(emptyTastePrefs());
+            container.querySelector('.zhihuE_Taste').remove();
+            mountTastePane(container);
+        };
+    }
 }
 
 function mountListEditor(container, { storageKey, placeholder, tips }) {
@@ -1484,7 +1532,7 @@ function mountIoPane(container) {
     const compactBytes = utf8Bytes(compactText);
     const keys = Object.keys(snap.values || {}).length;
     container.innerHTML = `<div class="zhihuE_IoMount">
-        <p class="zhihuE_StPaneTips">包含全部开关、屏蔽用户/关键词，以及完整噪音词库（<code>noise_lexicon_v1</code>）。导入会覆盖当前配置并刷新页面。</p>
+        <p class="zhihuE_StPaneTips">包含全部开关、屏蔽用户/关键词、口味增量（<code>noise_taste_v1</code>），以及完整噪音词库（<code>noise_lexicon_v1</code>）。导入会覆盖当前配置并刷新页面。</p>
         <p class="zhihuE_IoStat">脚本 v${escapeHtml(scriptVersion() || '—')} · 已保存 ${formatBytes(compactBytes)} · 格式化 ${formatBytes(utf8Bytes(prettyText))} · ${keys} 项</p>
         <textarea class="zhihuE_IoArea" spellcheck="false"></textarea>
         <div class="zhihuE_IoMsg"></div>
@@ -1657,6 +1705,14 @@ button,input,textarea {font:inherit;color:inherit;}
 .zhihuE_FxItem b {display:inline-block;min-width:18px;margin-right:6px;font-size:14px;}
 .zhihuE_FxItem span {display:block;margin-top:6px;font-size:12px;line-height:1.55;color:#8a8a8a;font-weight:400;}
 .zhihuE_FxNote {margin:12px 0 0;font-size:12px;line-height:1.65;color:#8a8a8a;}
+.zhihuE_TasteHead {display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+.zhihuE_TasteList {display:flex;flex-direction:column;gap:8px;}
+.zhihuE_TasteRow {display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;padding:10px 12px;border:1px solid #eee;border-radius:12px;background:#fff;}
+.zhihuE_TasteRow b {font-size:13px;}
+.zhihuE_TasteRow span {font-size:12px;color:#8a8a8a;}
+.zhihuE_TasteRow em {font-style:normal;font-variant-numeric:tabular-nums;font-weight:650;}
+.zhihuE_TasteRow em.is-up {color:#a33;}
+.zhihuE_TasteRow em.is-down {color:#2e7d32;}
 .zhihuE_Ts {display:flex;flex-direction:column;gap:12px;flex:none;}
 .zhihuE_TsTitle,.zhihuE_TsBody {width:100%;padding:12px 16px;border:1px solid #e8e8e8;border-radius:12px;background:#fafafa;font:inherit;font-size:14px;outline:none;box-sizing:border-box;}
 .zhihuE_TsTitle {height:44px;}
@@ -1769,7 +1825,8 @@ button,input,textarea {font:inherit;color:inherit;}
 [data-theme="dark"] .zhihuE_LvChip {background:#2b2f36;color:#c5ced8;}
 [data-theme="dark"] .zhihuE_Fx {background:#343a44;border-color:#3c434d;}
 [data-theme="dark"] .zhihuE_FxItem {background:#3a414c;border-color:#3c434d;}
-[data-theme="dark"] .zhihuE_FxKicker,[data-theme="dark"] .zhihuE_FxItem span,[data-theme="dark"] .zhihuE_FxNote,[data-theme="dark"] .zhihuE_TsSub,[data-theme="dark"] .zhihuE_TsHint,[data-theme="dark"] .zhihuE_TsItem {color:#9aa4b2;}
+[data-theme="dark"] .zhihuE_FxKicker,[data-theme="dark"] .zhihuE_FxItem span,[data-theme="dark"] .zhihuE_FxNote,[data-theme="dark"] .zhihuE_TsSub,[data-theme="dark"] .zhihuE_TsHint,[data-theme="dark"] .zhihuE_TsItem,[data-theme="dark"] .zhihuE_TasteRow span {color:#9aa4b2;}
+[data-theme="dark"] .zhihuE_TasteRow {background:#343a44;border-color:#3c434d;}
 [data-theme="dark"] .zhihuE_TsTitle,[data-theme="dark"] .zhihuE_TsBody,[data-theme="dark"] .zhihuE_TsBoard,[data-theme="dark"] .zhihuE_TsItem {background:#343a44;border-color:#3c434d;color:#e8edf2;}
 [data-theme="dark"] .zhihuE_TsBoard.is-keep {background:#2f3a34;border-color:#3d5244;}
 [data-theme="dark"] .zhihuE_TsBoard.is-demote {background:#3a372f;border-color:#534832;}
@@ -1864,13 +1921,15 @@ button,input,textarea {font:inherit;color:inherit;}
             bodyEl.innerHTML = settingsSwitchRow('menu_noiseScore') + (scoreOn
                 ? settingsFilterRow() +
                     settingsSwitchRow('menu_noiseBadge', ' is-sub') +
+                    settingsSwitchRow('menu_noiseTaste', ' is-sub') +
                     `<div class="zhihuE_StTabs">
                     <button type="button" class="zhihuE_StTab${wordTab === 'levels' ? ' zhihuE_isOn' : ''}" data-tab="levels">过滤档位</button>
                     <button type="button" class="zhihuE_StTab${wordTab === 'custom' ? ' zhihuE_isOn' : ''}" data-tab="custom">自定义词</button>
                     <button type="button" class="zhihuE_StTab${wordTab === 'lexicon' ? ' zhihuE_isOn' : ''}" data-tab="lexicon">噪音词库</button>
+                    <button type="button" class="zhihuE_StTab${wordTab === 'taste' ? ' zhihuE_isOn' : ''}" data-tab="taste">口味</button>
                     <button type="button" class="zhihuE_StTab${wordTab === 'test' ? ' zhihuE_isOn' : ''}" data-tab="test">试算</button>
                 </div>
-                <div class="zhihuE_StPane${wordTab === 'levels' || wordTab === 'test' ? '' : ' is-fill'}"></div>`
+                <div class="zhihuE_StPane${wordTab === 'levels' || wordTab === 'test' || wordTab === 'taste' ? '' : ' is-fill'}"></div>`
                 : '<p class="zhihuE_StPaneTips">评分关闭后，过滤和角标都不会生效。档位、词库和试算已折叠，打开后仍用上次的设置。</p>');
             if (!scoreOn) return;
             const pane = bodyEl.querySelector('.zhihuE_StPane');
@@ -1880,6 +1939,8 @@ button,input,textarea {font:inherit;color:inherit;}
                 mountKeywordEditor(pane);
             } else if (wordTab === 'lexicon') {
                 mountLexiconEditor(pane);
+            } else if (wordTab === 'taste') {
+                mountTastePane(pane);
             } else {
                 mountNoiseTestPane(pane);
             }
@@ -2624,6 +2685,107 @@ function touchLexicon(data, token) {
     data.touched = [...set];
 }
 
+const TASTE_WORD_STEP = 2;
+const TASTE_CAT_STEP = 5;
+const TASTE_VALUE_STEP = 3;
+const TASTE_WORD_RANGE = [-8, 12];
+const TASTE_CAT_RANGE = [-24, 28];
+const TASTE_VALUE_RANGE = [-8, 16];
+
+function emptyTastePrefs() {
+    return { words: {}, cats: {}, value: {}, actions: {}, clicks: 0 };
+}
+
+function tasteEnabled() {
+    return !!menuValue('menu_noiseScore') && menuValue('menu_noiseTaste') !== false;
+}
+
+function getTastePrefs() {
+    if (tasteCache) return tasteCache;
+    const saved = GM_getValue(TASTE_KEY);
+    if (!saved || typeof saved !== 'object' || Array.isArray(saved)) {
+        tasteCache = emptyTastePrefs();
+        return tasteCache;
+    }
+    tasteCache = {
+        words: saved.words && typeof saved.words === 'object' && !Array.isArray(saved.words) ? saved.words : {},
+        cats: saved.cats && typeof saved.cats === 'object' && !Array.isArray(saved.cats) ? saved.cats : {},
+        value: saved.value && typeof saved.value === 'object' && !Array.isArray(saved.value) ? saved.value : {},
+        actions: saved.actions && typeof saved.actions === 'object' && !Array.isArray(saved.actions) ? saved.actions : {},
+        clicks: Number(saved.clicks) || 0
+    };
+    return tasteCache;
+}
+
+function saveTastePrefs(data) {
+    tasteCache = data;
+    GM_setValue(TASTE_KEY, data);
+    writeSettingsBackup();
+}
+
+function clampTaste(n, range) {
+    return Math.max(range[0], Math.min(range[1], n));
+}
+
+function bumpTasteEntry(map, key, field, fieldDelta, step, range) {
+    const cur = map[key] || { like: 0, dislike: 0, delta: 0 };
+    const next = {
+        like: Math.max(0, (cur.like || 0) + (field === 'like' ? fieldDelta : 0)),
+        dislike: Math.max(0, (cur.dislike || 0) + (field === 'dislike' ? fieldDelta : 0)),
+        delta: clampTaste((cur.delta || 0) + step, range)
+    };
+    if (!next.like && !next.dislike && !next.delta) delete map[key];
+    else map[key] = next;
+}
+
+function applyTasteSignals(prefs, signals, action, sign) {
+    const like = action === 'like';
+    const field = like ? 'like' : 'dislike';
+    const wordStep = (like ? -TASTE_WORD_STEP : TASTE_WORD_STEP) * sign;
+    const catStep = (like ? -TASTE_CAT_STEP : TASTE_CAT_STEP) * sign;
+    const valueStep = (like ? TASTE_VALUE_STEP : -TASTE_VALUE_STEP) * sign;
+    for (const word of signals.noiseWords) {
+        bumpTasteEntry(prefs.words, word, field, sign, wordStep, TASTE_WORD_RANGE);
+    }
+    for (const id of signals.cats) {
+        bumpTasteEntry(prefs.cats, id, field, sign, catStep, TASTE_CAT_RANGE);
+    }
+    for (const word of signals.valueWords) {
+        bumpTasteEntry(prefs.value, word, field, sign, valueStep, TASTE_VALUE_RANGE);
+    }
+}
+
+function collectTasteSignals(title, body) {
+    const { titleScore, bodyScore } = scoreFeedNoise(title, body);
+    const noiseWords = new Set();
+    const valueWords = new Set();
+    const cats = new Set();
+    const take = score => {
+        if (!score || !score.hits) return;
+        for (const item of score.hits.words || []) {
+            if (item.source === 'char' || !item.word) continue;
+            noiseWords.add(String(item.word).toLowerCase());
+        }
+        for (const item of score.hits.emotion || []) {
+            if (item.word) noiseWords.add(String(item.word).toLowerCase());
+        }
+        for (const word of score.hits.controversy || []) noiseWords.add(String(word).toLowerCase());
+        for (const word of score.hits.clickbait || []) noiseWords.add(String(word).toLowerCase());
+        for (const item of score.hits.value || []) {
+            if (item.word) valueWords.add(String(item.word).toLowerCase());
+        }
+        if (score.winningCatId) cats.add(score.winningCatId);
+    };
+    take(titleScore);
+    take(bodyScore);
+    return { noiseWords: [...noiseWords], valueWords: [...valueWords], cats: [...cats] };
+}
+
+function tasteDelta(map, key) {
+    const item = map && map[key];
+    return item ? Number(item.delta) || 0 : 0;
+}
+
 function compileNoiseIndex() {
     if (noiseIndex) return noiseIndex;
     const lex = getActiveLexicon();
@@ -2641,6 +2803,7 @@ function compileNoiseIndex() {
             len: k.length
         })).sort((a, b) => b.len - a.len);
         cats.push({
+            id: cat.id,
             name: cat.name,
             level: cat.level,
             c: cat.c,
@@ -2670,15 +2833,17 @@ function scoreText(raw) {
         return {
             final: 0, K: 0, C: 0, E: 0, S: 0, B: 0, V: 0, kRaw: 0,
             hits: { words: [], custom: [], cats: [], emotion: [], controversy: [], clickbait: [], value: [] },
-            winningCat: '', exclude: '', cFallback: false, customHit: false, customFloor: 0,
+            winningCat: '', winningCatId: '', exclude: '', cFallback: false, customHit: false, customFloor: 0,
             rule: { action: '', words: [] }
         };
     }
     const text = String(raw).toLowerCase();
     const idx = compileNoiseIndex();
+    const prefs = tasteEnabled() ? getTastePrefs() : null;
     let kRaw = 0;
     let bestC = 0;
     let winningCat = '';
+    let winningCatId = '';
     let exclude = '';
     const wordHits = [];
     const catHits = [];
@@ -2691,25 +2856,28 @@ function scoreText(raw) {
             if (item.len < 2) continue;
             if (text.includes(item.k)) {
                 longHits += 1;
-                catW += item.w;
-                local.push({ word: item.k, w: item.w, cat: cat.name, source: 'cat' });
+                const w = Math.max(0, item.w + (prefs ? tasteDelta(prefs.words, item.k) : 0));
+                catW += w;
+                local.push({ word: item.k, w, cat: cat.name, source: 'cat' });
             }
         }
         if (longHits) {
             for (const item of cat.words) {
                 if (item.len >= 2) continue;
                 if (text.includes(item.k)) {
-                    const w = item.w * 0.35;
+                    const w = Math.max(0, item.w * 0.35 + (prefs ? tasteDelta(prefs.words, item.k) : 0));
                     catW += w;
                     local.push({ word: item.k, w, cat: cat.name, source: 'char' });
                 }
             }
-            let c = cat.c;
+            let c = cat.c + (prefs ? tasteDelta(prefs.cats, cat.id) : 0);
             const hitEx = cat.excludes.find(ex => text.includes(ex)) || '';
             if (hitEx) c *= 0.35;
+            c = Math.max(0, c);
             if (c > bestC) {
                 bestC = c;
                 winningCat = cat.name;
+                winningCatId = cat.id || '';
                 exclude = hitEx;
             }
             kRaw += catW;
@@ -2727,10 +2895,11 @@ function scoreText(raw) {
         const spec = CUSTOM_LEVELS[item.level] || CUSTOM_LEVELS.weight;
         customHit = true;
         customFloor = Math.max(customFloor, spec.floor);
-        customHits.push({ word: item.word || word, w: spec.k, level: spec.id, cat: '自定义', source: 'custom' });
+        const w = spec.k + (prefs ? tasteDelta(prefs.words, k) : 0);
+        customHits.push({ word: item.word || word, w, level: spec.id, cat: '自定义', source: 'custom' });
         if (!wordHits.some(hit => hit.word === word || hit.word === item.word)) {
-            kRaw += spec.k;
-            wordHits.push({ word: item.word || word, w: spec.k, level: spec.id, cat: '自定义', source: 'custom' });
+            kRaw += Math.max(0, w);
+            wordHits.push({ word: item.word || word, w, level: spec.id, cat: '自定义', source: 'custom' });
         }
     }
     const rule = noiseRuleFromHits(customHits);
@@ -2741,30 +2910,40 @@ function scoreText(raw) {
     let eSum = 0;
     for (const item of idx.emotion) {
         if (text.includes(item.k)) {
-            eSum += item.w;
-            emotion.push({ word: item.k, w: item.w });
+            const w = Math.max(0, item.w + (prefs ? tasteDelta(prefs.words, item.k) : 0));
+            eSum += w;
+            emotion.push({ word: item.k, w });
         }
     }
     const E = Math.min(25, eSum);
 
     const controversy = [];
+    let sRaw = 0;
     for (const word of idx.controversy) {
-        if (text.includes(word)) controversy.push(word);
+        if (text.includes(word)) {
+            controversy.push(word);
+            sRaw += Math.max(0, 6 + (prefs ? tasteDelta(prefs.words, word) : 0));
+        }
     }
-    const S = Math.min(30, 6 * controversy.length);
+    const S = Math.min(30, sRaw);
 
     const clickbait = [];
+    let bRaw = 0;
     for (const word of idx.clickbait) {
-        if (text.includes(word)) clickbait.push(word);
+        if (text.includes(word)) {
+            clickbait.push(word);
+            bRaw += Math.max(0, 5 + (prefs ? tasteDelta(prefs.words, word) : 0));
+        }
     }
-    const B = Math.min(25, clickbait.length * 5);
+    const B = Math.min(25, bRaw);
 
     const value = [];
     let V = 0;
     for (const item of idx.value) {
         if (text.includes(item.k)) {
-            V += item.w;
-            value.push({ word: item.k, w: item.w });
+            const w = Math.max(0, item.w + (prefs ? tasteDelta(prefs.value, item.k) : 0));
+            V += w;
+            value.push({ word: item.k, w });
         }
     }
     V = Math.min(50, V);
@@ -2780,7 +2959,7 @@ function scoreText(raw) {
     return {
         final, K, C: bestC, E, S, B, V, kRaw,
         hits: { words: wordHits, custom: customHits, cats: catHits, emotion, controversy, clickbait, value },
-        winningCat, exclude, cFallback, customHit, customFloor, rule
+        winningCat, winningCatId, exclude, cFallback, customHit, customFloor, rule
     };
 }
 
@@ -2839,6 +3018,14 @@ function injectNoiseStyles() {
         #zhihu-plus-noise-tray-panel b {float:right;font-variant-numeric:tabular-nums;}
         .zhihu-plus-noise-tag {display:inline-flex !important;align-items:center;vertical-align:middle;position:static !important;top:auto !important;right:auto !important;z-index:6;margin:0 0 0 8px !important;padding:1px 7px !important;border-radius:999px;font:inherit;font-size:11px !important;font-weight:650;font-variant-numeric:tabular-nums;line-height:1.45;white-space:nowrap;pointer-events:auto;cursor:pointer;width:auto !important;min-width:0 !important;height:auto !important;float:none !important;appearance:none;-webkit-appearance:none;--t:0;background:hsla(calc(145 - 145 * var(--t)), calc(42% + 53% * var(--t)), calc(94% - 42% * var(--t)), calc(0.78 + 0.22 * var(--t)));color:hsl(calc(145 - 145 * var(--t)), calc(48% + 40% * var(--t)), calc(26% + 56% * var(--t)));border:1px solid hsla(calc(145 - 145 * var(--t)), 72%, 38%, calc(0.1 + 0.42 * var(--t)));box-shadow:0 0 calc(2px + 12px * var(--t)) hsla(calc(145 - 145 * var(--t)), 90%, 48%, calc(0.04 + 0.42 * var(--t)));text-shadow:0 1px 2px rgba(0,0,0,calc(0.08 + 0.28 * var(--t)));}
         [data-theme="dark"] .zhihu-plus-noise-tag {background:hsla(calc(145 - 145 * var(--t)), calc(48% + 42% * var(--t)), calc(20% + 10% * var(--t)), calc(0.62 + 0.32 * var(--t)));color:hsl(calc(145 - 145 * var(--t)), 86%, calc(86% - 6% * var(--t)));}
+        .zhihu-plus-taste {display:inline-flex !important;align-items:center;gap:6px;margin:0 0 0 8px;vertical-align:middle;position:relative;z-index:7;}
+        .zhihu-plus-taste button {height:22px;padding:0 8px;border:1px solid rgba(0,0,0,.08);border-radius:999px;background:#f4f4f5;color:#666;font:11px/22px -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;cursor:pointer;}
+        .zhihu-plus-taste button:hover {border-color:#bbb;color:#1d1d1f;}
+        .zhihu-plus-taste button.is-on[data-taste="like"] {background:#e8f5e9;color:#2e7d32;border-color:#c8e6c9;}
+        .zhihu-plus-taste button.is-on[data-taste="dislike"] {background:#fce8e8;color:#a33;border-color:#f0cfcf;}
+        [data-theme="dark"] .zhihu-plus-taste button {background:#343a44;border-color:#3c434d;color:#c5ced8;}
+        [data-theme="dark"] .zhihu-plus-taste button.is-on[data-taste="like"] {background:#2f3a34;color:#8fd19a;border-color:#3d5244;}
+        [data-theme="dark"] .zhihu-plus-taste button.is-on[data-taste="dislike"] {background:#3a3232;color:#f0b6b6;border-color:#534040;}
     `);
     bindNoiseExplain();
 }
@@ -2947,6 +3134,7 @@ function noiseExplainHtml(title, body, result, href) {
     }
     if (mode === 'off') notes.push('过滤已关闭，信息流只打分不处理');
     else if (mode === 'demote') notes.push('过滤为仅降权，不会移出信息流');
+    if (tasteEnabled() && getTastePrefs().clicks) notes.push('分数已叠加本地「喜欢 / 不感兴趣」增量');
     const bar = row => {
         const pct = Math.max(0, Math.min(100, row.v));
         return `<div class="zhihuE_NxRow">
@@ -3150,6 +3338,100 @@ function cardNoiseText(card, titleCss) {
     return { title: title.trim(), body };
 }
 
+function tasteCardKey(card, titleCss) {
+    const href = cardNoiseLink(card);
+    if (href) return href;
+    const { title } = cardNoiseText(card, titleCss);
+    return title ? 't:' + title.slice(0, 96) : '';
+}
+
+function paintTasteBar(card, titleCss) {
+    if (!tasteEnabled()) {
+        const old = card.querySelector('.zhihu-plus-taste');
+        if (old) old.remove();
+        return;
+    }
+    const key = tasteCardKey(card, titleCss);
+    if (!key) return;
+    const anchor = noiseBadgeAnchor(card);
+    let bar = card.querySelector('.zhihu-plus-taste');
+    if (!bar) {
+        bar = document.createElement('span');
+        bar.className = 'zhihu-plus-taste';
+        bar.innerHTML = '<button type="button" data-taste="like">喜欢</button><button type="button" data-taste="dislike">不感兴趣</button>';
+        const host = anchor && (anchor.closest('h2') || anchor.parentElement);
+        if (host) host.appendChild(bar);
+        else {
+            ensureCardPosition(card);
+            card.insertAdjacentElement('afterbegin', bar);
+        }
+    }
+    const action = getTastePrefs().actions[key] || '';
+    bar.dataset.key = key;
+    bar.dataset.titleCss = titleCss || '';
+    bar.querySelector('[data-taste="like"]').classList.toggle('is-on', action === 'like');
+    bar.querySelector('[data-taste="dislike"]').classList.toggle('is-on', action === 'dislike');
+}
+
+let tasteClickBound = false;
+function bindTasteClicks() {
+    if (tasteClickBound) return;
+    tasteClickBound = true;
+    document.addEventListener('click', event => {
+        const btn = event.target.closest('.zhihu-plus-taste [data-taste]');
+        if (!btn) return;
+        event.preventDefault();
+        event.stopPropagation();
+        const bar = btn.closest('.zhihu-plus-taste');
+        const card = bar.closest('[data-zhihu-plus-noise]') || bar.closest('.Card, .HotItem, .List-item, .TopstoryItem');
+        if (!card) return;
+        applyCardTaste(card, bar.dataset.titleCss || '', btn.dataset.taste);
+    }, true);
+}
+
+function applyCardTaste(card, titleCss, nextAction) {
+    if (!tasteEnabled() || (nextAction !== 'like' && nextAction !== 'dislike')) return;
+    const { title, body } = cardNoiseText(card, titleCss);
+    const key = tasteCardKey(card, titleCss);
+    if (!key) return;
+    const prefs = getTastePrefs();
+    const prev = prefs.actions[key] || '';
+    const signals = collectTasteSignals(title, body);
+    if (prev) applyTasteSignals(prefs, signals, prev, -1);
+    if (prev === nextAction) delete prefs.actions[key];
+    else {
+        applyTasteSignals(prefs, signals, nextAction, 1);
+        prefs.actions[key] = nextAction;
+        prefs.clicks = (prefs.clicks || 0) + 1;
+        const actionKeys = Object.keys(prefs.actions);
+        if (actionKeys.length > 400) delete prefs.actions[actionKeys[0]];
+    }
+    saveTastePrefs(prefs);
+    const learned = signals.noiseWords.length + signals.valueWords.length + signals.cats.length;
+    if (!learned && prefs.actions[key] === 'dislike') {
+        notify('已隐藏这条。标题没打中词库，所以没有可学习的词。');
+    } else if (!learned && prefs.actions[key] === 'like') {
+        notify('已记下喜欢。标题没打中词库，权重没有变化。');
+    }
+    refreshNoiseFeed();
+}
+
+function resetNoiseCardVisual(card) {
+    card.classList.remove('zhihu-plus-noise-hide', 'zhihu-plus-noise-demote');
+    card.hidden = false;
+    card.style.display = '';
+    delete card.dataset.zhihuPlusNoise;
+    delete card.dataset.zhihuPlusTasteGen;
+}
+
+function refreshNoiseFeed() {
+    noiseTasteGen += 1;
+    hiddenNoiseItems.length = 0;
+    resetNoiseTray();
+    document.querySelectorAll('[data-zhihu-plus-noise]').forEach(resetNoiseCardVisual);
+    if (typeof noiseRescan === 'function') noiseRescan();
+}
+
 const hiddenNoiseItems = [];
 
 function resetNoiseTray() {
@@ -3181,11 +3463,11 @@ function renderNoiseTray() {
 
 function fillNoiseTrayPanel(panel) {
     panel.innerHTML = `<h4>已过滤 ${hiddenNoiseItems.length} 条</h4>` + hiddenNoiseItems.map((item, index) => {
-        const why = item.rule && item.rule.action === 'hide'
+        const why = item.why || (item.rule && item.rule.action === 'hide'
             ? '规则隐藏'
             : item.rule && item.rule.action === 'demote'
                 ? '规则降权'
-                : '分数隐藏';
+                : '分数隐藏');
         const title = item.title || '（无标题）';
         return `<button type="button" data-hidden="${index}"><b>${item.score}</b>${escapeHtml(title.slice(0, 42))}<div style="margin-top:4px;font-size:12px;color:#8a8a8a;">${why}</div></button>`;
     }).join('');
@@ -3210,22 +3492,33 @@ function toggleNoiseTrayPanel() {
 }
 
 function applyNoiseToCard(card, titleCss) {
-    if (!card || card.dataset.zhihuPlusNoise) return;
+    if (!card) return;
+    const gen = String(noiseTasteGen);
+    if (card.dataset.zhihuPlusNoise && card.dataset.zhihuPlusTasteGen === gen) return;
+    if (card.dataset.zhihuPlusNoise) resetNoiseCardVisual(card);
     const { title, body } = cardNoiseText(card, titleCss);
     if (!title && !body) return;
     const { final, rule } = scoreFeedNoise(title, body);
     const rounded = Math.round(final);
+    const tasteKey = tasteEnabled() ? tasteCardKey(card, titleCss) : '';
+    const tasteAction = tasteKey ? (getTastePrefs().actions[tasteKey] || '') : '';
     card.dataset.zhihuPlusNoise = String(rounded);
+    card.dataset.zhihuPlusTasteGen = gen;
     const mode = readFilterMode();
     const hideByRule = rule && rule.action === 'hide';
     const demoteByRule = rule && (rule.action === 'demote' || rule.action === 'hide');
-    const hide = mode === 'hide' && (hideByRule || final >= NOISE_HIDE);
-    const demote = (mode === 'hide' || mode === 'demote') && !hide && (demoteByRule || final >= NOISE_DEMOTE);
+    const hideByTaste = tasteAction === 'dislike';
+    const keepByTaste = tasteAction === 'like';
+    const hide = !keepByTaste && (hideByTaste || (mode === 'hide' && (hideByRule || final >= NOISE_HIDE)));
+    const demote = !keepByTaste && !hide && (mode === 'hide' || mode === 'demote') && (demoteByRule || final >= NOISE_DEMOTE);
     if (hide) {
         card.classList.add('zhihu-plus-noise-hide');
         card.hidden = true;
         card.style.display = 'none';
-        hiddenNoiseItems.push({ card, titleCss, title, score: rounded, rule });
+        hiddenNoiseItems.push({
+            card, titleCss, title, score: rounded, rule,
+            why: hideByTaste ? '不感兴趣' : ''
+        });
         renderNoiseTray();
         return;
     }
@@ -3234,12 +3527,14 @@ function applyNoiseToCard(card, titleCss) {
         ensureCardPosition(card);
     }
     if (menuValue('menu_noiseBadge')) paintNoiseBadge(card, rounded, titleCss);
+    paintTasteBar(card, titleCss);
 }
 
 function blockKeywords(type) {
     if (!menuValue('menu_noiseScore')) return;
     noiseIndex = null;
     injectNoiseStyles();
+    bindTasteClicks();
 
     switch (type) {
         case 'index':
@@ -3273,6 +3568,7 @@ function blockKeywordsFeed(selector, className) {
             });
         }
     };
+    noiseRescan = scan;
     scan();
     window.addEventListener('urlchange', () => {
         resetNoiseTray();
@@ -3294,6 +3590,7 @@ function blockKeywordsSearch() {
             applyNoiseToCard(item, 'a[data-za-detail-view-id]');
         });
     };
+    noiseRescan = scan;
     setTimeout(scan, 2000);
     window.addEventListener('urlchange', () => {
         resetNoiseTray();
