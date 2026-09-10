@@ -3,7 +3,7 @@
 // @name:zh-CN   知乎增强优化
 // @name:zh-TW   知乎增強優化
 // @name:en      Zhihu Enhancement Plus
-// @version      1.7.32
+// @version      1.8.0
 // @author       local (based on X.I.U / 知乎增强 2.2.15)
 // @description  用于知乎网页。可开关：低饱和配色、隐藏右侧栏、清空或锁定标签标题与图标、净化搜索热门、默认/一键/点空白收起回答与评论、右键回顶、展开问题描述、置顶发布时间、信息流类型标签、直达问题、按用户与噪音评分（可显示得分、可过滤）及关键词、按类别屏蔽视频/文章/想法/话题/盐选/相关搜索/热榜杂项。设置可 JSON 导入导出。始终生效：关登录弹窗、原图、站外直链、点浮层关评论、去掉搜索高亮链接。基于 XIU2「知乎增强」2.2.15（GPL-3.0），无远程外部脚本。
 // @description:zh-CN 用于知乎网页。可开关：低饱和配色、隐藏右侧栏、清空或锁定标签标题与图标、净化搜索热门、默认/一键/点空白收起回答与评论、右键回顶、展开问题描述、置顶发布时间、信息流类型标签、直达问题、按用户与噪音评分（可显示得分、可过滤）及关键词、按类别屏蔽视频/文章/想法/话题/盐选/相关搜索/热榜杂项。设置可 JSON 导入导出。始终生效：关登录弹窗、原图、站外直链、点浮层关评论、去掉搜索高亮链接。基于 XIU2「知乎增强」2.2.15（GPL-3.0），无远程外部脚本。
@@ -88,9 +88,9 @@ const MENU_ITEMS = [
     { key: 'menu_blockUsers',          label: '屏蔽指定用户',         tip: '隐藏黑名单用户的回答、文章和评论。可在下方编辑名单。', def: true },
     { key: 'menu_customBlockUsers',    label: '编辑屏蔽用户',         tip: '自定义屏蔽用户',   def: DEFAULT_BLOCK_USERS, kind: 'users' },
     { key: 'menu_noiseScore',          label: '噪音评分',             tip: '给信息流打噪音分。过滤和显示得分都要先开这项。', def: true },
-    { key: 'menu_blockKeywords',       label: '噪音过滤',             tip: '按分数隐藏高噪音、降权中噪音。必须先开启评分。', def: true },
-    { key: 'menu_noiseBadge',          label: '显示噪音得分',         tip: '每条内容显示分数，0 分不标。分越高标识越鲜艳。必须先开启评分。', def: true },
-    { key: 'menu_customBlockKeywords', label: '编辑屏蔽关键词',       tip: '可设隐藏 / 降权 / 加权。未单独改的词跟随列表默认。', def: DEFAULT_BLOCK_KEYWORDS, kind: 'keywords' },
+    { key: 'menu_blockKeywords',       label: '噪音过滤',             tip: '关闭只打分；仅降权会变淡；隐藏会移出信息流并可复查。', def: 'hide', kind: 'filter' },
+    { key: 'menu_noiseBadge',          label: '显示噪音得分',         tip: '每条内容显示模型分，0 分不标。规则隐藏不改这个数字。', def: true },
+    { key: 'menu_customBlockKeywords', label: '编辑屏蔽关键词',       tip: '每条词可开关，并设隐藏 / 降权 / 加权。预置词默认开着。', def: DEFAULT_BLOCK_KEYWORDS, kind: 'keywords' },
     {
         key: 'menu_noiseLevel',
         label: '噪音过滤档位',
@@ -268,9 +268,13 @@ function isValidSettingValue(key, value) {
     }
     const item = MENU_ITEMS.find(x => x.key === key);
     if (!item) return false;
-    if (item.kind === 'users' || item.kind === 'keywords') {
+    if (item.kind === 'users') {
         return Array.isArray(value) && value.every(x => typeof x === 'string');
     }
+    if (item.kind === 'keywords') {
+        return Array.isArray(value) && value.every(x => typeof x === 'string' || (x && typeof x.word === 'string'));
+    }
+    if (item.kind === 'filter') return value === 'off' || value === 'demote' || value === 'hide' || typeof value === 'boolean';
     if (item.kind === 'group' || item.kind === 'lexicon') return typeof value === 'string';
     return typeof value === 'boolean';
 }
@@ -441,6 +445,73 @@ function dropCustomLevel(map, word) {
     }
     return map;
 }
+
+function readFilterMode() {
+    const value = menuValue('menu_blockKeywords');
+    if (value === 'off' || value === 'demote' || value === 'hide') return value;
+    if (value === false) return 'off';
+    return 'hide';
+}
+
+function defaultKeywordLevel(word, fallback) {
+    if (String(word || '').length < 2) return 'weight';
+    return normalizeCustomLevel(fallback) || readCustomDefaultLevel();
+}
+
+function normalizeKeywordList(raw) {
+    const fallback = readCustomDefaultLevel();
+    const off = readListOff('menu_customBlockKeywords');
+    const list = Array.isArray(raw) ? raw : [];
+    const out = [];
+    const seen = new Set();
+    for (const item of list) {
+        let word = '';
+        let on = true;
+        let level = '';
+        if (typeof item === 'string') {
+            word = item;
+            on = !off.has(word);
+            level = customLevelFor(word, defaultKeywordLevel(word, fallback));
+        } else if (item && typeof item.word === 'string') {
+            word = item.word;
+            on = item.on !== false;
+            level = normalizeCustomLevel(item.level) || defaultKeywordLevel(word, fallback);
+        }
+        const key = word.toLowerCase();
+        if (!word || seen.has(key)) continue;
+        seen.add(key);
+        out.push({ word, on, level: CUSTOM_LEVEL_IDS.includes(level) ? level : defaultKeywordLevel(word, fallback) });
+    }
+    return out;
+}
+
+function readKeywordEntries() {
+    return normalizeKeywordList(menuValue('menu_customBlockKeywords'));
+}
+
+function writeKeywordEntries(list) {
+    menuSet('menu_customBlockKeywords', normalizeKeywordList(list));
+    noiseIndex = null;
+}
+
+function activeKeywordEntries() {
+    return readKeywordEntries().filter(item => item.on && item.word);
+}
+
+function hydrateNoiseSettings() {
+    const keywords = normalizeKeywordList(GM_getValue('menu_customBlockKeywords'));
+    cache.menu_customBlockKeywords = keywords;
+    GM_setValue('menu_customBlockKeywords', keywords);
+    const filter = GM_getValue('menu_blockKeywords');
+    const mode = filter === 'off' || filter === 'demote' || filter === 'hide'
+        ? filter
+        : filter === false ? 'off' : 'hide';
+    cache.menu_blockKeywords = mode;
+    GM_setValue('menu_blockKeywords', mode);
+    writeSettingsBackup();
+}
+
+hydrateNoiseSettings();
 
 function activeListValues(storageKey) {
     const off = readListOff(storageKey);
@@ -620,6 +691,17 @@ function settingsSwitchRow(key, extra = '') {
     </div>`;
 }
 
+function settingsFilterRow() {
+    const mode = readFilterMode();
+    const opts = [['off', '关闭'], ['demote', '仅降权'], ['hide', '隐藏']];
+    return `<div data-zplus-row${mode !== 'off' ? ' data-on="1"' : ''} data-sub="1">
+        <div><div class="zhihuE_StName">噪音过滤</div><div class="zhihuE_StDesc">规则和分数分开：隐藏/降权按自定义词执行，分数只表示有多吵。关闭则只打分。</div></div>
+        <div class="zhihuE_KwSeg">${opts.map(([id, name]) =>
+            `<button type="button" class="zhihuE_KwSegBtn${mode === id ? ' zhihuE_isOn' : ''}" data-filter="${id}">${name}</button>`
+        ).join('')}</div>
+    </div>`;
+}
+
 function settingsToggleCard(item) {
     const on = !!menuValue(item.key);
     const chips = (item.tags || []).map(t => `<span class="zhihuE_LvChip">${escapeHtml(t)}</span>`).join('');
@@ -664,14 +746,14 @@ function settingsNoiseFormulaHtml() {
         <div class="zhihuE_FxKicker">评分公式</div>
         <div class="zhihuE_FxMain">分数 = clamp(${n(w.k)}K + ${n(w.c)}C + ${n(w.e)}E + ${n(w.s)}S + ${n(w.b)}B − ${n(w.v)}V, 0, 100)</div>
         <div class="zhihuE_FxGrid">
-            <div class="zhihuE_FxItem"><b>K</b>关键词饱和<span>K = 100(1 − e<sup>−k/20</sup>)。k 为命中词权重和。自定义词按级别：隐藏 +${CUSTOM_LEVELS.hide.k} 且分数≥${CUSTOM_LEVELS.hide.floor}；降权 +${CUSTOM_LEVELS.demote.k} 且≥${CUSTOM_LEVELS.demote.floor}；加权 +${CUSTOM_LEVELS.weight.k} 不保底。分类单字仅在已有长词命中时计 0.35。</span></div>
+            <div class="zhihuE_FxItem"><b>K</b>关键词饱和<span>K = 100(1 − e<sup>−k/20</sup>)。k 为命中词权重和。自定义词按级别加权：隐藏 +${CUSTOM_LEVELS.hide.k}，降权 +${CUSTOM_LEVELS.demote.k}，加权 +${CUSTOM_LEVELS.weight.k}。隐藏/降权是规则，不改写这个分数。分类单字仅在已有长词命中时计 0.35。</span></div>
             <div class="zhihuE_FxItem"><b>C</b>分类系数<span>取命中档位的最大 c。该分类有排除词则 ×0.35。无关键词但 E+B ≥ 16 时，C 至少为 42。</span></div>
             <div class="zhihuE_FxItem"><b>E</b>情绪<span>命中情绪词的权重和，上限 25。</span></div>
             <div class="zhihuE_FxItem"><b>S</b>争议<span>6 × 争议词命中数，上限 30。</span></div>
             <div class="zhihuE_FxItem"><b>B</b>标题党<span>5 × 标题党词命中数，上限 25。</span></div>
             <div class="zhihuE_FxItem"><b>V</b>价值<span>白名单权重和，上限 50，从总分里减去。</span></div>
         </div>
-        <p class="zhihuE_FxNote">信息流卡片取 max(标题分, 0.72×标题 + 0.28×摘要)。${NOISE_DEMOTE} 以下保留，${NOISE_DEMOTE}–${NOISE_HIDE} 降权，${NOISE_HIDE} 及以上隐藏。自定义词的级别可在「自定义词」里改。</p>
+        <p class="zhihuE_FxNote">信息流卡片取 max(标题分, 0.72×标题 + 0.28×摘要)。模型分 ${NOISE_DEMOTE}–${NOISE_HIDE} 降权，${NOISE_HIDE} 及以上隐藏。自定义词的「隐藏 / 降权」作为规则另外执行，分数保持模型分。</p>
     </div>`;
 }
 
@@ -717,9 +799,9 @@ function mountNoiseTestPane(container) {
             board.className = 'zhihuE_TsBoard';
             return;
         }
-        const { final, titleScore, bodyScore } = scoreFeedNoise(title, body);
+        const { final, titleScore, bodyScore, rule } = scoreFeedNoise(title, body);
         const rounded = Math.round(final);
-        const verdict = noiseVerdict(final);
+        const verdict = noiseVerdict(final, rule);
         scoreEl.textContent = String(rounded);
         verdictEl.textContent = verdict.name;
         subEl.textContent = `标题 ${Math.round(titleScore.final)} · 摘要 ${body ? Math.round(bodyScore.final) : '—'}`;
@@ -733,22 +815,19 @@ function mountNoiseTestPane(container) {
             ['V', '价值', parts.V]
         ].map(([k, name, v]) => `<div class="zhihuE_TsItem"><b>${k}</b>${name}<span>${Math.round(v)}</span></div>`).join('');
         board.className = `zhihuE_TsBoard is-${verdict.id}`;
-        const filterOn = !!menuValue('menu_blockKeywords');
+        const mode = readFilterMode();
         const badgeOn = !!menuValue('menu_noiseBadge');
-        const customFloor = Math.max(titleScore.customFloor || 0, bodyScore.customFloor || 0);
-        if (titleScore.customHit || bodyScore.customHit) {
-            if (customFloor >= NOISE_HIDE) {
-                hintEl.textContent = filterOn
-                    ? '命中「隐藏」级自定义词，刷新后会直接屏蔽。'
-                    : '命中「隐藏」级自定义词。过滤仍关闭，信息流不会隐藏。';
-            } else if (customFloor >= NOISE_DEMOTE) {
-                hintEl.textContent = filterOn
-                    ? '命中「降权」级自定义词，刷新后会变淡。'
-                    : '命中「降权」级自定义词。过滤仍关闭，信息流外观不变。';
-            } else {
-                hintEl.textContent = '命中「加权」级自定义词，只加分，不保底隐藏或降权。';
-            }
-        } else if (filterOn) {
+        if (rule && rule.action === 'hide') {
+            hintEl.textContent = mode === 'hide'
+                ? '命中隐藏规则，模型分不变。刷新后会移出信息流，可在「已过滤」里复查。'
+                : mode === 'demote'
+                    ? '命中隐藏规则，当前过滤是仅降权，刷新后只会变淡。'
+                    : '命中隐藏规则。过滤已关闭，信息流不处理。';
+        } else if (rule && rule.action === 'demote') {
+            hintEl.textContent = mode === 'off'
+                ? '命中降权规则。过滤已关闭，信息流不处理。'
+                : '命中降权规则，模型分不变。刷新后会变淡。';
+        } else if (mode !== 'off') {
             hintEl.textContent = '分项来自标题。信息流刷新后才会按此结果隐藏或降权。';
         } else if (badgeOn) {
             hintEl.textContent = '过滤已关闭：信息流会打分并显示角标，但不会隐藏或降权。';
@@ -759,6 +838,200 @@ function mountNoiseTestPane(container) {
 
     titleEl.addEventListener('input', run);
     bodyEl.addEventListener('input', run);
+}
+
+function mountKeywordEditor(container) {
+    let list = readKeywordEntries();
+    let filter = '';
+    let defaultLevel = readCustomDefaultLevel();
+    container.insertAdjacentHTML('beforeend', `<div class="zhihuE_ListMount">
+        <p class="zhihuE_StPaneTips">预置词默认开着，可关掉。点级别切换隐藏 / 降权 / 加权。隐藏和降权是规则，不改模型分；加权只加分。单字默认加权。</p>
+        <div class="zhihuE_KwBar">
+            <span class="zhihuE_KwBarLabel">新词默认</span>
+            <div class="zhihuE_KwSeg">${CUSTOM_LEVEL_IDS.map(id =>
+                `<button type="button" class="zhihuE_KwSegBtn${id === defaultLevel ? ' zhihuE_isOn' : ''}" data-level="${id}">${CUSTOM_LEVEL_LABELS[id]}</button>`
+            ).join('')}</div>
+        </div>
+        <div class="zhihuE_DlgAdd">
+            <input class="zhihuE_DlgInput" type="text" placeholder="例如：广告, 引流, [捂脸]" />
+            <button type="button" class="zhihuE_DlgAddBtn">添加</button>
+        </div>
+        <div class="zhihuE_DlgFilterWrap"><input class="zhihuE_DlgFilter" type="search" placeholder="在已有词条中筛选…" /></div>
+        <div class="zhihuE_DlgCloud"></div>
+        <div class="zhihuE_DlgFoot">
+            <div class="zhihuE_DlgCount">共 <b class="zhihuE_DlgCountNum">0</b> 条 · 启用 <b class="zhihuE_DlgCountOn">0</b> 条</div>
+            <div class="zhihuE_DlgFootRight">
+                <button type="button" class="zhihuE_DlgCopy zhihuE_DlgImportBtn">粘贴导入</button>
+                <button type="button" class="zhihuE_DlgCopy zhihuE_DlgCopyAll">复制全部</button>
+            </div>
+        </div>
+        <div class="zhihuE_DlgImport">
+            <textarea class="zhihuE_DlgImportArea" placeholder="粘贴词表，用逗号、换行或 | 分隔。确认后覆盖当前列表并自动去重。预置词仍会保留。"></textarea>
+            <div class="zhihuE_DlgImportActions">
+                <button type="button" class="zhihuE_DlgCopy zhihuE_DlgImportCancel">取消</button>
+                <button type="button" class="zhihuE_DlgCopy is-ok zhihuE_DlgImportOk">确认覆盖导入</button>
+            </div>
+        </div>
+    </div>`);
+    const root = container.querySelector('.zhihuE_ListMount:last-child');
+    const cloud = root.querySelector('.zhihuE_DlgCloud');
+    const input = root.querySelector('.zhihuE_DlgInput');
+
+    const persist = () => {
+        writeKeywordEntries(list);
+        list = readKeywordEntries();
+        render();
+    };
+    const renderBar = () => {
+        root.querySelectorAll('.zhihuE_KwSegBtn').forEach(btn => {
+            btn.classList.toggle('zhihuE_isOn', btn.dataset.level === defaultLevel);
+        });
+    };
+    const visible = () => {
+        if (!filter) return list.map((item, index) => ({ item, index }));
+        const q = filter.toLowerCase();
+        return list.map((item, index) => ({ item, index })).filter(row => row.item.word.toLowerCase().includes(q));
+    };
+    const render = () => {
+        root.querySelector('.zhihuE_DlgCountNum').textContent = String(list.length);
+        root.querySelector('.zhihuE_DlgCountOn').textContent = String(list.filter(item => item.on).length);
+        renderBar();
+        const rows = visible();
+        if (!list.length) {
+            cloud.innerHTML = '<div class="zhihuE_DlgEmpty">还没有词条，在上方添加</div>';
+            return;
+        }
+        if (!rows.length) {
+            cloud.innerHTML = '<div class="zhihuE_DlgEmpty">没有匹配的词条</div>';
+            return;
+        }
+        cloud.innerHTML = rows.map(({ item, index }) => {
+            const packed = isPackedListItem('menu_customBlockKeywords', item.word);
+            const del = packed ? '' : `<button type="button" class="zhihuE_DlgChipDel" data-index="${index}" aria-label="删除">×</button>`;
+            return `<span class="zhihuE_DlgChip${packed ? ' is-pack' : ''}${item.on ? '' : ' is-off'}" data-index="${index}">
+                <span>${escapeHtml(item.word)}</span>
+                <button type="button" class="zhihuE_DlgChipLv is-${item.level}" data-index="${index}">${CUSTOM_LEVEL_LABELS[item.level] || item.level}</button>
+                ${del}
+            </span>`;
+        }).join('');
+    };
+    const addWords = words => {
+        const have = new Set(list.map(item => item.word.toLowerCase()));
+        const added = [];
+        for (const word of words) {
+            const key = word.toLowerCase();
+            if (have.has(key)) continue;
+            have.add(key);
+            added.push({ word, on: true, level: defaultKeywordLevel(word, defaultLevel) });
+        }
+        if (!added.length) return false;
+        list = added.concat(list);
+        persist();
+        return true;
+    };
+    root.querySelector('.zhihuE_DlgAddBtn').onclick = () => {
+        if (addWords(parseWords(input.value))) input.value = '';
+        input.focus();
+    };
+    input.addEventListener('keydown', event => {
+        if (event.key === 'Enter') {
+            if (addWords(parseWords(input.value))) input.value = '';
+        }
+    });
+    root.querySelector('.zhihuE_KwSeg').addEventListener('click', event => {
+        const btn = event.target.closest('.zhihuE_KwSegBtn');
+        if (!btn || !CUSTOM_LEVEL_IDS.includes(btn.dataset.level)) return;
+        defaultLevel = btn.dataset.level;
+        writeCustomDefaultLevel(defaultLevel);
+        renderBar();
+    });
+    root.querySelector('.zhihuE_DlgFilter').addEventListener('input', event => {
+        filter = event.target.value.trim();
+        render();
+    });
+    cloud.addEventListener('click', event => {
+        const del = event.target.closest('.zhihuE_DlgChipDel');
+        if (del) {
+            const index = Number(del.dataset.index);
+            const item = list[index];
+            if (!item || isPackedListItem('menu_customBlockKeywords', item.word)) return;
+            list.splice(index, 1);
+            persist();
+            return;
+        }
+        const lv = event.target.closest('.zhihuE_DlgChipLv');
+        if (lv) {
+            const index = Number(lv.dataset.index);
+            const item = list[index];
+            if (!item) return;
+            const current = CUSTOM_LEVEL_IDS.includes(item.level) ? item.level : 'weight';
+            item.level = CUSTOM_LEVEL_IDS[(CUSTOM_LEVEL_IDS.indexOf(current) + 1) % CUSTOM_LEVEL_IDS.length];
+            persist();
+            return;
+        }
+        const chip = event.target.closest('.zhihuE_DlgChip');
+        if (!chip) return;
+        const item = list[Number(chip.dataset.index)];
+        if (!item) return;
+        item.on = !item.on;
+        persist();
+    });
+    const flash = (btn, text) => {
+        const raw = btn.textContent;
+        btn.textContent = text;
+        setTimeout(() => { btn.textContent = raw; }, 1600);
+    };
+    root.querySelector('.zhihuE_DlgCopyAll').onclick = async () => {
+        const text = list.map(item => item.word).join(', ');
+        const btn = root.querySelector('.zhihuE_DlgCopyAll');
+        try {
+            await navigator.clipboard.writeText(text);
+            flash(btn, '已复制');
+        } catch (err) {
+            flash(btn, '复制失败');
+        }
+    };
+    const applyImport = text => {
+        const words = uniqueWords(parseWords(text));
+        const btn = root.querySelector('.zhihuE_DlgImportBtn');
+        if (!words.length) {
+            flash(btn, '没有可用词条');
+            return false;
+        }
+        const incoming = new Set(words.map(word => word.toLowerCase()));
+        const packed = list.filter(item => isPackedListItem('menu_customBlockKeywords', item.word)).map(item => ({
+            ...item,
+            on: incoming.has(item.word.toLowerCase())
+        }));
+        const extras = words
+            .filter(word => !isPackedListItem('menu_customBlockKeywords', word))
+            .map(word => ({ word, on: true, level: defaultKeywordLevel(word, defaultLevel) }));
+        list = packed.concat(extras);
+        persist();
+        flash(btn, `已导入 ${words.length} 条`);
+        return true;
+    };
+    root.querySelector('.zhihuE_DlgImportBtn').onclick = async () => {
+        try {
+            const text = navigator.clipboard && navigator.clipboard.readText
+                ? (await navigator.clipboard.readText() || '').trim()
+                : '';
+            if (text) {
+                applyImport(text);
+                return;
+            }
+        } catch (err) { /* 改为手动粘贴 */ }
+        root.querySelector('.zhihuE_DlgImport').classList.add('is-open');
+    };
+    root.querySelector('.zhihuE_DlgImportCancel').onclick = () => {
+        root.querySelector('.zhihuE_DlgImport').classList.remove('is-open');
+    };
+    root.querySelector('.zhihuE_DlgImportOk').onclick = () => {
+        if (applyImport(root.querySelector('.zhihuE_DlgImportArea').value)) {
+            root.querySelector('.zhihuE_DlgImport').classList.remove('is-open');
+        }
+    };
+    render();
 }
 
 function mountListEditor(container, { storageKey, placeholder, tips }) {
@@ -1589,7 +1862,7 @@ button,input,textarea {font:inherit;color:inherit;}
         }
         if (current === 'block-words') {
             bodyEl.innerHTML = settingsSwitchRow('menu_noiseScore') + (scoreOn
-                ? settingsSwitchRow('menu_blockKeywords', ' is-sub') +
+                ? settingsFilterRow() +
                     settingsSwitchRow('menu_noiseBadge', ' is-sub') +
                     `<div class="zhihuE_StTabs">
                     <button type="button" class="zhihuE_StTab${wordTab === 'levels' ? ' zhihuE_isOn' : ''}" data-tab="levels">过滤档位</button>
@@ -1604,11 +1877,7 @@ button,input,textarea {font:inherit;color:inherit;}
             if (wordTab === 'levels') {
                 pane.innerHTML = settingsNoiseFormulaHtml() + settingsNoiseCards().map(settingsToggleCard).join('');
             } else if (wordTab === 'custom') {
-                mountListEditor(pane, {
-                    storageKey: 'menu_customBlockKeywords',
-                    placeholder: '例如：广告, 引流, [捂脸]',
-                    tips: '预置词只能开关。点词条上的级别可单独改；没改过的跟随上方默认。隐藏保底 60，降权保底 30，加权只加分。单字容易误伤。'
-                });
+                mountKeywordEditor(pane);
             } else if (wordTab === 'lexicon') {
                 mountLexiconEditor(pane);
             } else {
@@ -1649,6 +1918,12 @@ button,input,textarea {font:inherit;color:inherit;}
         const tab = event.target.closest('.zhihuE_StTab');
         if (tab && tab.dataset.tab) {
             wordTab = tab.dataset.tab;
+            renderBody();
+            return;
+        }
+        const filterBtn = event.target.closest('[data-filter]');
+        if (filterBtn && filterBtn.dataset.filter) {
+            menuSet('menu_blockKeywords', filterBtn.dataset.filter);
             renderBody();
             return;
         }
@@ -2373,15 +2648,11 @@ function compileNoiseIndex() {
             words
         });
     }
-    const custom = [];
-    const customOff = new Set([...readListOff('menu_customBlockKeywords')].map(x => String(x).toLowerCase()));
-    for (const word of menuValue('menu_customBlockKeywords') || []) {
-        if (!word) continue;
-        const k = String(word).toLowerCase();
-        if (customOff.has(k)) continue;
-        const level = customLevelFor(word);
-        custom.push({ k, word: String(word), level: CUSTOM_LEVELS[level] ? level : 'hide' });
-    }
+    const custom = activeKeywordEntries().map(item => ({
+        k: String(item.word).toLowerCase(),
+        word: item.word,
+        level: CUSTOM_LEVELS[item.level] ? item.level : 'weight'
+    }));
     const toPairs = map => Object.keys(map).map(k => ({ k: k.toLowerCase(), w: map[k] }));
     noiseIndex = {
         cats,
@@ -2399,7 +2670,8 @@ function scoreText(raw) {
         return {
             final: 0, K: 0, C: 0, E: 0, S: 0, B: 0, V: 0, kRaw: 0,
             hits: { words: [], custom: [], cats: [], emotion: [], controversy: [], clickbait: [], value: [] },
-            winningCat: '', exclude: '', cFallback: false, customHit: false, customFloor: 0
+            winningCat: '', exclude: '', cFallback: false, customHit: false, customFloor: 0,
+            rule: { action: '', words: [] }
         };
     }
     const text = String(raw).toLowerCase();
@@ -2452,7 +2724,7 @@ function scoreText(raw) {
     for (const item of idx.custom) {
         const word = item && item.k;
         if (!word || !text.includes(word)) continue;
-        const spec = CUSTOM_LEVELS[item.level] || CUSTOM_LEVELS.hide;
+        const spec = CUSTOM_LEVELS[item.level] || CUSTOM_LEVELS.weight;
         customHit = true;
         customFloor = Math.max(customFloor, spec.floor);
         customHits.push({ word: item.word || word, w: spec.k, level: spec.id, cat: '自定义', source: 'custom' });
@@ -2461,6 +2733,7 @@ function scoreText(raw) {
             wordHits.push({ word: item.word || word, w: spec.k, level: spec.id, cat: '自定义', source: 'custom' });
         }
     }
+    const rule = noiseRuleFromHits(customHits);
 
     const K = 100 * (1 - Math.exp(-kRaw / 20));
 
@@ -2503,26 +2776,45 @@ function scoreText(raw) {
     }
 
     const noise = NOISE_WEIGHTS.k * K + NOISE_WEIGHTS.c * bestC + NOISE_WEIGHTS.e * E + NOISE_WEIGHTS.s * S + NOISE_WEIGHTS.b * B;
-    let final = Math.max(0, Math.min(100, noise - NOISE_WEIGHTS.v * V));
-    if (customFloor) final = Math.max(final, customFloor);
+    const final = Math.max(0, Math.min(100, noise - NOISE_WEIGHTS.v * V));
     return {
         final, K, C: bestC, E, S, B, V, kRaw,
         hits: { words: wordHits, custom: customHits, cats: catHits, emotion, controversy, clickbait, value },
-        winningCat, exclude, cFallback, customHit, customFloor
+        winningCat, exclude, cFallback, customHit, customFloor, rule
     };
+}
+
+function noiseRuleFromHits(hits) {
+    let action = '';
+    for (const item of hits || []) {
+        if (item.level === 'hide') action = 'hide';
+        else if (item.level === 'demote' && action !== 'hide') action = 'demote';
+    }
+    return { action, words: hits || [] };
+}
+
+function mergeNoiseRules(a, b) {
+    const words = [...((a && a.words) || []), ...((b && b.words) || [])];
+    const action = (a && a.action) === 'hide' || (b && b.action) === 'hide'
+        ? 'hide'
+        : (a && a.action) === 'demote' || (b && b.action) === 'demote'
+            ? 'demote'
+            : '';
+    return { action, words };
 }
 
 function scoreFeedNoise(title, body) {
     const titleScore = scoreText(title);
     const bodyScore = scoreText(String(body || '').slice(0, 280));
-    let final = Math.max(titleScore.final, titleScore.final * 0.72 + bodyScore.final * 0.28);
-    const customFloor = Math.max(titleScore.customFloor || 0, bodyScore.customFloor || 0);
-    if (customFloor) final = Math.max(final, customFloor);
-    return { final, titleScore, bodyScore };
+    const final = Math.max(titleScore.final, titleScore.final * 0.72 + bodyScore.final * 0.28);
+    const rule = mergeNoiseRules(titleScore.rule, bodyScore.rule);
+    return { final, titleScore, bodyScore, rule };
 }
 
-function noiseVerdict(score) {
+function noiseVerdict(score, rule) {
+    if (rule && rule.action === 'hide') return { id: 'hide', name: '规则隐藏' };
     if (score >= NOISE_HIDE) return { id: 'hide', name: '会隐藏' };
+    if (rule && rule.action === 'demote') return { id: 'demote', name: '规则降权' };
     if (score >= NOISE_DEMOTE) return { id: 'demote', name: '会降权' };
     return { id: 'keep', name: '会保留' };
 }
@@ -2539,6 +2831,12 @@ function injectNoiseStyles() {
         .zhihu-plus-noise-hide {display: none !important;}
         .zhihu-plus-noise-demote {opacity: .42; transition: opacity .2s;}
         .zhihu-plus-noise-demote:hover {opacity: .88;}
+        #zhihu-plus-noise-tray {position:fixed;right:20px;bottom:92px;z-index:2147483000;padding:8px 14px;border:0;border-radius:999px;background:#1d1d1f;color:#fff;font:12px/1.4 -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;cursor:pointer;box-shadow:0 10px 28px rgba(0,0,0,.22);}
+        #zhihu-plus-noise-tray-panel {position:fixed;right:20px;bottom:140px;z-index:2147483000;width:min(360px,92vw);max-height:min(420px,60vh);overflow:auto;padding:14px;border-radius:16px;background:#fff;box-shadow:0 18px 50px rgba(0,0,0,.22);font:13px/1.5 -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;color:#1d1d1f;}
+        #zhihu-plus-noise-tray-panel h4 {margin:0 0 10px;font-size:13px;}
+        #zhihu-plus-noise-tray-panel button {display:block;width:100%;margin:0 0 8px;padding:8px 10px;border:1px solid #eee;border-radius:10px;background:#fafafa;text-align:left;font:inherit;cursor:pointer;}
+        #zhihu-plus-noise-tray-panel button:hover {background:#fff;border-color:#d4d4d4;}
+        #zhihu-plus-noise-tray-panel b {float:right;font-variant-numeric:tabular-nums;}
         .zhihu-plus-noise-tag {display:inline-flex !important;align-items:center;vertical-align:middle;position:static !important;top:auto !important;right:auto !important;z-index:6;margin:0 0 0 8px !important;padding:1px 7px !important;border-radius:999px;font:inherit;font-size:11px !important;font-weight:650;font-variant-numeric:tabular-nums;line-height:1.45;white-space:nowrap;pointer-events:auto;cursor:pointer;width:auto !important;min-width:0 !important;height:auto !important;float:none !important;appearance:none;-webkit-appearance:none;--t:0;background:hsla(calc(145 - 145 * var(--t)), calc(42% + 53% * var(--t)), calc(94% - 42% * var(--t)), calc(0.78 + 0.22 * var(--t)));color:hsl(calc(145 - 145 * var(--t)), calc(48% + 40% * var(--t)), calc(26% + 56% * var(--t)));border:1px solid hsla(calc(145 - 145 * var(--t)), 72%, 38%, calc(0.1 + 0.42 * var(--t)));box-shadow:0 0 calc(2px + 12px * var(--t)) hsla(calc(145 - 145 * var(--t)), 90%, 48%, calc(0.04 + 0.42 * var(--t)));text-shadow:0 1px 2px rgba(0,0,0,calc(0.08 + 0.28 * var(--t)));}
         [data-theme="dark"] .zhihu-plus-noise-tag {background:hsla(calc(145 - 145 * var(--t)), calc(48% + 42% * var(--t)), calc(20% + 10% * var(--t)), calc(0.62 + 0.32 * var(--t)));color:hsl(calc(145 - 145 * var(--t)), 86%, calc(86% - 6% * var(--t)));}
     `);
@@ -2622,11 +2920,11 @@ function noiseHitChips(list, fmt) {
 }
 
 function noiseExplainHtml(title, body, result, href) {
-    const { final, titleScore, bodyScore } = result;
-    const verdict = noiseVerdict(final);
+    const { final, titleScore, bodyScore, rule } = result;
+    const verdict = noiseVerdict(final, rule);
     const mixed = titleScore.final * 0.72 + bodyScore.final * 0.28;
     const used = final === titleScore.final ? 'title' : 'mix';
-    const filterOn = !!menuValue('menu_blockKeywords');
+    const mode = readFilterMode();
     const rows = noisePartRows(titleScore);
     const w = NOISE_WEIGHTS;
     const n = x => (Math.round(x * 10) / 10).toFixed(1);
@@ -2643,14 +2941,12 @@ function noiseExplainHtml(title, body, result, href) {
             const label = (CUSTOM_LEVELS[item.level] || CUSTOM_LEVELS.weight).name;
             return `${item.word}（${label}）`;
         }).join('、');
-        const floor = Math.max(0, ...customHits.map(item => (CUSTOM_LEVELS[item.level] || {}).floor || 0));
-        notes.push(floor >= NOISE_HIDE
-            ? `命中自定义词「${names}」，分数提到隐藏线`
-            : floor >= NOISE_DEMOTE
-                ? `命中自定义词「${names}」，分数提到降权线`
-                : `命中自定义词「${names}」，只加权`);
+        notes.push(rule && rule.action
+            ? `自定义规则「${names}」，分数仍是模型分`
+            : `命中自定义词「${names}」，只加权`);
     }
-    if (!filterOn) notes.push('过滤已关闭，信息流只打分不处理');
+    if (mode === 'off') notes.push('过滤已关闭，信息流只打分不处理');
+    else if (mode === 'demote') notes.push('过滤为仅降权，不会移出信息流');
     const bar = row => {
         const pct = Math.max(0, Math.min(100, row.v));
         return `<div class="zhihuE_NxRow">
@@ -2854,21 +3150,86 @@ function cardNoiseText(card, titleCss) {
     return { title: title.trim(), body };
 }
 
+const hiddenNoiseItems = [];
+
+function resetNoiseTray() {
+    hiddenNoiseItems.length = 0;
+    const tray = document.getElementById('zhihu-plus-noise-tray');
+    const panel = document.getElementById('zhihu-plus-noise-tray-panel');
+    if (tray) tray.remove();
+    if (panel) panel.remove();
+}
+
+function renderNoiseTray() {
+    let tray = document.getElementById('zhihu-plus-noise-tray');
+    const panel = document.getElementById('zhihu-plus-noise-tray-panel');
+    if (!hiddenNoiseItems.length) {
+        if (tray) tray.remove();
+        if (panel) panel.remove();
+        return;
+    }
+    if (!tray) {
+        tray = document.createElement('button');
+        tray.id = 'zhihu-plus-noise-tray';
+        tray.type = 'button';
+        tray.addEventListener('click', toggleNoiseTrayPanel);
+        document.body.appendChild(tray);
+    }
+    tray.textContent = `已过滤 ${hiddenNoiseItems.length} 条`;
+    if (panel) fillNoiseTrayPanel(panel);
+}
+
+function fillNoiseTrayPanel(panel) {
+    panel.innerHTML = `<h4>已过滤 ${hiddenNoiseItems.length} 条</h4>` + hiddenNoiseItems.map((item, index) => {
+        const why = item.rule && item.rule.action === 'hide'
+            ? '规则隐藏'
+            : item.rule && item.rule.action === 'demote'
+                ? '规则降权'
+                : '分数隐藏';
+        const title = item.title || '（无标题）';
+        return `<button type="button" data-hidden="${index}"><b>${item.score}</b>${escapeHtml(title.slice(0, 42))}<div style="margin-top:4px;font-size:12px;color:#8a8a8a;">${why}</div></button>`;
+    }).join('');
+    panel.querySelectorAll('[data-hidden]').forEach(btn => {
+        btn.onclick = () => {
+            const item = hiddenNoiseItems[Number(btn.dataset.hidden)];
+            if (item) showNoiseExplain(item.card, item.titleCss || '');
+        };
+    });
+}
+
+function toggleNoiseTrayPanel() {
+    const existing = document.getElementById('zhihu-plus-noise-tray-panel');
+    if (existing) {
+        existing.remove();
+        return;
+    }
+    const panel = document.createElement('div');
+    panel.id = 'zhihu-plus-noise-tray-panel';
+    fillNoiseTrayPanel(panel);
+    document.body.appendChild(panel);
+}
+
 function applyNoiseToCard(card, titleCss) {
     if (!card || card.dataset.zhihuPlusNoise) return;
     const { title, body } = cardNoiseText(card, titleCss);
     if (!title && !body) return;
-    const { final } = scoreFeedNoise(title, body);
+    const { final, rule } = scoreFeedNoise(title, body);
     const rounded = Math.round(final);
     card.dataset.zhihuPlusNoise = String(rounded);
-    const filterOn = !!menuValue('menu_blockKeywords');
-    if (filterOn && final >= NOISE_HIDE) {
+    const mode = readFilterMode();
+    const hideByRule = rule && rule.action === 'hide';
+    const demoteByRule = rule && (rule.action === 'demote' || rule.action === 'hide');
+    const hide = mode === 'hide' && (hideByRule || final >= NOISE_HIDE);
+    const demote = (mode === 'hide' || mode === 'demote') && !hide && (demoteByRule || final >= NOISE_DEMOTE);
+    if (hide) {
         card.classList.add('zhihu-plus-noise-hide');
         card.hidden = true;
         card.style.display = 'none';
+        hiddenNoiseItems.push({ card, titleCss, title, score: rounded, rule });
+        renderNoiseTray();
         return;
     }
-    if (filterOn && final >= NOISE_DEMOTE) {
+    if (demote) {
         card.classList.add('zhihu-plus-noise-demote');
         ensureCardPosition(card);
     }
@@ -2913,7 +3274,10 @@ function blockKeywordsFeed(selector, className) {
         }
     };
     scan();
-    window.addEventListener('urlchange', () => setTimeout(scan, 1000));
+    window.addEventListener('urlchange', () => {
+        resetNoiseTray();
+        setTimeout(scan, 1000);
+    });
     observeTree(mutations => {
         forAddedElements(mutations, target => {
             if (target.className === className) {
@@ -2931,7 +3295,10 @@ function blockKeywordsSearch() {
         });
     };
     setTimeout(scan, 2000);
-    window.addEventListener('urlchange', () => setTimeout(scan, 1000));
+    window.addEventListener('urlchange', () => {
+        resetNoiseTray();
+        setTimeout(scan, 1000);
+    });
     observeTree(mutations => {
         if (!location.search.includes('type=content')) return;
         forAddedElements(mutations, target => {
@@ -2944,15 +3311,19 @@ function blockKeywordsSearch() {
 }
 
 function blockKeywordsComment() {
-    if (!menuValue('menu_blockKeywords')) return;
+    if (readFilterMode() === 'off') return;
     const filterComment = comment => {
         const content = comment.querySelector('.RichText');
         if (!content || content.dataset.zhihuPlusNoise) return;
         const score = scoreText(content.textContent || '');
+        const mode = readFilterMode();
         content.dataset.zhihuPlusNoise = String(Math.round(score.final));
-        if (score.final >= NOISE_HIDE) {
+        const hide = mode === 'hide' && ((score.rule && score.rule.action === 'hide') || score.final >= NOISE_HIDE);
+        const demote = !hide && (mode === 'hide' || mode === 'demote')
+            && ((score.rule && score.rule.action) || score.final >= NOISE_DEMOTE);
+        if (hide) {
             content.textContent = '[该评论已降噪]';
-        } else if (score.final >= NOISE_DEMOTE) {
+        } else if (demote) {
             content.style.opacity = '0.45';
         }
     };
