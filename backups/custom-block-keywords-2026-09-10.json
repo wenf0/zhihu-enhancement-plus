@@ -1,0 +1,547 @@
+{
+  "kind": "zhihu-enhancement-plus-keywords-backup",
+  "v": 1,
+  "source": "src/lib/defaults.ts DEFAULT_BLOCK_KEYWORDS",
+  "createdAt": "2026-09-10",
+  "note": "扩展内置预置屏蔽关键词快照。浏览器里若改过名单，请再在设置→备份导出完整 settings JSON。",
+  "defaultLevel": "hide",
+  "count": 89,
+  "words": [
+    "长鑫科技",
+    "地铁安检",
+    "张凌赫",
+    "上海地铁",
+    "俄罗斯",
+    "小红书",
+    "《崩坏星穹铁道》",
+    "《鸣潮》",
+    "曲婉婷",
+    "邹市明",
+    "理想汽车",
+    "闲鱼",
+    "拉丁舞",
+    "问界",
+    "国内暗网",
+    "理想L9livis",
+    "王师傅和小毛毛",
+    "流萤",
+    "鞠婧祎",
+    "周淑怡",
+    "多益网络",
+    "崩老头",
+    "袁隆平",
+    "世界杯氛围淡淡",
+    "成龙",
+    "战锤40K",
+    "《绝区零》",
+    "比亚迪",
+    "李小璐",
+    "大量空座",
+    "沈逸",
+    "崩坏：星穹铁道",
+    "恋与深空",
+    "世界杯的热度",
+    "布达拉宫",
+    "开心麻花",
+    "监护人",
+    "红牛",
+    "社保",
+    "韩红",
+    "A股股市",
+    "靠谱外卖",
+    "张桂梅",
+    "高圆圆",
+    "粉丝",
+    "赵丽颖",
+    "三角洲行动",
+    "鹅腿阿姨",
+    "影视飓风",
+    "田曦薇",
+    "男",
+    "女",
+    "父亲",
+    "母亲",
+    "大龄剩女",
+    "男性",
+    "女性",
+    "coser",
+    "儿子",
+    "体育生",
+    "女儿",
+    "迪士尼",
+    "盲盒",
+    "奶茶",
+    "漫展",
+    "小孩",
+    "结婚",
+    "生娃",
+    "华为",
+    "大龄女",
+    "大妈",
+    "单亲",
+    "女生",
+    "美女",
+    "女神",
+    "小姐姐",
+    "男子",
+    "女演员",
+    "健身房",
+    "JK",
+    "身材",
+    "985",
+    "211",
+    "小米",
+    "妈",
+    "妈妈",
+    "生物爹",
+    "原生家庭",
+    "今日俄罗斯"
+  ],
+  "entries": [
+    {
+      "word": "长鑫科技",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "地铁安检",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "张凌赫",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "上海地铁",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "俄罗斯",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "小红书",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "《崩坏星穹铁道》",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "《鸣潮》",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "曲婉婷",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "邹市明",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "理想汽车",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "闲鱼",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "拉丁舞",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "问界",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "国内暗网",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "理想L9livis",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "王师傅和小毛毛",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "流萤",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "鞠婧祎",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "周淑怡",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "多益网络",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "崩老头",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "袁隆平",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "世界杯氛围淡淡",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "成龙",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "战锤40K",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "《绝区零》",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "比亚迪",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "李小璐",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "大量空座",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "沈逸",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "崩坏：星穹铁道",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "恋与深空",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "世界杯的热度",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "布达拉宫",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "开心麻花",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "监护人",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "红牛",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "社保",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "韩红",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "A股股市",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "靠谱外卖",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "张桂梅",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "高圆圆",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "粉丝",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "赵丽颖",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "三角洲行动",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "鹅腿阿姨",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "影视飓风",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "田曦薇",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "男",
+      "on": true,
+      "level": "weight"
+    },
+    {
+      "word": "女",
+      "on": true,
+      "level": "weight"
+    },
+    {
+      "word": "父亲",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "母亲",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "大龄剩女",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "男性",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "女性",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "coser",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "儿子",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "体育生",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "女儿",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "迪士尼",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "盲盒",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "奶茶",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "漫展",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "小孩",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "结婚",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "生娃",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "华为",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "大龄女",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "大妈",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "单亲",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "女生",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "美女",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "女神",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "小姐姐",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "男子",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "女演员",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "健身房",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "JK",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "身材",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "985",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "211",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "小米",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "妈",
+      "on": true,
+      "level": "weight"
+    },
+    {
+      "word": "妈妈",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "生物爹",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "原生家庭",
+      "on": true,
+      "level": "hide"
+    },
+    {
+      "word": "今日俄罗斯",
+      "on": true,
+      "level": "hide"
+    }
+  ]
+}
