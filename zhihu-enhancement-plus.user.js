@@ -3,7 +3,7 @@
 // @name:zh-CN   知乎增强优化
 // @name:zh-TW   知乎增強優化
 // @name:en      Zhihu Enhancement Plus
-// @version      1.7.28
+// @version      1.7.29
 // @author       local (based on X.I.U / 知乎增强 2.2.15)
 // @description  用于知乎网页。可开关：低饱和配色、隐藏右侧栏、清空或锁定标签标题与图标、净化搜索热门、默认/一键/点空白收起回答与评论、右键回顶、展开问题描述、置顶发布时间、信息流类型标签、直达问题、按用户与噪音评分（可显示得分、可过滤）及关键词、按类别屏蔽视频/文章/想法/话题/盐选/相关搜索/热榜杂项。设置可 JSON 导入导出。始终生效：关登录弹窗、原图、站外直链、点浮层关评论、去掉搜索高亮链接。基于 XIU2「知乎增强」2.2.15（GPL-3.0），无远程外部脚本。
 // @description:zh-CN 用于知乎网页。可开关：低饱和配色、隐藏右侧栏、清空或锁定标签标题与图标、净化搜索热门、默认/一键/点空白收起回答与评论、右键回顶、展开问题描述、置顶发布时间、信息流类型标签、直达问题、按用户与噪音评分（可显示得分、可过滤）及关键词、按类别屏蔽视频/文章/想法/话题/盐选/相关搜索/热榜杂项。设置可 JSON 导入导出。始终生效：关登录弹窗、原图、站外直链、点浮层关评论、去掉搜索高亮链接。基于 XIU2「知乎增强」2.2.15（GPL-3.0），无远程外部脚本。
@@ -90,7 +90,7 @@ const MENU_ITEMS = [
     { key: 'menu_noiseScore',          label: '噪音评分',             tip: '给信息流打噪音分。过滤和显示得分都要先开这项。', def: true },
     { key: 'menu_blockKeywords',       label: '噪音过滤',             tip: '按分数隐藏高噪音、降权中噪音。必须先开启评分。', def: true },
     { key: 'menu_noiseBadge',          label: '显示噪音得分',         tip: '每条内容显示分数，0 分不标。分越高标识越鲜艳。必须先开启评分。', def: true },
-    { key: 'menu_customBlockKeywords', label: '编辑屏蔽关键词',       tip: '自定义词加权到噪音分', def: DEFAULT_BLOCK_KEYWORDS, kind: 'keywords' },
+    { key: 'menu_customBlockKeywords', label: '编辑屏蔽关键词',       tip: '命中即提到隐藏线并屏蔽。单字会大面积命中，建议关掉。', def: DEFAULT_BLOCK_KEYWORDS, kind: 'keywords' },
     {
         key: 'menu_noiseLevel',
         label: '噪音过滤档位',
@@ -605,14 +605,14 @@ function settingsNoiseFormulaHtml() {
         <div class="zhihuE_FxKicker">评分公式</div>
         <div class="zhihuE_FxMain">分数 = clamp(${n(w.k)}K + ${n(w.c)}C + ${n(w.e)}E + ${n(w.s)}S + ${n(w.b)}B − ${n(w.v)}V, 0, 100)</div>
         <div class="zhihuE_FxGrid">
-            <div class="zhihuE_FxItem"><b>K</b>关键词饱和<span>K = 100(1 − e<sup>−k/20</sup>)。k 为命中词权重和；自定义词每条 +8；单字仅在已有长词命中时计 0.35。</span></div>
+            <div class="zhihuE_FxItem"><b>K</b>关键词饱和<span>K = 100(1 − e<sup>−k/20</sup>)。k 为命中词权重和；自定义词每条 +${NOISE_CUSTOM_K}，且分数至少提到隐藏线；分类单字仅在已有长词命中时计 0.35。</span></div>
             <div class="zhihuE_FxItem"><b>C</b>分类系数<span>取命中档位的最大 c。该分类有排除词则 ×0.35。无关键词但 E+B ≥ 16 时，C 至少为 42。</span></div>
             <div class="zhihuE_FxItem"><b>E</b>情绪<span>命中情绪词的权重和，上限 25。</span></div>
             <div class="zhihuE_FxItem"><b>S</b>争议<span>6 × 争议词命中数，上限 30。</span></div>
             <div class="zhihuE_FxItem"><b>B</b>标题党<span>5 × 标题党词命中数，上限 25。</span></div>
             <div class="zhihuE_FxItem"><b>V</b>价值<span>白名单权重和，上限 50，从总分里减去。</span></div>
         </div>
-        <p class="zhihuE_FxNote">信息流卡片取 max(标题分, 0.72×标题 + 0.28×摘要)。${NOISE_DEMOTE} 以下保留，${NOISE_DEMOTE}–${NOISE_HIDE} 降权，${NOISE_HIDE} 及以上隐藏。</p>
+        <p class="zhihuE_FxNote">信息流卡片取 max(标题分, 0.72×标题 + 0.28×摘要)。${NOISE_DEMOTE} 以下保留，${NOISE_DEMOTE}–${NOISE_HIDE} 降权，${NOISE_HIDE} 及以上隐藏。命中启用的自定义词时，分数至少为 ${NOISE_HIDE}，直接隐藏。</p>
     </div>`;
 }
 
@@ -676,7 +676,11 @@ function mountNoiseTestPane(container) {
         board.className = `zhihuE_TsBoard is-${verdict.id}`;
         const filterOn = !!menuValue('menu_blockKeywords');
         const badgeOn = !!menuValue('menu_noiseBadge');
-        if (filterOn) {
+        if (titleScore.customHit || bodyScore.customHit) {
+            hintEl.textContent = filterOn
+                ? '命中自定义词，分数已提到隐藏线。信息流刷新后会直接屏蔽。'
+                : '命中自定义词，分数已提到隐藏线。过滤仍关闭，信息流不会隐藏。';
+        } else if (filterOn) {
             hintEl.textContent = '分项来自标题。信息流刷新后才会按此结果隐藏或降权。';
         } else if (badgeOn) {
             hintEl.textContent = '过滤已关闭：信息流会打分并显示角标，但不会隐藏或降权。';
@@ -1473,7 +1477,7 @@ button,input,textarea {font:inherit;color:inherit;}
                 mountListEditor(pane, {
                     storageKey: 'menu_customBlockKeywords',
                     placeholder: '例如：广告, 引流, [捂脸]',
-                    tips: '预置词只能开关，自己加的可以开关或删除。不区分大小写，会加权到噪音分。'
+                    tips: '预置词只能开关，自己加的可以开关或删除。不区分大小写。命中启用的自定义词后分数至少到隐藏线，信息流会直接屏蔽。单字容易误伤。'
                 });
             } else if (wordTab === 'lexicon') {
                 mountLexiconEditor(pane);
@@ -2034,6 +2038,7 @@ function blockUsersDel(name, userid, reload) {
 const NOISE_WEIGHTS = { k: 0.30, c: 0.25, e: 0.15, s: 0.15, b: 0.15, v: 0.30 };
 const NOISE_HIDE = 60;
 const NOISE_DEMOTE = 30;
+const NOISE_CUSTOM_K = 48;
 
 function noiseWords(weight, list) {
     const out = Object.create(null);
@@ -2219,7 +2224,6 @@ function compileNoiseIndex() {
         3: !!menuValue('menu_noiseL3')
     };
     const cats = [];
-    const seen = new Set();
     for (const cat of Object.keys(lex.cats).map(id => lex.cats[id])) {
         if (!enabled[cat.level]) continue;
         const words = Object.keys(cat.words).map(k => ({
@@ -2227,7 +2231,6 @@ function compileNoiseIndex() {
             w: cat.words[k],
             len: k.length
         })).sort((a, b) => b.len - a.len);
-        for (const item of words) seen.add(item.k);
         cats.push({
             name: cat.name,
             level: cat.level,
@@ -2241,7 +2244,7 @@ function compileNoiseIndex() {
     for (const word of menuValue('menu_customBlockKeywords') || []) {
         if (!word) continue;
         const k = String(word).toLowerCase();
-        if (customOff.has(k) || seen.has(k)) continue;
+        if (customOff.has(k)) continue;
         custom.push(k);
     }
     const toPairs = map => Object.keys(map).map(k => ({ k: k.toLowerCase(), w: map[k] }));
@@ -2261,7 +2264,7 @@ function scoreText(raw) {
         return {
             final: 0, K: 0, C: 0, E: 0, S: 0, B: 0, V: 0, kRaw: 0,
             hits: { words: [], emotion: [], controversy: [], clickbait: [], value: [] },
-            winningCat: '', exclude: '', cFallback: false
+            winningCat: '', exclude: '', cFallback: false, customHit: false
         };
     }
     const text = String(raw).toLowerCase();
@@ -2306,10 +2309,13 @@ function scoreText(raw) {
         }
     }
 
+    let customHit = false;
     for (const word of idx.custom) {
-        if (text.includes(word)) {
-            kRaw += 8;
-            wordHits.push({ word, w: 8, cat: '自定义', source: 'custom' });
+        if (!word || !text.includes(word)) continue;
+        customHit = true;
+        if (!wordHits.some(item => item.word === word)) {
+            kRaw += NOISE_CUSTOM_K;
+            wordHits.push({ word, w: NOISE_CUSTOM_K, cat: '自定义', source: 'custom' });
         }
     }
 
@@ -2351,18 +2357,20 @@ function scoreText(raw) {
     if (cFallback) bestC = Math.max(bestC, 42);
 
     const noise = NOISE_WEIGHTS.k * K + NOISE_WEIGHTS.c * bestC + NOISE_WEIGHTS.e * E + NOISE_WEIGHTS.s * S + NOISE_WEIGHTS.b * B;
-    const final = Math.max(0, Math.min(100, noise - NOISE_WEIGHTS.v * V));
+    let final = Math.max(0, Math.min(100, noise - NOISE_WEIGHTS.v * V));
+    if (customHit) final = Math.max(final, NOISE_HIDE);
     return {
         final, K, C: bestC, E, S, B, V, kRaw,
         hits: { words: wordHits, emotion, controversy, clickbait, value },
-        winningCat, exclude, cFallback
+        winningCat, exclude, cFallback, customHit
     };
 }
 
 function scoreFeedNoise(title, body) {
     const titleScore = scoreText(title);
     const bodyScore = scoreText(String(body || '').slice(0, 280));
-    const final = Math.max(titleScore.final, titleScore.final * 0.72 + bodyScore.final * 0.28);
+    let final = Math.max(titleScore.final, titleScore.final * 0.72 + bodyScore.final * 0.28);
+    if (titleScore.customHit || bodyScore.customHit) final = Math.max(final, NOISE_HIDE);
     return { final, titleScore, bodyScore };
 }
 
@@ -2468,6 +2476,7 @@ function noiseExplainHtml(title, body, result, href) {
     if (titleScore.winningCat) notes.push(`分类取「${titleScore.winningCat}」`);
     if (titleScore.exclude) notes.push(`排除词「${titleScore.exclude}」使 C ×0.35`);
     if (titleScore.cFallback) notes.push('无关键词但情绪和标题党偏高，C 保底 42');
+    if (titleScore.customHit || bodyScore.customHit) notes.push('命中自定义词，分数提到隐藏线');
     if (!filterOn) notes.push('过滤已关闭，信息流只打分不处理');
     const bar = row => {
         const pct = Math.max(0, Math.min(100, row.v));
