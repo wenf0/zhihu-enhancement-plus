@@ -1,5 +1,4 @@
 import {
-  BLOCK_TYPE_DEFAULTS_V213,
   LEXICON_KEY,
   REMOVED_KEYWORD_KEYS,
   SETTINGS_KIND,
@@ -18,7 +17,6 @@ export const EXTRA_KEYS = [
   LEXICON_KEY,
   TASTE_KEY,
   USERS_OFF_KEY,
-  BLOCK_TYPE_DEFAULTS_V213,
 ];
 
 const cache: SettingsValues = Object.create(null);
@@ -46,7 +44,6 @@ export function defaultSettings(): SettingsValues {
   values[USERS_OFF_KEY] = [];
   values[LEXICON_KEY] = null;
   values[TASTE_KEY] = emptyTastePrefs();
-  values[BLOCK_TYPE_DEFAULTS_V213] = true;
   return values;
 }
 
@@ -67,23 +64,9 @@ export async function loadSettings(): Promise<SettingsValues> {
   if (merged.menu_noiseScore == null) merged.menu_noiseScore = true;
   merged.menu_blockKeywords = normalizeFilterMode(merged.menu_blockKeywords);
   for (const key of REMOVED_KEYWORD_KEYS) delete merged[key];
-
-  const patch: SettingsValues = {};
-  if (!merged[BLOCK_TYPE_DEFAULTS_V213]) {
-    merged.menu_blockTypeArticle = true;
-    merged.menu_blockTypeSearch = true;
-    merged.menu_blockYanXuan = true;
-    merged[BLOCK_TYPE_DEFAULTS_V213] = true;
-    patch.menu_blockTypeArticle = true;
-    patch.menu_blockTypeSearch = true;
-    patch.menu_blockYanXuan = true;
-    patch[BLOCK_TYPE_DEFAULTS_V213] = true;
-  }
-
   writeCache(merged);
   const stale = REMOVED_KEYWORD_KEYS.filter(key => key in stored);
   if (stale.length) void browser.storage.local.remove([...stale]);
-  if (Object.keys(patch).length) void browser.storage.local.set(patch);
   return merged;
 }
 

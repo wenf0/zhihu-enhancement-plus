@@ -59,8 +59,6 @@ export const SETTINGS_KIND = 'zhihu-enhancement-plus-settings';
 export const LEXICON_KEY = 'noise_lexicon_v1';
 export const TASTE_KEY = 'noise_taste_v1';
 export const USERS_OFF_KEY = 'menu_customBlockUsersOff';
-/** 一次性：把文章 / 搜索盐选 / 盐选内容默认打开 */
-export const BLOCK_TYPE_DEFAULTS_V213 = 'menu_block_type_defaults_v213';
 
 /** 已移除的自定义关键词相关 key，加载时清掉本地残留 */
 export const REMOVED_KEYWORD_KEYS = [
