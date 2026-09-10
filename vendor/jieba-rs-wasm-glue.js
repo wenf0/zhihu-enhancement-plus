@@ -439,5 +439,5 @@ async function __wbg_init(module_or_path) {
 }
 
 
-    return { cut: cut, add_word: add_word, initSync: initSync, init: __wbg_init };
+    return { cut: cut, cut_for_search: cut_for_search, tag: tag, add_word: add_word, initSync: initSync, init: __wbg_init };
 })();

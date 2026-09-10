@@ -3,7 +3,7 @@
 // @name:zh-CN   知乎增强优化
 // @name:zh-TW   知乎增強優化
 // @name:en      Zhihu Enhancement Plus
-// @version      1.10.0
+// @version      1.11.0
 // @author       local (based on X.I.U / 知乎增强 2.2.15)
 // @description  用于知乎网页。可开关：低饱和配色、隐藏右侧栏、清空或锁定标签标题与图标、净化搜索热门、默认/一键/点空白收起回答与评论、右键回顶、展开问题描述、置顶发布时间、信息流类型标签、直达问题、按用户与噪音评分（可显示得分、可过滤、喜欢/不感兴趣回写权重）及关键词、按类别屏蔽视频/文章/想法/话题/盐选/相关搜索/热榜杂项。设置可 JSON 导入导出。始终生效：关登录弹窗、原图、站外直链、点浮层关评论、去掉搜索高亮链接。基于 XIU2「知乎增强」2.2.15（GPL-3.0）。噪音评分用结巴分词（jieba-rs WASM）。
 // @description:zh-CN 用于知乎网页。可开关：低饱和配色、隐藏右侧栏、清空或锁定标签标题与图标、净化搜索热门、默认/一键/点空白收起回答与评论、右键回顶、展开问题描述、置顶发布时间、信息流类型标签、直达问题、按用户与噪音评分（可显示得分、可过滤、喜欢/不感兴趣回写权重）及关键词、按类别屏蔽视频/文章/想法/话题/盐选/相关搜索/热榜杂项。设置可 JSON 导入导出。始终生效：关登录弹窗、原图、站外直链、点浮层关评论、去掉搜索高亮链接。基于 XIU2「知乎增强」2.2.15（GPL-3.0）。噪音评分用结巴分词（jieba-rs WASM）。
@@ -94,7 +94,7 @@ const MENU_ITEMS = [
     { key: 'menu_noiseScore',          label: '噪音评分',             tip: '给信息流打噪音分。过滤和显示得分都要先开这项。', def: true },
     { key: 'menu_blockKeywords',       label: '噪音过滤',             tip: '关闭只打分；仅降权会变淡；隐藏会移出信息流并可复查。', def: 'hide', kind: 'filter' },
     { key: 'menu_noiseBadge',          label: '显示噪音得分',         tip: '每条内容显示模型分，0 分不标。规则隐藏不改这个数字。', def: true },
-    { key: 'menu_noiseTaste',          label: '喜欢 / 不感兴趣',       tip: '卡片上点喜欢或讨厌，只回写命中的词库词和分类，慢慢贴近口味。', def: true },
+    { key: 'menu_noiseTaste',          label: '喜欢 / 不感兴趣',       tip: '对卡片分词后对照词库，回写权重；多次出现的新实词也会学进去。', def: true },
     { key: 'menu_customBlockKeywords', label: '编辑屏蔽关键词',       tip: '每条词可开关，并设隐藏 / 降权 / 加权。预置词默认开着。', def: DEFAULT_BLOCK_KEYWORDS, kind: 'keywords' },
     {
         key: 'menu_noiseLevel',
@@ -767,7 +767,7 @@ function settingsNoiseFormulaHtml() {
             <div class="zhihuE_FxItem"><b>B</b>标题党<span>5 × 标题党词命中数，上限 25。</span></div>
             <div class="zhihuE_FxItem"><b>V</b>价值<span>白名单权重和，上限 50，从总分里减去。</span></div>
         </div>
-        <p class="zhihuE_FxNote">关键词经 jieba-rs 分词后再匹配。信息流卡片取 max(标题分, 0.72×标题 + 0.28×摘要)。模型分 ${NOISE_DEMOTE}–${NOISE_HIDE} 降权，${NOISE_HIDE} 及以上隐藏。自定义词的「隐藏 / 降权」作为规则另外执行，分数保持模型分。开启「喜欢 / 不感兴趣」后，命中词和分类会叠加本地口味增量，不改词库原文。</p>
+        <p class="zhihuE_FxNote">关键词经 jieba-rs 分词后再匹配（顺序切词、相邻拼接、搜索切词）。信息流卡片取 max(标题分, 0.72×标题 + 0.28×摘要)。模型分 ${NOISE_DEMOTE}–${NOISE_HIDE} 降权，${NOISE_HIDE} 及以上隐藏。自定义词的「隐藏 / 降权」作为规则另外执行，分数保持模型分。开启「喜欢 / 不感兴趣」后，分词结果对照词库回写权重；词库外的实词点满 2 次后以小步长进 K 或 V，不改词库原文。</p>
     </div>`;
 }
 
@@ -1069,11 +1069,14 @@ function mountTastePane(container) {
         const cat = lex.cats && lex.cats[id];
         rows.push({ word: cat ? cat.name : id, kind: '分类', like: item.like || 0, dislike: item.dislike || 0, delta: item.delta || 0 });
     }
+    for (const [word, item] of Object.entries(prefs.learned || {})) {
+        rows.push({ word, kind: '新词', like: item.like || 0, dislike: item.dislike || 0, delta: item.delta || 0 });
+    }
     rows.sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta) || (b.like + b.dislike) - (a.like + a.dislike));
     const shown = rows.filter(row => row.delta || row.like || row.dislike);
     const sign = n => (n > 0 ? '+' : '') + n;
     container.insertAdjacentHTML('beforeend', `<div class="zhihuE_Taste">
-        <p class="zhihuE_StPaneTips">卡片上的「喜欢 / 不感兴趣」只回写<strong>已经命中的词库词和分类</strong>，不做全文分词，避免「的、是、一个」带偏权重。喜欢会降低噪音词、抬高价值词；不感兴趣相反，并立刻隐藏该条。再点一次同一按钮可撤销。</p>
+        <p class="zhihuE_StPaneTips">卡片先用结巴分词，再和词库对照。命中的噪音词 / 价值词 / 分类立刻改权重；标题里的词步长 ×1.5。词库外的名词、专名、形容词会记为「新词」，同一词被点满 2 次后才进分数。停用词（的、是、一个）不学。喜欢降低噪音、抬高价值；不感兴趣相反并立刻隐藏该条。再点一次同一按钮可撤销。</p>
         <div class="zhihuE_TasteHead">
             <p class="zhihuE_StPaneTips">已学习 ${prefs.clicks || 0} 次 · ${shown.length} 条增量</p>
             <button type="button" class="zhihuE_IoBtn" data-taste-reset>清空口味</button>
@@ -2962,7 +2965,7 @@ async function __wbg_init(module_or_path) {
 }
 
 
-    return { cut: cut, add_word: add_word, initSync: initSync, init: __wbg_init };
+    return { cut: cut, cut_for_search: cut_for_search, tag: tag, add_word: add_word, initSync: initSync, init: __wbg_init };
 })();
 
 const JIEBA_WASM_URL = 'https://cdn.jsdelivr.net/npm/jieba-wasm@2.4.0/pkg/web/jieba_rs_wasm_bg.wasm';
@@ -2970,7 +2973,17 @@ let jiebaReady = false;
 let jiebaUnavailable = false;
 let jiebaPromise = null;
 const jiebaTokenCache = new Map();
+const jiebaSetCache = new Map();
 const jiebaDictSeen = new Set();
+const JIEBA_LEARN_POS = new Set(['n', 'nr', 'nrfg', 'nrt', 'ns', 'nt', 'nz', 'nw', 'vn', 'an', 'a', 'eng']);
+const JIEBA_STOPWORDS = new Set([
+    '的', '了', '是', '在', '我', '有', '和', '就', '不', '人', '都', '一', '一个', '上', '也', '很', '到', '说', '要', '去', '你',
+    '会', '着', '没有', '看', '好', '自己', '这', '他', '她', '它', '我们', '他们', '什么', '怎么', '如何', '为什么', '这个', '那个',
+    '可以', '还是', '因为', '所以', '如果', '但是', '然后', '而且', '或者', '只是', '已经', '现在', '时候', '一样', '这样', '那么',
+    '这么', '一些', '还有', '不是', '就是', '还', '能', '对', '把', '被', '让', '给', '从', '为', '与', '及', '等', '中', '后',
+    '前', '里', '外', '下', '多', '少', '更', '最', '太', '非常', '真的', '觉得', '应该', '可能', '知乎', '问题', '回答', '谢邀',
+    '楼主', '题主', '评论', '点赞', '收藏', '关注', '分享', 'http', 'https', 'www', 'com', 'the', 'and', 'for', 'you'
+]);
 
 function gmFetchBuffer(url) {
     return new Promise((resolve, reject) => {
@@ -3012,6 +3025,7 @@ function ensureJieba() {
         ZhihuPlusJiebaWasm.initSync({ module: bytes });
         jiebaReady = true;
         jiebaTokenCache.clear();
+        jiebaSetCache.clear();
         if (noiseIndex) syncJiebaUserDict();
         return true;
     })().catch(err => {
@@ -3042,7 +3056,10 @@ function syncJiebaUserDict() {
     for (const word of idx.controversy) add(word);
     for (const word of idx.clickbait) add(word);
     for (const item of idx.value) add(item.k);
+    const learned = tasteEnabled() ? getTastePrefs().learned : null;
+    if (learned) for (const word of Object.keys(learned)) add(word);
     jiebaTokenCache.clear();
+    jiebaSetCache.clear();
 }
 
 function cutNoiseTokens(text) {
@@ -3058,6 +3075,66 @@ function cutNoiseTokens(text) {
     return cached;
 }
 
+function noiseTokenSet(text) {
+    const raw = String(text || '');
+    if (!raw) return null;
+    if (!jiebaReady) return null;
+    let cached = jiebaSetCache.get(raw);
+    if (cached) return cached;
+    const tokens = cutNoiseTokens(raw);
+    const set = new Set(tokens);
+    const maxLen = (noiseIndex && noiseIndex.maxTermLen) || 16;
+    for (let i = 0; i < tokens.length; i++) {
+        let acc = tokens[i];
+        for (let j = i + 1; j < tokens.length; j++) {
+            acc += tokens[j];
+            if (acc.length > maxLen) break;
+            set.add(acc);
+        }
+    }
+    try {
+        if (typeof ZhihuPlusJiebaWasm.cut_for_search === 'function') {
+            for (const tok of ZhihuPlusJiebaWasm.cut_for_search(raw, true)) {
+                const t = String(tok).toLowerCase();
+                if (t) set.add(t);
+            }
+        }
+    } catch (_) { /* search cut optional */ }
+    if (jiebaSetCache.size > 400) jiebaSetCache.clear();
+    jiebaSetCache.set(raw, set);
+    return set;
+}
+
+function jiebaTagTokens(text) {
+    if (!jiebaReady || typeof ZhihuPlusJiebaWasm.tag !== 'function') return [];
+    try {
+        return ZhihuPlusJiebaWasm.tag(String(text || ''), true).map(item => {
+            if (item && typeof item === 'object') {
+                return { word: String(item.word || '').toLowerCase(), tag: String(item.tag || item.flag || '') };
+            }
+            const s = String(item || '');
+            const i = s.lastIndexOf('/');
+            return i > 0 ? { word: s.slice(0, i).toLowerCase(), tag: s.slice(i + 1) } : { word: s.toLowerCase(), tag: '' };
+        }).filter(item => item.word);
+    } catch (_) {
+        return [];
+    }
+}
+
+function isJiebaStopword(word) {
+    const t = String(word || '').toLowerCase();
+    if (!t || t.length < 2) return true;
+    if (JIEBA_STOPWORDS.has(t)) return true;
+    if (/^[\d.]+$/.test(t) || /^[^\u4e00-\u9fffa-z0-9]+$/i.test(t)) return true;
+    return false;
+}
+
+function canLearnJiebaToken(word, tag) {
+    if (isJiebaStopword(word)) return false;
+    if (tag && !JIEBA_LEARN_POS.has(tag)) return false;
+    return true;
+}
+
 function noiseHasFallback(text, term) {
     if (term.length >= 2) return text.includes(term);
     const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -3065,22 +3142,13 @@ function noiseHasFallback(text, term) {
     return re.test(text);
 }
 
-function noiseHas(text, term) {
+function noiseHas(text, term, tokenSet) {
     const t = String(term || '').toLowerCase();
     if (!t || !text) return false;
+    if (tokenSet) return tokenSet.has(t);
     const tokens = cutNoiseTokens(text);
     if (!tokens) return noiseHasFallback(text, t);
-    if (tokens.includes(t)) return true;
-    if (t.length < 2) return false;
-    for (let i = 0; i < tokens.length; i++) {
-        let acc = '';
-        for (let j = i; j < tokens.length; j++) {
-            acc += tokens[j];
-            if (acc === t) return true;
-            if (acc.length >= t.length) break;
-        }
-    }
-    return false;
+    return (noiseTokenSet(text) || new Set(tokens)).has(t);
 }
 
 function noiseWords(weight, list) {
@@ -3261,12 +3329,15 @@ function touchLexicon(data, token) {
 const TASTE_WORD_STEP = 2;
 const TASTE_CAT_STEP = 5;
 const TASTE_VALUE_STEP = 3;
+const TASTE_LEARNED_STEP = 1;
 const TASTE_WORD_RANGE = [-8, 12];
 const TASTE_CAT_RANGE = [-24, 28];
 const TASTE_VALUE_RANGE = [-8, 16];
+const TASTE_LEARNED_RANGE = [-10, 10];
+const TASTE_LEARNED_MIN = 2;
 
 function emptyTastePrefs() {
-    return { words: {}, cats: {}, value: {}, actions: {}, clicks: 0 };
+    return { words: {}, cats: {}, value: {}, learned: {}, actions: {}, clicks: 0 };
 }
 
 function tasteEnabled() {
@@ -3284,6 +3355,7 @@ function getTastePrefs() {
         words: saved.words && typeof saved.words === 'object' && !Array.isArray(saved.words) ? saved.words : {},
         cats: saved.cats && typeof saved.cats === 'object' && !Array.isArray(saved.cats) ? saved.cats : {},
         value: saved.value && typeof saved.value === 'object' && !Array.isArray(saved.value) ? saved.value : {},
+        learned: saved.learned && typeof saved.learned === 'object' && !Array.isArray(saved.learned) ? saved.learned : {},
         actions: saved.actions && typeof saved.actions === 'object' && !Array.isArray(saved.actions) ? saved.actions : {},
         clicks: Number(saved.clicks) || 0
     };
@@ -3294,6 +3366,7 @@ function saveTastePrefs(data) {
     tasteCache = data;
     GM_setValue(TASTE_KEY, data);
     writeSettingsBackup();
+    if (jiebaReady) syncJiebaUserDict();
 }
 
 function clampTaste(n, range) {
@@ -3314,44 +3387,105 @@ function bumpTasteEntry(map, key, field, fieldDelta, step, range) {
 function applyTasteSignals(prefs, signals, action, sign) {
     const like = action === 'like';
     const field = like ? 'like' : 'dislike';
-    const wordStep = (like ? -TASTE_WORD_STEP : TASTE_WORD_STEP) * sign;
+    const titleBoost = new Set(signals.titleWords || []);
+    const stepFor = (base, word) => Math.round(base * (titleBoost.has(word) ? 1.5 : 1)) * sign;
+    const wordStep = like ? -TASTE_WORD_STEP : TASTE_WORD_STEP;
     const catStep = (like ? -TASTE_CAT_STEP : TASTE_CAT_STEP) * sign;
-    const valueStep = (like ? TASTE_VALUE_STEP : -TASTE_VALUE_STEP) * sign;
+    const valueStep = like ? TASTE_VALUE_STEP : -TASTE_VALUE_STEP;
+    const learnedStep = like ? -TASTE_LEARNED_STEP : TASTE_LEARNED_STEP;
+    if (!prefs.learned || typeof prefs.learned !== 'object') prefs.learned = {};
     for (const word of signals.noiseWords) {
-        bumpTasteEntry(prefs.words, word, field, sign, wordStep, TASTE_WORD_RANGE);
+        bumpTasteEntry(prefs.words, word, field, sign, stepFor(wordStep, word), TASTE_WORD_RANGE);
     }
     for (const id of signals.cats) {
         bumpTasteEntry(prefs.cats, id, field, sign, catStep, TASTE_CAT_RANGE);
     }
     for (const word of signals.valueWords) {
-        bumpTasteEntry(prefs.value, word, field, sign, valueStep, TASTE_VALUE_RANGE);
+        bumpTasteEntry(prefs.value, word, field, sign, stepFor(valueStep, word), TASTE_VALUE_RANGE);
+    }
+    for (const word of signals.learned || []) {
+        bumpTasteEntry(prefs.learned, word, field, sign, stepFor(learnedStep, word), TASTE_LEARNED_RANGE);
+    }
+    const learnedKeys = Object.keys(prefs.learned);
+    if (learnedKeys.length > 200) {
+        learnedKeys.sort((a, b) => {
+            const x = prefs.learned[a];
+            const y = prefs.learned[b];
+            return (Math.abs(x.delta || 0) + (x.like || 0) + (x.dislike || 0))
+                - (Math.abs(y.delta || 0) + (y.like || 0) + (y.dislike || 0));
+        }).slice(0, learnedKeys.length - 200).forEach(k => delete prefs.learned[k]);
     }
 }
 
 function collectTasteSignals(title, body) {
-    const { titleScore, bodyScore } = scoreFeedNoise(title, body);
+    const idx = compileNoiseIndex();
+    const titleText = String(title || '').toLowerCase();
+    const bodyText = String(body || '').toLowerCase();
+    const mixed = (titleText + '\n' + bodyText).trim();
+    const tokenSet = noiseTokenSet(mixed);
+    const titleSet = noiseTokenSet(titleText);
     const noiseWords = new Set();
     const valueWords = new Set();
     const cats = new Set();
-    const take = score => {
-        if (!score || !score.hits) return;
-        for (const item of score.hits.words || []) {
-            if (item.source === 'char' || !item.word) continue;
-            noiseWords.add(String(item.word).toLowerCase());
+    const titleWords = new Set();
+    const learned = new Set();
+    if (tokenSet && idx.lookupNoise) {
+        for (const tok of tokenSet) {
+            if (tok.length < 2) continue;
+            const meta = idx.lookupNoise[tok];
+            if (meta) {
+                noiseWords.add(tok);
+                for (const id of meta.cats) if (id) cats.add(id);
+                if (titleSet && titleSet.has(tok)) titleWords.add(tok);
+            }
+            if (idx.lookupValue && idx.lookupValue[tok]) {
+                valueWords.add(tok);
+                if (titleSet && titleSet.has(tok)) titleWords.add(tok);
+            }
         }
-        for (const item of score.hits.emotion || []) {
-            if (item.word) noiseWords.add(String(item.word).toLowerCase());
-        }
-        for (const word of score.hits.controversy || []) noiseWords.add(String(word).toLowerCase());
-        for (const word of score.hits.clickbait || []) noiseWords.add(String(word).toLowerCase());
-        for (const item of score.hits.value || []) {
-            if (item.word) valueWords.add(String(item.word).toLowerCase());
-        }
-        if (score.winningCatId) cats.add(score.winningCatId);
+    } else {
+        const { titleScore, bodyScore } = scoreFeedNoise(title, body);
+        const take = score => {
+            if (!score || !score.hits) return;
+            for (const item of score.hits.words || []) {
+                if (item.source === 'char' || !item.word) continue;
+                noiseWords.add(String(item.word).toLowerCase());
+            }
+            for (const item of score.hits.emotion || []) {
+                if (item.word) noiseWords.add(String(item.word).toLowerCase());
+            }
+            for (const word of score.hits.controversy || []) noiseWords.add(String(word).toLowerCase());
+            for (const word of score.hits.clickbait || []) noiseWords.add(String(word).toLowerCase());
+            for (const item of score.hits.value || []) {
+                if (item.word) valueWords.add(String(item.word).toLowerCase());
+            }
+            if (score.winningCatId) cats.add(score.winningCatId);
+        };
+        take(titleScore);
+        take(bodyScore);
+    }
+    const tagged = jiebaTagTokens(mixed);
+    const candidates = tagged.length
+        ? tagged.filter(item => canLearnJiebaToken(item.word, item.tag)).map(item => item.word)
+        : [...(cutNoiseTokens(mixed) || [])].filter(word => canLearnJiebaToken(word, ''));
+    for (const word of candidates) {
+        if (idx.lookupNoise && idx.lookupNoise[word]) continue;
+        if (idx.lookupValue && idx.lookupValue[word]) continue;
+        learned.add(word);
+        if (titleSet && titleSet.has(word)) titleWords.add(word);
+    }
+    const learnedList = [...learned].sort((a, b) => {
+        const ta = titleWords.has(a) ? 1 : 0;
+        const tb = titleWords.has(b) ? 1 : 0;
+        return tb - ta || b.length - a.length;
+    }).slice(0, 24);
+    return {
+        noiseWords: [...noiseWords],
+        valueWords: [...valueWords],
+        cats: [...cats],
+        learned: learnedList,
+        titleWords: [...titleWords]
     };
-    take(titleScore);
-    take(bodyScore);
-    return { noiseWords: [...noiseWords], valueWords: [...valueWords], cats: [...cats] };
 }
 
 function tasteDelta(map, key) {
@@ -3390,15 +3524,45 @@ function compileNoiseIndex() {
         level: CUSTOM_LEVELS[item.level] ? item.level : 'weight'
     }));
     const toPairs = map => Object.keys(map).map(k => ({ k: k.toLowerCase(), w: map[k] }));
+    const emotion = toPairs(lex.emotion);
+    const controversy = (lex.controversy || []).map(x => String(x).toLowerCase());
+    const clickbait = (lex.clickbait || []).map(x => String(x).toLowerCase());
+    const value = toPairs(lex.value);
+    const lookupNoise = Object.create(null);
+    const lookupValue = Object.create(null);
+    let maxTermLen = 2;
+    const putNoise = (word, catId) => {
+        const k = String(word || '').toLowerCase();
+        if (!k) return;
+        if (k.length > maxTermLen) maxTermLen = k.length;
+        const cur = lookupNoise[k] || { cats: [] };
+        if (catId && !cur.cats.includes(catId)) cur.cats.push(catId);
+        lookupNoise[k] = cur;
+    };
+    for (const cat of cats) {
+        for (const item of cat.words) putNoise(item.k, cat.id);
+    }
+    for (const item of custom) putNoise(item.k, '');
+    for (const item of emotion) putNoise(item.k, '');
+    for (const word of controversy) putNoise(word, '');
+    for (const word of clickbait) putNoise(word, '');
+    for (const item of value) {
+        lookupValue[item.k] = 1;
+        if (item.k.length > maxTermLen) maxTermLen = item.k.length;
+    }
     noiseIndex = {
         cats,
         custom,
-        emotion: toPairs(lex.emotion),
-        controversy: (lex.controversy || []).map(x => String(x).toLowerCase()),
-        clickbait: (lex.clickbait || []).map(x => String(x).toLowerCase()),
-        value: toPairs(lex.value)
+        emotion,
+        controversy,
+        clickbait,
+        value,
+        lookupNoise,
+        lookupValue,
+        maxTermLen
     };
     jiebaTokenCache.clear();
+    jiebaSetCache.clear();
     syncJiebaUserDict();
     return noiseIndex;
 }
@@ -3407,7 +3571,7 @@ function scoreText(raw) {
     if (!raw) {
         return {
             final: 0, K: 0, C: 0, E: 0, S: 0, B: 0, V: 0, kRaw: 0,
-            hits: { words: [], custom: [], cats: [], emotion: [], controversy: [], clickbait: [], value: [] },
+            hits: { words: [], custom: [], cats: [], emotion: [], controversy: [], clickbait: [], value: [], learned: [] },
             winningCat: '', winningCatId: '', exclude: '', cFallback: false, customHit: false, customFloor: 0,
             rule: { action: '', words: [] }
         };
@@ -3415,7 +3579,8 @@ function scoreText(raw) {
     const text = String(raw).toLowerCase();
     const idx = compileNoiseIndex();
     const prefs = tasteEnabled() ? getTastePrefs() : null;
-    const has = term => noiseHas(text, term);
+    const tokenSet = noiseTokenSet(text);
+    const has = term => noiseHas(text, term, tokenSet);
     let kRaw = 0;
     let bestC = 0;
     let winningCat = '';
@@ -3480,6 +3645,19 @@ function scoreText(raw) {
     }
     const rule = noiseRuleFromHits(customHits);
 
+    const learnedHits = [];
+    if (prefs && prefs.learned) {
+        for (const word of Object.keys(prefs.learned)) {
+            const item = prefs.learned[word];
+            if (!item || !has(word)) continue;
+            if ((item.like || 0) + (item.dislike || 0) < TASTE_LEARNED_MIN) continue;
+            const d = Number(item.delta) || 0;
+            if (!d) continue;
+            learnedHits.push({ word, w: d, cat: '口味新词', source: 'learned' });
+            if (d > 0) kRaw += d;
+        }
+    }
+
     const K = 100 * (1 - Math.exp(-kRaw / 20));
 
     const emotion = [];
@@ -3522,6 +3700,9 @@ function scoreText(raw) {
             value.push({ word: item.k, w });
         }
     }
+    for (const item of learnedHits) {
+        if (item.w < 0) V += Math.abs(item.w);
+    }
     V = Math.min(50, V);
 
     const cFallback = kRaw === 0 && E + B >= 16;
@@ -3534,7 +3715,7 @@ function scoreText(raw) {
     const final = Math.max(0, Math.min(100, noise - NOISE_WEIGHTS.v * V));
     return {
         final, K, C: bestC, E, S, B, V, kRaw,
-        hits: { words: wordHits, custom: customHits, cats: catHits, emotion, controversy, clickbait, value },
+        hits: { words: wordHits, custom: customHits, cats: catHits, emotion, controversy, clickbait, value, learned: learnedHits },
         winningCat, winningCatId, exclude, cFallback, customHit, customFloor, rule
     };
 }
@@ -3710,7 +3891,9 @@ function noiseExplainHtml(title, body, result, href) {
     }
     if (mode === 'off') notes.push('过滤已关闭，信息流只打分不处理');
     else if (mode === 'demote') notes.push('过滤为仅降权，不会移出信息流');
-    if (tasteEnabled() && getTastePrefs().clicks) notes.push('分数已叠加本地「喜欢 / 不感兴趣」增量');
+    const learnedHits = mergeNoiseHits(hits.learned, bodyScore.hits && bodyScore.hits.learned);
+    if (tasteEnabled() && getTastePrefs().clicks) notes.push('分数已叠加本地「喜欢 / 不感兴趣」增量（词库对照 + 结巴新词）');
+    if (learnedHits.length) notes.push(`口味新词 ${learnedHits.length} 个（同一词点满 ${TASTE_LEARNED_MIN} 次后计分）`);
     const bar = row => {
         const pct = Math.max(0, Math.min(100, row.v));
         return `<div class="zhihuE_NxRow">
@@ -3761,6 +3944,7 @@ function noiseExplainHtml(title, body, result, href) {
             <div class="zhihuE_NxBlock"><span>争议</span><div>${noiseHitChips(hits.controversy.map(word => ({ word })), chip)}</div></div>
             <div class="zhihuE_NxBlock"><span>标题党</span><div>${noiseHitChips(hits.clickbait.map(word => ({ word })), chip)}</div></div>
             <div class="zhihuE_NxBlock"><span>价值</span><div>${noiseHitChips(hits.value, chip)}</div></div>
+            <div class="zhihuE_NxBlock"><span>口味新词</span><div>${noiseHitChips(learnedHits, chip)}</div></div>
         </div>
     </div>
     ${title ? `<p class="zhihuE_NxQuote">${escapeHtml(title.slice(0, 180))}</p>` : ''}
@@ -3965,8 +4149,25 @@ function bindTasteClicks() {
     }, true);
 }
 
+const tastePending = new Set();
+
 function applyCardTaste(card, titleCss, nextAction) {
     if (!tasteEnabled() || (nextAction !== 'like' && nextAction !== 'dislike')) return;
+    const key = tasteCardKey(card, titleCss);
+    if (!key || tastePending.has(key)) return;
+    const run = () => {
+        tastePending.delete(key);
+        applyCardTasteNow(card, titleCss, nextAction);
+    };
+    if (jiebaReady || jiebaUnavailable) {
+        applyCardTasteNow(card, titleCss, nextAction);
+        return;
+    }
+    tastePending.add(key);
+    ensureJieba().then(run);
+}
+
+function applyCardTasteNow(card, titleCss, nextAction) {
     const { title, body } = cardNoiseText(card, titleCss);
     const key = tasteCardKey(card, titleCss);
     if (!key) return;
@@ -3983,11 +4184,18 @@ function applyCardTaste(card, titleCss, nextAction) {
         if (actionKeys.length > 400) delete prefs.actions[actionKeys[0]];
     }
     saveTastePrefs(prefs);
-    const learned = signals.noiseWords.length + signals.valueWords.length + signals.cats.length;
-    if (!learned && prefs.actions[key] === 'dislike') {
-        notify('已隐藏这条。标题没打中词库，所以没有可学习的词。');
-    } else if (!learned && prefs.actions[key] === 'like') {
-        notify('已记下喜欢。标题没打中词库，权重没有变化。');
+    const lexHits = signals.noiseWords.length + signals.valueWords.length + signals.cats.length;
+    const newHits = (signals.learned || []).length;
+    const current = prefs.actions[key] || '';
+    if (!current) notify('已撤销这次口味。');
+    else if (lexHits || newHits) {
+        notify(current === 'dislike'
+            ? `已隐藏。对照词库 ${lexHits} 个，新实词 ${newHits} 个已记入口味。`
+            : `已记下喜欢。对照词库 ${lexHits} 个，新实词 ${newHits} 个。`);
+    } else {
+        notify(current === 'dislike'
+            ? '已隐藏这条。分词后没打中可学习的词。'
+            : '已记下喜欢。分词后没打中可学习的词。');
     }
     refreshNoiseFeed();
 }
