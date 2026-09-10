@@ -9,6 +9,8 @@ Thumbs.db
 *.log
 node_modules/
 dist/
+.output/
+.wxt/
 todolist.md
 todolist
 TODO.md

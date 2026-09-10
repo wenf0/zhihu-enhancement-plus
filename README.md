@@ -1,6 +1,6 @@
 # 知乎增强优化（Zhihu Enhancement Plus）
 
-原「知乎增强」的结构化优化版：噪音评分过滤（结巴分词整词匹配）、喜欢/不感兴趣回写词权重、低饱和配色、隐藏右侧栏、清空标签标题与图标、移除登录弹窗、屏蔽视频/盐选、默认收起回答、屏蔽用户、原图与站外直链、时间置顶等。
+Chrome 扩展（Manifest V3）：噪音评分过滤（结巴分词整词匹配）、喜欢/不感兴趣回写词权重、低饱和配色、隐藏右侧栏、清空标签标题与图标、移除登录弹窗、屏蔽视频/盐选、默认收起回答、屏蔽用户、原图与站外直链、时间置顶等。
 
 基于 [XIU2/UserScript](https://github.com/XIU2/UserScript) 的「知乎增强」2.2.15，许可证为 GPL-3.0。
 
@@ -8,24 +8,31 @@
 
 ## 安装
 
-- Greasy Fork：https://greasyfork.org/zh-CN/scripts/595014-知乎增强优化
-- GitHub：https://github.com/wenf0/zhihu-enhancement-plus
+1. `npm install && npm run build`
+2. Chrome 打开 `chrome://extensions`
+3. 打开「开发者模式」
+4. 「加载已解压的扩展程序」，选仓库里的 `.output/chrome-mv3`
+
+设置页：工具栏图标 →「打开完整设置」，或扩展详情里的「扩展程序选项」。
+
+旧油猴脚本源码保留在 [`legacy/`](legacy/)，不再作为主产物。
 
 ## 开发
 
-源码是 TypeScript 模块，用 Vite 打成**单文件、不压缩**的油猴脚本。
+现代栈：**WXT + TypeScript + React 19 + Tailwind CSS v4 + shadcn/ui**。
 
-- 源码：`src/*.ts`
-- 样式：`src/styles/*.css`（设置面板 / 评分说明 / 信息流角标）
-- 结巴 WASM glue：`vendor/jieba-rs-wasm-glue.js`
-- 安装 / 更新用：根目录 `zhihu-enhancement-plus.user.js`
-- 依赖更新：GitHub Dependabot 会盯 `package.json`
+- 内容脚本：`src/entrypoints/content.ts`，页面逻辑在 `src/lib/content/`
+- 打分 / 词库 / 结巴：`src/lib/noise/`
+- 设置页：`src/entrypoints/options/`（React + shadcn）
+- 弹层：`src/entrypoints/popup/`
+- 存储：`chrome.storage.local`（兼容旧油猴 JSON 备份）
+- 结巴 WASM：`public/jieba_rs_wasm_bg.wasm`
 
 ```bash
 npm install
-npm run preview:ui   # 本地预览设置/角标样式
-npm run dev          # 开发用 userscript（安装列表里带 dev: 前缀）
-npm run build        # 产出 dist/*.user.js 并复制到仓库根目录
+npm run dev      # 开发模式，自动装进浏览器
+npm run build    # 产出 .output/chrome-mv3
+npm run typecheck
 ```
 
-改完样式刷新预览页即可。版本号只改 `src/version.ts`。
+版本号只改 `src/lib/version.ts`。

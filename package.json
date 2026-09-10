@@ -1,19 +1,38 @@
 {
   "name": "zhihu-enhancement-plus",
   "private": true,
-  "description": "Zhihu userscript built with Vite + TypeScript",
+  "version": "2.0.0",
+  "description": "Zhihu Chrome extension: noise scoring, feed filters, and reading tweaks",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "preview:ui": "vite --config vite.preview.config.ts",
-    "build": "vite build && node scripts/copy-userjs.mjs",
-    "pack": "vite build && node scripts/copy-userjs.mjs",
-    "pack:check": "vite build && node scripts/copy-userjs.mjs && git diff --quiet -- zhihu-enhancement-plus.user.js",
-    "typecheck": "tsc --noEmit"
+    "dev": "wxt",
+    "build": "wxt build",
+    "zip": "wxt zip",
+    "typecheck": "tsc --noEmit",
+    "postinstall": "wxt prepare"
+  },
+  "dependencies": {
+    "@radix-ui/react-label": "^2.1.8",
+    "@radix-ui/react-scroll-area": "^1.2.10",
+    "@radix-ui/react-select": "^2.2.6",
+    "@radix-ui/react-separator": "^1.1.8",
+    "@radix-ui/react-slot": "^1.2.4",
+    "@radix-ui/react-switch": "^1.2.6",
+    "@radix-ui/react-tabs": "^1.1.13",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.544.0",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "tailwind-merge": "^3.3.1"
   },
   "devDependencies": {
-    "typescript": "^7.0.2",
-    "vite": "^8.2.2",
-    "vite-plugin-monkey": "^8.1.1"
+    "@tailwindcss/vite": "^4.1.13",
+    "@types/react": "^19.1.13",
+    "@types/react-dom": "^19.1.9",
+    "@wxt-dev/module-react": "^1.1.5",
+    "tailwindcss": "^4.1.13",
+    "typescript": "^5.9.2",
+    "wxt": "^0.20.11"
   }
 }
