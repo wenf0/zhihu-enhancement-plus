@@ -333,6 +333,12 @@ export function App() {
     void settings.updateTaste(next);
   };
 
+  useEffect(() => {
+    if (!notice) return;
+    const timer = window.setTimeout(() => setNotice(''), 3200);
+    return () => window.clearTimeout(timer);
+  }, [notice]);
+
   if (!settings.ready) {
     return <div className="p-10 text-sm text-zinc-500">正在读取 chrome.storage…</div>;
   }
@@ -360,7 +366,16 @@ export function App() {
         </nav>
       </aside>
       <main className="flex-1 p-8">
-        {notice && <div className="mb-4 rounded-xl bg-zinc-900 px-4 py-2 text-sm text-white">{notice}</div>}
+        {notice && (
+          <button
+            type="button"
+            className="mb-4 block w-full rounded-xl bg-zinc-900 px-4 py-2 text-left text-sm text-white"
+            onClick={() => setNotice('')}
+            title="点击关闭"
+          >
+            {notice}
+          </button>
+        )}
 
         {pane === 'appearance' && (
           <section>
