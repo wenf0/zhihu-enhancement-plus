@@ -160,12 +160,13 @@ export function addTypeTips() {
     }
     const margin = location.pathname === '/search' ? '2' : '4';
     const style = `font-weight: bold;font-size: 13px;padding: 1px 4px 0;border-radius: 2px;display: inline-block;vertical-align: top;margin: ${margin}px 4px 0 0;`;
+    // 挂在标题容器上，避免和「直达问题」同为 a 时互相抢 ::before / 视觉绑死
     injectStyle('zhihu-plus-type-tips', `/* 区分问题文章 */
-.AnswerItem .ContentItem-title a:not(.zhihu_e_toQuestion)::before {content:'问题';color: #f68b83;background-color: #f68b8333;${style}}
-.TopstoryQuestionAskItem .ContentItem-title a:not(.zhihu_e_toQuestion)::before {content:'问题';color: #ff5a4e;background-color: #ff5a4e33;${style}}
-.ZVideoItem .ContentItem-title a::before, .ZvideoItem .ContentItem-title a::before {content:'视频';color: #00BCD4;background-color: #00BCD433;${style}}
-.PinItem .ContentItem-title a::before {content:'想法';color: #4CAF50;background-color: #4CAF5033;${style}}
-.ArticleItem .ContentItem-title a::before {content:'文章';color: #2196F3;background-color: #2196F333;${style}}`);
+.AnswerItem .ContentItem-title::before {content:'问题';color: #f68b83;background-color: #f68b8333;${style}}
+.TopstoryQuestionAskItem .ContentItem-title::before {content:'问题';color: #ff5a4e;background-color: #ff5a4e33;${style}}
+.ZVideoItem .ContentItem-title::before, .ZvideoItem .ContentItem-title::before {content:'视频';color: #00BCD4;background-color: #00BCD433;${style}}
+.PinItem .ContentItem-title::before {content:'想法';color: #4CAF50;background-color: #4CAF5033;${style}}
+.ArticleItem .ContentItem-title::before {content:'文章';color: #2196F3;background-color: #2196F333;${style}}`);
 }
 
 let toQuestionBound = false;
@@ -177,13 +178,14 @@ export function addToQuestion() {
         return;
     }
     const css = location.pathname === '/search'
-        ? `a.zhihu_e_toQuestion {font-size: 13px !important;font-weight: normal !important;padding: 1px 6px 0 !important;border-radius: 2px !important;display: inline-block !important;vertical-align: top !important;height: 20.67px !important;line-height: 20.67px !important;margin-top: 2px !important;}`
-        : `a.zhihu_e_toQuestion {font-size: 13px !important;font-weight: normal !important;padding: 1px 6px 0 !important;border-radius: 2px !important;display: inline-block !important;vertical-align: top !important;margin-top: 4px !important;}`;
+        ? `a.zhihu_e_toQuestion {font-size: 13px !important;font-weight: normal !important;padding: 1px 6px 0 !important;border-radius: 2px !important;display: inline-block !important;vertical-align: top !important;height: 20.67px !important;line-height: 20.67px !important;margin-top: 2px !important;margin-left: 6px !important;}`
+        : `a.zhihu_e_toQuestion {font-size: 13px !important;font-weight: normal !important;padding: 1px 6px 0 !important;border-radius: 2px !important;display: inline-block !important;vertical-align: top !important;margin-top: 4px !important;margin-left: 6px !important;}`;
     injectStyle('zhihu-plus-to-question', css);
 
     const decorate = titleA => {
         if (!menuValue('menu_toQuestion')) return;
-        if (!titleA || titleA.parentElement.querySelector('a.zhihu_e_toQuestion')) return;
+        if (!titleA || titleA.classList.contains('zhihu_e_toQuestion')) return;
+        if (!titleA.parentElement || titleA.parentElement.querySelector('a.zhihu_e_toQuestion')) return;
         if (titleA.textContent.includes('?')) titleA.innerHTML = titleA.innerHTML.replace('?', '？');
         if (!/answer\/\d+/.test(titleA.href)) return;
         const meta = titleA.parentElement.querySelector('meta[itemprop="url"]');
@@ -191,7 +193,7 @@ export function addToQuestion() {
         titleA.insertAdjacentHTML('afterend', `<a class="zhihu_e_toQuestion VoteButton" href="${meta.content}" target="_blank">直达问题</a>`);
     };
 
-    const titleSel = 'h2.ContentItem-title a:not(.zhihu_e_tips)';
+    const titleSel = 'h2.ContentItem-title a:not(.zhihu_e_toQuestion)';
     if (location.pathname === '/search') onReadyNodes(titleSel, decorate);
     else qsa(titleSel).forEach(decorate);
 
