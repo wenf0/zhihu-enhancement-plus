@@ -1,5 +1,15 @@
-function compileNoiseIndex() {
-    if (noiseIndex) return noiseIndex;
+import { state } from './state';
+import { CUSTOM_LEVELS, NOISE_WEIGHTS, NOISE_HIDE, NOISE_DEMOTE } from './noise-const';
+import { getActiveLexicon } from './noise-lexicon';
+import { menuValue, activeKeywordEntries } from './config';
+import { getTastePrefs, tasteDelta, tasteEnabled, TASTE_LEARNED_MIN } from './noise-taste';
+import {
+    noiseHas, noiseTokenSet, jiebaTagTokens, canLearnJiebaToken, cutNoiseTokens, syncJiebaUserDict,
+    jiebaTokenCache, jiebaSetCache
+} from './noise-jieba';
+
+export function compileNoiseIndex() {
+    if (state.noiseIndex) return state.noiseIndex;
     const lex = getActiveLexicon();
     const enabled = {
         1: menuValue('menu_noiseL1') !== false,
@@ -55,7 +65,7 @@ function compileNoiseIndex() {
         lookupValue[item.k] = 1;
         if (item.k.length > maxTermLen) maxTermLen = item.k.length;
     }
-    noiseIndex = {
+    state.noiseIndex = {
         cats,
         custom,
         emotion,
@@ -69,10 +79,10 @@ function compileNoiseIndex() {
     jiebaTokenCache.clear();
     jiebaSetCache.clear();
     syncJiebaUserDict();
-    return noiseIndex;
+    return state.noiseIndex;
 }
 
-function scoreText(raw) {
+export function scoreText(raw) {
     if (!raw) {
         return {
             final: 0, K: 0, C: 0, E: 0, S: 0, B: 0, V: 0, kRaw: 0,
@@ -225,7 +235,7 @@ function scoreText(raw) {
     };
 }
 
-function noiseRuleFromHits(hits) {
+export function noiseRuleFromHits(hits) {
     let action = '';
     for (const item of hits || []) {
         if (item.level === 'hide') action = 'hide';
@@ -234,7 +244,7 @@ function noiseRuleFromHits(hits) {
     return { action, words: hits || [] };
 }
 
-function mergeNoiseRules(a, b) {
+export function mergeNoiseRules(a, b) {
     const words = [...((a && a.words) || []), ...((b && b.words) || [])];
     const action = (a && a.action) === 'hide' || (b && b.action) === 'hide'
         ? 'hide'
@@ -244,7 +254,7 @@ function mergeNoiseRules(a, b) {
     return { action, words };
 }
 
-function scoreFeedNoise(title, body) {
+export function scoreFeedNoise(title, body) {
     const titleScore = scoreText(title);
     const bodyScore = scoreText(String(body || '').slice(0, 280));
     const final = Math.max(titleScore.final, titleScore.final * 0.72 + bodyScore.final * 0.28);
@@ -252,7 +262,7 @@ function scoreFeedNoise(title, body) {
     return { final, titleScore, bodyScore, rule };
 }
 
-function noiseVerdict(score, rule) {
+export function noiseVerdict(score, rule) {
     if (rule && rule.action === 'hide') return { id: 'hide', name: '规则隐藏' };
     if (score >= NOISE_HIDE) return { id: 'hide', name: '会隐藏' };
     if (rule && rule.action === 'demote') return { id: 'demote', name: '规则降权' };
@@ -260,9 +270,80 @@ function noiseVerdict(score, rule) {
     return { id: 'keep', name: '会保留' };
 }
 
-function noiseTint(score) {
+export function noiseTint(score) {
     const s = Math.max(0, Math.min(100, Number(score) || 0));
     if (s <= NOISE_DEMOTE) return (s / NOISE_DEMOTE) * 0.38;
     if (s < NOISE_HIDE) return 0.38 + (s - NOISE_DEMOTE) / (NOISE_HIDE - NOISE_DEMOTE) * 0.32;
     return 0.7 + (s - NOISE_HIDE) / (100 - NOISE_HIDE) * 0.3;
+}
+
+export function collectTasteSignals(title, body) {
+    const idx = compileNoiseIndex();
+    const titleText = String(title || '').toLowerCase();
+    const bodyText = String(body || '').toLowerCase();
+    const mixed = (titleText + '\n' + bodyText).trim();
+    const tokenSet = noiseTokenSet(mixed);
+    const titleSet = noiseTokenSet(titleText);
+    const noiseWords = new Set();
+    const valueWords = new Set();
+    const cats = new Set();
+    const titleWords = new Set();
+    const learned = new Set();
+    if (tokenSet && idx.lookupNoise) {
+        for (const tok of tokenSet) {
+            if (tok.length < 2) continue;
+            const meta = idx.lookupNoise[tok];
+            if (meta) {
+                noiseWords.add(tok);
+                for (const id of meta.cats) if (id) cats.add(id);
+                if (titleSet && titleSet.has(tok)) titleWords.add(tok);
+            }
+            if (idx.lookupValue && idx.lookupValue[tok]) {
+                valueWords.add(tok);
+                if (titleSet && titleSet.has(tok)) titleWords.add(tok);
+            }
+        }
+    } else {
+        const { titleScore, bodyScore } = scoreFeedNoise(title, body);
+        const take = score => {
+            if (!score || !score.hits) return;
+            for (const item of score.hits.words || []) {
+                if (item.source === 'char' || !item.word) continue;
+                noiseWords.add(String(item.word).toLowerCase());
+            }
+            for (const item of score.hits.emotion || []) {
+                if (item.word) noiseWords.add(String(item.word).toLowerCase());
+            }
+            for (const word of score.hits.controversy || []) noiseWords.add(String(word).toLowerCase());
+            for (const word of score.hits.clickbait || []) noiseWords.add(String(word).toLowerCase());
+            for (const item of score.hits.value || []) {
+                if (item.word) valueWords.add(String(item.word).toLowerCase());
+            }
+            if (score.winningCatId) cats.add(score.winningCatId);
+        };
+        take(titleScore);
+        take(bodyScore);
+    }
+    const tagged = jiebaTagTokens(mixed);
+    const candidates = tagged.length
+        ? tagged.filter(item => canLearnJiebaToken(item.word, item.tag)).map(item => item.word)
+        : [...(cutNoiseTokens(mixed) || [])].filter(word => canLearnJiebaToken(word, ''));
+    for (const word of candidates) {
+        if (idx.lookupNoise && idx.lookupNoise[word]) continue;
+        if (idx.lookupValue && idx.lookupValue[word]) continue;
+        learned.add(word);
+        if (titleSet && titleSet.has(word)) titleWords.add(word);
+    }
+    const learnedList = [...learned].sort((a, b) => {
+        const ta = titleWords.has(a) ? 1 : 0;
+        const tb = titleWords.has(b) ? 1 : 0;
+        return tb - ta || b.length - a.length;
+    }).slice(0, 24);
+    return {
+        noiseWords: [...noiseWords],
+        valueWords: [...valueWords],
+        cats: [...cats],
+        learned: learnedList,
+        titleWords: [...titleWords]
+    };
 }

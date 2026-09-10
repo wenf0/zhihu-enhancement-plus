@@ -13,15 +13,19 @@
 
 ## 开发
 
-油猴只能装一个文件，所以仓库里同时保留拆开的源码和打包结果：
+源码是 TypeScript 模块，用 Vite 打成**单文件、不压缩**的油猴脚本。
 
-- 源码：`src/`（按功能拆文件）
+- 源码：`src/*.ts`
+- 样式：`src/styles/*.css`（设置面板 / 评分说明 / 信息流角标）
 - 结巴 WASM glue：`vendor/jieba-rs-wasm-glue.js`
 - 安装 / 更新用：根目录 `zhihu-enhancement-plus.user.js`
+- 依赖更新：GitHub Dependabot 会盯 `package.json`
 
 ```bash
-node scripts/pack.mjs          # 拼回 user.js
-node scripts/pack.mjs --check  # 检查打包结果是否过期
+npm install
+npm run preview:ui   # 本地预览设置/角标样式
+npm run dev          # 开发用 userscript（安装列表里带 dev: 前缀）
+npm run build        # 产出 dist/*.user.js 并复制到仓库根目录
 ```
 
-拼接顺序见 `scripts/sources.mjs`。不要在源码里用 `import` / `export`，打包只是按顺序拼接。
+改完样式刷新预览页即可。版本号只改 `src/version.ts`。

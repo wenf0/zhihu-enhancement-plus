@@ -1,4 +1,9 @@
-const NOISE_CATEGORIES = [
+import { GM_getValue, GM_setValue } from '$';
+import { LEXICON_KEY, writeSettingsBackup } from './config';
+import { state } from './state';
+import { noiseWords } from './noise-jieba';
+
+export const NOISE_CATEGORIES = [
     {
         id: 'celebrity', name: '娱乐八卦', level: 1, c: 90,
         words: Object.assign(noiseWords(10, ['塌房', '出轨', '劈腿', '大瓜', '实锤', '爆料', '黑料', '绯闻', '热搜', '饭圈', '追星', '控评', '脱粉', '站姐', '红毯', '生图']),
@@ -90,23 +95,23 @@ const NOISE_CATEGORIES = [
     }
 ];
 
-const NOISE_EMOTION = Object.assign(
+export const NOISE_EMOTION = Object.assign(
     noiseWords(8, ['炸锅', '破防', '气炸', '怒斥', '炮轰', '细思极恐', '全网炸锅', '网友炸锅']),
     noiseWords(6, ['震惊', '离谱', '炸裂', '怒了', '痛批', '质问', '笑死', '绷不住', '全网热议'])
 );
-const NOISE_CONTROVERSY = ['争议', '冲突', '对立', '矛盾', '互骂', '开战', '站队', '分成两派', '支持反对'];
-const NOISE_CLICKBAIT = ['震惊', '真相', '内幕', '竟然', '居然', '背后', '你绝对想不到', '千万不要', '不转不是', '看完沉默', '太可怕', '建议所有人'];
-const NOISE_VALUE = Object.assign(
+export const NOISE_CONTROVERSY = ['争议', '冲突', '对立', '矛盾', '互骂', '开战', '站队', '分成两派', '支持反对'];
+export const NOISE_CLICKBAIT = ['震惊', '真相', '内幕', '竟然', '居然', '背后', '你绝对想不到', '千万不要', '不转不是', '看完沉默', '太可怕', '建议所有人'];
+export const NOISE_VALUE = Object.assign(
     noiseWords(10, ['ai', '人工智能', '芯片', '半导体', 'dram', 'hbm', 'gpu', 'cpu', '量子计算', '开源', 'linux', '数据库', '云计算', '网络安全']),
     noiseWords(8, ['编程', '软件', '算法', '论文', '科研', '实验', '工程', '供应链', '产业链', '财报', '宏观经济', '货币政策', '美联储', '长鑫科技']),
     noiseWords(6, ['技术', '科学', '医学', '学术', '利率', '公司业绩'])
 );
 
-function cloneWords(map) {
+export function cloneWords(map) {
     return Object.assign(Object.create(null), map || {});
 }
 
-function defaultLexicon() {
+export function defaultLexicon() {
     const cats = Object.create(null);
     for (const cat of NOISE_CATEGORIES) {
         cats[cat.id] = {
@@ -128,7 +133,7 @@ function defaultLexicon() {
     };
 }
 
-function getActiveLexicon() {
+export function getActiveLexicon() {
     const base = defaultLexicon();
     const saved = GM_getValue(LEXICON_KEY);
     if (!saved || typeof saved !== 'object') return base;
@@ -153,16 +158,18 @@ function getActiveLexicon() {
     return base;
 }
 
-function saveLexicon(data) {
+export function saveLexicon(data) {
     GM_setValue(LEXICON_KEY, data);
-    noiseIndex = null;
+    state.noiseIndex = null;
     writeSettingsBackup();
 }
 
 writeSettingsBackup();
 
-function touchLexicon(data, token) {
+export function touchLexicon(data, token) {
     const set = new Set(data.touched || []);
     set.add(token);
     data.touched = [...set];
 }
+
+state.getActiveLexicon = getActiveLexicon;

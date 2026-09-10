@@ -1,33 +1,23 @@
-function injectNoiseStyles() {
-    injectStyle('zhihu-plus-noise', `
-        .zhihu-plus-noise-hide {display: none !important;}
-        .zhihu-plus-noise-demote {opacity: .42; transition: opacity .2s;}
-        .zhihu-plus-noise-demote:hover {opacity: .88;}
-        #zhihu-plus-noise-tray {position:fixed;right:20px;bottom:92px;z-index:2147483000;padding:8px 14px;border:0;border-radius:999px;background:#1d1d1f;color:#fff;font:12px/1.4 -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;cursor:pointer;box-shadow:0 10px 28px rgba(0,0,0,.22);}
-        #zhihu-plus-noise-tray-panel {position:fixed;right:20px;bottom:140px;z-index:2147483000;width:min(360px,92vw);max-height:min(420px,60vh);overflow:auto;padding:14px;border-radius:16px;background:#fff;box-shadow:0 18px 50px rgba(0,0,0,.22);font:13px/1.5 -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;color:#1d1d1f;}
-        #zhihu-plus-noise-tray-panel h4 {margin:0 0 10px;font-size:13px;}
-        #zhihu-plus-noise-tray-panel button {display:block;width:100%;margin:0 0 8px;padding:8px 10px;border:1px solid #eee;border-radius:10px;background:#fafafa;text-align:left;font:inherit;cursor:pointer;}
-        #zhihu-plus-noise-tray-panel button:hover {background:#fff;border-color:#d4d4d4;}
-        #zhihu-plus-noise-tray-panel b {float:right;font-variant-numeric:tabular-nums;}
-        .zhihu-plus-noise-tag {display:inline-flex !important;align-items:center;vertical-align:middle;position:static !important;top:auto !important;right:auto !important;z-index:6;margin:0 0 0 8px !important;padding:1px 7px !important;border-radius:999px;font:inherit;font-size:11px !important;font-weight:650;font-variant-numeric:tabular-nums;line-height:1.45;white-space:nowrap;pointer-events:auto;cursor:pointer;width:auto !important;min-width:0 !important;height:auto !important;float:none !important;appearance:none;-webkit-appearance:none;--t:0;background:hsla(calc(145 - 145 * var(--t)), calc(42% + 53% * var(--t)), calc(94% - 42% * var(--t)), calc(0.78 + 0.22 * var(--t)));color:hsl(calc(145 - 145 * var(--t)), calc(48% + 40% * var(--t)), calc(26% + 56% * var(--t)));border:1px solid hsla(calc(145 - 145 * var(--t)), 72%, 38%, calc(0.1 + 0.42 * var(--t)));box-shadow:0 0 calc(2px + 12px * var(--t)) hsla(calc(145 - 145 * var(--t)), 90%, 48%, calc(0.04 + 0.42 * var(--t)));text-shadow:0 1px 2px rgba(0,0,0,calc(0.08 + 0.28 * var(--t)));}
-        [data-theme="dark"] .zhihu-plus-noise-tag {background:hsla(calc(145 - 145 * var(--t)), calc(48% + 42% * var(--t)), calc(20% + 10% * var(--t)), calc(0.62 + 0.32 * var(--t)));color:hsl(calc(145 - 145 * var(--t)), 86%, calc(86% - 6% * var(--t)));}
-        .zhihu-plus-taste {display:inline-flex !important;align-items:center;gap:6px;margin:0 0 0 8px;vertical-align:middle;position:relative;z-index:7;}
-        .zhihu-plus-taste button {height:22px;padding:0 8px;border:1px solid rgba(0,0,0,.08);border-radius:999px;background:#f4f4f5;color:#666;font:11px/22px -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;cursor:pointer;}
-        .zhihu-plus-taste button:hover {border-color:#bbb;color:#1d1d1f;}
-        .zhihu-plus-taste button.is-on[data-taste="like"] {background:#e8f5e9;color:#2e7d32;border-color:#c8e6c9;}
-        .zhihu-plus-taste button.is-on[data-taste="dislike"] {background:#fce8e8;color:#a33;border-color:#f0cfcf;}
-        [data-theme="dark"] .zhihu-plus-taste button {background:#343a44;border-color:#3c434d;color:#c5ced8;}
-        [data-theme="dark"] .zhihu-plus-taste button.is-on[data-taste="like"] {background:#2f3a34;color:#8fd19a;border-color:#3d5244;}
-        [data-theme="dark"] .zhihu-plus-taste button.is-on[data-taste="dislike"] {background:#3a3232;color:#f0b6b6;border-color:#534040;}
-    `);
+import { state } from './state';
+import { NOISE_HIDE, NOISE_DEMOTE, NOISE_WEIGHTS, CUSTOM_LEVELS } from './noise-const';
+import { menuValue, readFilterMode } from './config';
+import { escapeHtml, injectStyle, observeTree, forAddedElements, hideClosest, notify } from './utils';
+import { ensureJieba, jiebaReady, jiebaUnavailable } from './noise-jieba';
+import { scoreFeedNoise, scoreText, collectTasteSignals, noiseVerdict, noiseTint } from './noise-score';
+import { getTastePrefs, saveTastePrefs, applyTasteSignals, tasteEnabled, TASTE_LEARNED_MIN } from './noise-taste';
+import noiseCss from './styles/noise.css?inline';
+import explainCss from './styles/explain.css?inline';
+
+export function injectNoiseStyles() {
+    injectStyle('zhihu-plus-noise', noiseCss);
     bindNoiseExplain();
 }
 
-function ensureCardPosition(card) {
+export function ensureCardPosition(card) {
     if (getComputedStyle(card).position === 'static') card.style.position = 'relative';
 }
 
-function noiseBadgeAnchor(card) {
+export function noiseBadgeAnchor(card) {
     const titleA = card.querySelector('h2.ContentItem-title a:not(.zhihu_e_toQuestion)');
     if (titleA) return titleA;
     const hotTitle = card.querySelector('h2.HotItem-title');
@@ -37,7 +27,7 @@ function noiseBadgeAnchor(card) {
     return card.querySelector('h2, .ContentItem-title');
 }
 
-function paintNoiseBadge(card, score, titleCss) {
+export function paintNoiseBadge(card, score, titleCss) {
     if (score <= 0) {
         const old = card.querySelector('.zhihu-plus-noise-tag');
         if (old) old.remove();
@@ -63,7 +53,7 @@ function paintNoiseBadge(card, score, titleCss) {
     if (titleCss) tag.dataset.titleCss = titleCss;
 }
 
-function noisePartRows(parts) {
+export function noisePartRows(parts) {
     const w = NOISE_WEIGHTS;
     return [
         ['K', '关键词', parts.K, w.k, 1],
@@ -79,7 +69,7 @@ function noisePartRows(parts) {
     });
 }
 
-function mergeNoiseHits(a, b) {
+export function mergeNoiseHits(a, b) {
     const out = [];
     const seen = new Set();
     for (const item of [...(a || []), ...(b || [])]) {
@@ -91,7 +81,7 @@ function mergeNoiseHits(a, b) {
     return out;
 }
 
-function noiseHitChips(list, fmt) {
+export function noiseHitChips(list, fmt) {
     if (!list || !list.length) return '<span class="zhihuE_NxEmpty">无</span>';
     const max = 36;
     const shown = list.slice(0, max);
@@ -99,7 +89,7 @@ function noiseHitChips(list, fmt) {
     return shown.map(fmt).join('') + (extra > 0 ? `<span class="zhihuE_NxMore">+${extra}</span>` : '');
 }
 
-function noiseExplainHtml(title, body, result, href) {
+export function noiseExplainHtml(title, body, result, href) {
     const { final, titleScore, bodyScore, rule } = result;
     const verdict = noiseVerdict(final, rule);
     const mixed = titleScore.final * 0.72 + bodyScore.final * 0.28;
@@ -188,7 +178,7 @@ function noiseExplainHtml(title, body, result, href) {
     ${notes.length ? `<p class="zhihuE_NxNote">${notes.map(escapeHtml).join(' · ')}</p>` : ''}`;
 }
 
-function showNoiseExplain(card, titleCss) {
+export function showNoiseExplain(card, titleCss) {
     const existing = document.querySelector('.zhihuE_NxHost');
     if (existing) existing.remove();
     const { title, body } = cardNoiseText(card, titleCss);
@@ -197,61 +187,7 @@ function showNoiseExplain(card, titleCss) {
     const host = document.createElement('div');
     host.className = 'zhihuE_NxHost';
     const shadow = host.attachShadow({ mode: 'open' });
-    shadow.innerHTML = `<style>
-:host {all:initial;display:block;position:fixed;inset:0;z-index:2147483646;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Noto Sans SC","Microsoft YaHei",sans-serif;color:#1d1d1f;line-height:1.5;}
-*,*::before,*::after {box-sizing:border-box;}
-button {font:inherit;color:inherit;}
-.zhihuE_NxMask {position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(18,18,18,.42);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);}
-.zhihuE_NxCard {width:min(1120px,96vw);max-height:min(960px,94vh);overflow:auto;padding:36px 40px 32px;border-radius:32px;background:#fff;box-shadow:0 32px 90px rgba(0,0,0,.28);}
-.zhihuE_NxHead {display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:22px;}
-.zhihuE_NxKicker {margin:0 0 4px;font-size:11px;letter-spacing:.18em;color:#aaa;text-transform:uppercase;}
-.zhihuE_NxHead h3 {margin:0;font-size:26px;font-weight:650;}
-.zhihuE_NxClose {flex:none;width:36px;height:36px;border:0;border-radius:50%;background:#f4f4f5;color:#666;cursor:pointer;font-size:18px;line-height:1;}
-.zhihuE_NxClose:hover {background:#1d1d1f;color:#fff;}
-.zhihuE_NxHero {display:flex;align-items:center;gap:22px;padding:22px 24px;border-radius:22px;margin-bottom:22px;border:1px solid #eee;}
-.zhihuE_NxHero.is-keep {background:#f6faf6;border-color:#dbe8db;}
-.zhihuE_NxHero.is-demote {background:#faf7f1;border-color:#eadfc8;}
-.zhihuE_NxHero.is-hide {background:#faf5f5;border-color:#ead4d4;}
-.zhihuE_NxScore {font-size:64px;font-weight:650;letter-spacing:-.04em;line-height:1;font-variant-numeric:tabular-nums;}
-.zhihuE_NxVerdict {font-size:18px;font-weight:650;}
-.zhihuE_NxMix {margin:6px 0 0;font-size:13px;line-height:1.55;color:#8a8a8a;}
-.zhihuE_NxBody {display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.95fr);gap:8px 40px;align-items:start;}
-.zhihuE_NxFormula {margin:0 0 16px;font-size:14px;color:#666;font-variant-numeric:tabular-nums;}
-.zhihuE_NxRows {display:flex;flex-direction:column;gap:12px;}
-.zhihuE_NxRow {display:grid;grid-template-columns:28px 1fr auto;gap:12px;align-items:center;}
-.zhihuE_NxKey {font-size:14px;font-weight:700;}
-.zhihuE_NxName {font-size:12px;color:#8a8a8a;margin-bottom:5px;}
-.zhihuE_NxTrack {height:7px;border-radius:999px;background:#f0f0f0;overflow:hidden;}
-.zhihuE_NxTrack i {display:block;height:100%;border-radius:inherit;background:#1d1d1f;}
-.zhihuE_NxMath {font-size:13px;color:#8a8a8a;font-variant-numeric:tabular-nums;white-space:nowrap;}
-.zhihuE_NxMath b {color:#1d1d1f;font-weight:650;margin-left:6px;}
-.zhihuE_NxHits {display:grid;grid-template-columns:1fr 1fr;gap:14px 16px;margin:0;}
-.zhihuE_NxBlock span {display:block;font-size:11px;letter-spacing:.12em;color:#aaa;margin-bottom:6px;text-transform:uppercase;}
-.zhihuE_NxBlock div {display:flex;flex-wrap:wrap;gap:6px;}
-.zhihuE_NxChip {display:inline-flex;align-items:center;gap:6px;padding:4px 8px 4px 10px;border-radius:999px;background:#f6f6f6;font-size:12px;}
-.zhihuE_NxChip b {font-weight:650;color:#888;}
-.zhihuE_NxChip.is-win {background:#1d1d1f;color:#fff;}
-.zhihuE_NxChip.is-win b {color:rgba(255,255,255,.72);}
-.zhihuE_NxEmpty,.zhihuE_NxMore {font-size:12px;color:#bbb;}
-.zhihuE_NxQuote {margin:20px 0 0;font-size:14px;line-height:1.65;color:#666;}
-.zhihuE_NxLink {margin:6px 0 0;font-size:12px;line-height:1.5;color:#8a8a8a;word-break:break-all;user-select:all;}
-.zhihuE_NxNote {margin:10px 0 0;font-size:12px;line-height:1.65;color:#8a8a8a;}
-@media (max-width: 820px) {
-  .zhihuE_NxCard {width:min(720px,96vw);padding:24px 22px 20px;border-radius:24px;}
-  .zhihuE_NxBody,.zhihuE_NxHits {grid-template-columns:1fr;}
-}
-[data-theme="dark"] .zhihuE_NxCard {background:#2b2f36;color:#e8edf2;}
-[data-theme="dark"] .zhihuE_NxClose,[data-theme="dark"] .zhihuE_NxChip,[data-theme="dark"] .zhihuE_NxTrack {background:#343a44;color:#c5ced8;}
-[data-theme="dark"] .zhihuE_NxChip.is-win {background:#e8edf2;color:#1d1d1f;}
-[data-theme="dark"] .zhihuE_NxChip.is-win b {color:rgba(29,29,31,.55);}
-[data-theme="dark"] .zhihuE_NxClose:hover {background:#e8edf2;color:#1d1d1f;}
-[data-theme="dark"] .zhihuE_NxHero {border-color:#3c434d;}
-[data-theme="dark"] .zhihuE_NxHero.is-keep {background:#2f3a34;border-color:#3d5244;}
-[data-theme="dark"] .zhihuE_NxHero.is-demote {background:#3a372f;border-color:#534832;}
-[data-theme="dark"] .zhihuE_NxHero.is-hide {background:#3a3232;border-color:#534040;}
-[data-theme="dark"] .zhihuE_NxKicker,[data-theme="dark"] .zhihuE_NxMix,[data-theme="dark"] .zhihuE_NxName,[data-theme="dark"] .zhihuE_NxMath,[data-theme="dark"] .zhihuE_NxNote,[data-theme="dark"] .zhihuE_NxLink,[data-theme="dark"] .zhihuE_NxBlock span {color:#9aa4b2;}
-[data-theme="dark"] .zhihuE_NxTrack i,[data-theme="dark"] .zhihuE_NxMath b {background:#e8edf2;color:#e8edf2;}
-</style>
+    shadow.innerHTML = `<style>${explainCss}</style>
 <div class="zhihuE_NxMask"><div class="zhihuE_NxCard"></div></div>`;
     const mask = shadow.querySelector('.zhihuE_NxMask');
     const pane = shadow.querySelector('.zhihuE_NxCard');
@@ -273,8 +209,8 @@ button {font:inherit;color:inherit;}
     document.body.appendChild(host);
 }
 
-let noiseExplainBound = false;
-function bindNoiseExplain() {
+export let noiseExplainBound = false;
+export function bindNoiseExplain() {
     if (noiseExplainBound) return;
     noiseExplainBound = true;
     document.addEventListener('click', event => {
@@ -287,7 +223,7 @@ function bindNoiseExplain() {
     }, true);
 }
 
-function sanitizeZhihuUrl(raw) {
+export function sanitizeZhihuUrl(raw) {
     try {
         const u = new URL(String(raw || ''), location.href);
         if (u.protocol !== 'http:' && u.protocol !== 'https:') return '';
@@ -299,7 +235,7 @@ function sanitizeZhihuUrl(raw) {
     }
 }
 
-function cardNoiseLink(card) {
+export function cardNoiseLink(card) {
     if (!card) return '';
     const candidates = [];
     const titleA = card.querySelector('h2.ContentItem-title a:not(.zhihu_e_toQuestion)');
@@ -319,7 +255,7 @@ function cardNoiseLink(card) {
     return '';
 }
 
-function cardNoiseText(card, titleCss) {
+export function cardNoiseText(card, titleCss) {
     let title = '';
     if (titleCss) {
         const el = card.querySelector(titleCss);
@@ -334,14 +270,14 @@ function cardNoiseText(card, titleCss) {
     return { title: title.trim(), body };
 }
 
-function tasteCardKey(card, titleCss) {
+export function tasteCardKey(card, titleCss) {
     const href = cardNoiseLink(card);
     if (href) return href;
     const { title } = cardNoiseText(card, titleCss);
     return title ? 't:' + title.slice(0, 96) : '';
 }
 
-function paintTasteBar(card, titleCss) {
+export function paintTasteBar(card, titleCss) {
     if (!tasteEnabled()) {
         const old = card.querySelector('.zhihu-plus-taste');
         if (old) old.remove();
@@ -369,8 +305,8 @@ function paintTasteBar(card, titleCss) {
     bar.querySelector('[data-taste="dislike"]').classList.toggle('is-on', action === 'dislike');
 }
 
-let tasteClickBound = false;
-function bindTasteClicks() {
+export let tasteClickBound = false;
+export function bindTasteClicks() {
     if (tasteClickBound) return;
     tasteClickBound = true;
     document.addEventListener('click', event => {
@@ -385,9 +321,9 @@ function bindTasteClicks() {
     }, true);
 }
 
-const tastePending = new Set();
+export const tastePending = new Set();
 
-function applyCardTaste(card, titleCss, nextAction) {
+export function applyCardTaste(card, titleCss, nextAction) {
     if (!tasteEnabled() || (nextAction !== 'like' && nextAction !== 'dislike')) return;
     const key = tasteCardKey(card, titleCss);
     if (!key || tastePending.has(key)) return;
@@ -403,7 +339,7 @@ function applyCardTaste(card, titleCss, nextAction) {
     ensureJieba().then(run);
 }
 
-function applyCardTasteNow(card, titleCss, nextAction) {
+export function applyCardTasteNow(card, titleCss, nextAction) {
     const { title, body } = cardNoiseText(card, titleCss);
     const key = tasteCardKey(card, titleCss);
     if (!key) return;
@@ -436,7 +372,7 @@ function applyCardTasteNow(card, titleCss, nextAction) {
     refreshNoiseFeed();
 }
 
-function resetNoiseCardVisual(card) {
+export function resetNoiseCardVisual(card) {
     card.classList.remove('zhihu-plus-noise-hide', 'zhihu-plus-noise-demote');
     card.hidden = false;
     card.style.display = '';
@@ -444,17 +380,17 @@ function resetNoiseCardVisual(card) {
     delete card.dataset.zhihuPlusTasteGen;
 }
 
-function refreshNoiseFeed() {
-    noiseTasteGen += 1;
+export function refreshNoiseFeed() {
+    state.noiseTasteGen += 1;
     hiddenNoiseItems.length = 0;
     resetNoiseTray();
     document.querySelectorAll('[data-zhihu-plus-noise]').forEach(resetNoiseCardVisual);
-    if (typeof noiseRescan === 'function') noiseRescan();
+    if (typeof state.noiseRescan === 'function') state.noiseRescan();
 }
 
-const hiddenNoiseItems = [];
+export const hiddenNoiseItems = [];
 
-function resetNoiseTray() {
+export function resetNoiseTray() {
     hiddenNoiseItems.length = 0;
     const tray = document.getElementById('zhihu-plus-noise-tray');
     const panel = document.getElementById('zhihu-plus-noise-tray-panel');
@@ -462,7 +398,7 @@ function resetNoiseTray() {
     if (panel) panel.remove();
 }
 
-function renderNoiseTray() {
+export function renderNoiseTray() {
     let tray = document.getElementById('zhihu-plus-noise-tray');
     const panel = document.getElementById('zhihu-plus-noise-tray-panel');
     if (!hiddenNoiseItems.length) {
@@ -481,7 +417,7 @@ function renderNoiseTray() {
     if (panel) fillNoiseTrayPanel(panel);
 }
 
-function fillNoiseTrayPanel(panel) {
+export function fillNoiseTrayPanel(panel) {
     panel.innerHTML = `<h4>已过滤 ${hiddenNoiseItems.length} 条</h4>` + hiddenNoiseItems.map((item, index) => {
         const why = item.why || (item.rule && item.rule.action === 'hide'
             ? '规则隐藏'
@@ -499,7 +435,7 @@ function fillNoiseTrayPanel(panel) {
     });
 }
 
-function toggleNoiseTrayPanel() {
+export function toggleNoiseTrayPanel() {
     const existing = document.getElementById('zhihu-plus-noise-tray-panel');
     if (existing) {
         existing.remove();
@@ -511,9 +447,9 @@ function toggleNoiseTrayPanel() {
     document.body.appendChild(panel);
 }
 
-function applyNoiseToCard(card, titleCss) {
+export function applyNoiseToCard(card, titleCss) {
     if (!card) return;
-    const gen = String(noiseTasteGen);
+    const gen = String(state.noiseTasteGen);
     if (card.dataset.zhihuPlusNoise && card.dataset.zhihuPlusTasteGen === gen) return;
     if (card.dataset.zhihuPlusNoise) resetNoiseCardVisual(card);
     const { title, body } = cardNoiseText(card, titleCss);
@@ -550,13 +486,13 @@ function applyNoiseToCard(card, titleCss) {
     paintTasteBar(card, titleCss);
 }
 
-function blockKeywords(type) {
+export function blockKeywords(type) {
     if (!menuValue('menu_noiseScore')) return;
     if (!jiebaReady && !jiebaUnavailable) {
         ensureJieba().then(() => blockKeywords(type));
         return;
     }
-    noiseIndex = null;
+    state.noiseIndex = null;
     injectNoiseStyles();
     bindTasteClicks();
 
@@ -582,7 +518,7 @@ function blockKeywords(type) {
     }
 }
 
-function blockKeywordsFeed(selector, className) {
+export function blockKeywordsFeed(selector, className) {
     const scan = () => {
         if (location.pathname === '/hot') {
             document.querySelectorAll('.HotItem').forEach(item => applyNoiseToCard(item, 'h2.HotItem-title'));
@@ -592,7 +528,7 @@ function blockKeywordsFeed(selector, className) {
             });
         }
     };
-    noiseRescan = scan;
+    state.noiseRescan = scan;
     scan();
     window.addEventListener('urlchange', () => {
         resetNoiseTray();
@@ -607,14 +543,14 @@ function blockKeywordsFeed(selector, className) {
     });
 }
 
-function blockKeywordsSearch() {
+export function blockKeywordsSearch() {
     const scan = () => {
         if (!location.search.includes('type=content')) return;
         document.querySelectorAll('.HotLanding-contentItem, .Card.SearchResult-Card[data-za-detail-view-path-module="AnswerItem"], .Card.SearchResult-Card[data-za-detail-view-path-module="PostItem"]').forEach(item => {
             applyNoiseToCard(item, 'a[data-za-detail-view-id]');
         });
     };
-    noiseRescan = scan;
+    state.noiseRescan = scan;
     setTimeout(scan, 2000);
     window.addEventListener('urlchange', () => {
         resetNoiseTray();
@@ -631,7 +567,7 @@ function blockKeywordsSearch() {
     });
 }
 
-function blockKeywordsComment() {
+export function blockKeywordsComment() {
     if (readFilterMode() === 'off') return;
     const filterComment = comment => {
         const content = comment.querySelector('.RichText');

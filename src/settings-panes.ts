@@ -1,17 +1,24 @@
+import { state } from './state';
+import {
+    MENU_ITEMS, menuValue, menuSet, readFilterMode, readKeywordEntries, writeKeywordEntries,
+    readCustomDefaultLevel, writeCustomDefaultLevel, customLevelFor, isPackedListItem,
+    readListOff, writeListOff, CUSTOM_LEVEL_IDS, CUSTOM_LEVEL_LABELS,
+    snapshotSettings, scriptVersion, formatBytes, utf8Bytes, parseSettingsJson,
+    applyImportedSettings, downloadJsonFile, settingsExportFilename,
+    defaultKeywordLevel, readCustomLevelMap, writeCustomLevelMap, dropCustomLevel
+} from './config';
+import { parseWords, uniqueWords, parseWeightedWords, escapeHtml, notify } from './utils';
+import { CUSTOM_LEVELS, NOISE_WEIGHTS, NOISE_HIDE, NOISE_DEMOTE } from './noise-const';
+import { defaultLexicon, getActiveLexicon, saveLexicon, touchLexicon, NOISE_CATEGORIES } from './noise-lexicon';
+import { ensureJieba, jiebaReady, jiebaUnavailable } from './noise-jieba';
+import { emptyTastePrefs, getTastePrefs, saveTastePrefs } from './noise-taste';
+import { scoreFeedNoise, noiseVerdict } from './noise-score';
+
 /* -------------------------------------------------------------------------- */
 /* 菜单                                                                       */
 /* -------------------------------------------------------------------------- */
 
-function registerMenuCommand() {
-    for (const id of menuCommandIds) GM_unregisterMenuCommand(id);
-    menuCommandIds.length = 0;
-    for (const item of MENU_ITEMS) {
-        cache[item.key] = GM_getValue(item.key);
-    }
-    menuCommandIds.push(GM_registerMenuCommand('setting', openSettingsPanel));
-}
-
-function settingsSwitchRow(key, extra = '') {
+export function settingsSwitchRow(key, extra = '') {
     const item = MENU_ITEMS.find(x => x.key === key);
     const on = !!menuValue(key);
     const sub = typeof extra === 'string' && extra.includes('is-sub');
@@ -21,7 +28,7 @@ function settingsSwitchRow(key, extra = '') {
     </div>`;
 }
 
-function settingsFilterRow() {
+export function settingsFilterRow() {
     const mode = readFilterMode();
     const opts = [['off', '关闭'], ['demote', '仅降权'], ['hide', '隐藏']];
     return `<div data-zplus-row${mode !== 'off' ? ' data-on="1"' : ''} data-sub="1">
@@ -32,7 +39,7 @@ function settingsFilterRow() {
     </div>`;
 }
 
-function settingsToggleCard(item) {
+export function settingsToggleCard(item) {
     const on = !!menuValue(item.key);
     const chips = (item.tags || []).map(t => `<span class="zhihuE_LvChip">${escapeHtml(t)}</span>`).join('');
     return `<div data-zplus-card${on ? ' data-on="1"' : ''} data-key="${item.key}">
@@ -49,7 +56,7 @@ function settingsToggleCard(item) {
     </div>`;
 }
 
-function settingsNoiseCards() {
+export function settingsNoiseCards() {
     return [
         { key: 'menu_noiseL1', tag: 'L1', name: '强过滤', hint: '默认开启', desc: '明星八卦、饭圈、男女对立、婚恋生育、吃瓜爆料。命中后更容易直接隐藏。', tags: ['塌房', '热搜', '饭圈', '男女对立', '催婚'] },
         { key: 'menu_noiseL2', tag: 'L2', name: '中强过滤', hint: '默认开启', desc: '二次元抽卡、消费种草、汽车热点、体育赛事、网红生活。多数会降权，而不是一刀切。', tags: ['抽卡', '种草', '理想汽车', '世界杯', '探店'] },
@@ -57,7 +64,7 @@ function settingsNoiseCards() {
     ];
 }
 
-function settingsTypeCards() {
+export function settingsTypeCards() {
     return [
         { key: 'menu_blockTypeVideo', tag: '视频', name: '视频', desc: '首页、搜索页和问题页里的视频卡片、视频回答。', tags: ['首页', '搜索', '问题页'] },
         { key: 'menu_blockTypeArticle', tag: '文章', name: '文章', desc: '信息流里的专栏文章，不影响问题回答。', tags: ['首页', '搜索'] },
@@ -69,7 +76,7 @@ function settingsTypeCards() {
     ];
 }
 
-function settingsNoiseFormulaHtml() {
+export function settingsNoiseFormulaHtml() {
     const w = NOISE_WEIGHTS;
     const n = x => x.toFixed(2);
     return `<div class="zhihuE_Fx">
@@ -87,7 +94,7 @@ function settingsNoiseFormulaHtml() {
     </div>`;
 }
 
-function mountNoiseTestPane(container) {
+export function mountNoiseTestPane(container) {
     container.insertAdjacentHTML('beforeend', `<div class="zhihuE_Ts">
         <p class="zhihuE_StPaneTips">粘贴标题，摘要可选。和信息流同一套公式、当前档位与词库。只填一栏时按标题计分。</p>
         <input class="zhihuE_TsTitle" type="text" placeholder="粘贴或输入标题" />
@@ -113,7 +120,7 @@ function mountNoiseTestPane(container) {
     const board = root.querySelector('.zhihuE_TsBoard');
 
     const run = () => {
-        noiseIndex = null;
+        state.noiseIndex = null;
         let title = titleEl.value.trim();
         let body = bodyEl.value.trim();
         if (!title && body) {
@@ -177,7 +184,7 @@ function mountNoiseTestPane(container) {
     bodyEl.addEventListener('input', run);
 }
 
-function mountKeywordEditor(container) {
+export function mountKeywordEditor(container) {
     let list = readKeywordEntries();
     let filter = '';
     let defaultLevel = readCustomDefaultLevel();
@@ -371,7 +378,7 @@ function mountKeywordEditor(container) {
     render();
 }
 
-function mountTastePane(container) {
+export function mountTastePane(container) {
     const prefs = getTastePrefs();
     const lex = getActiveLexicon();
     const rows = [];
@@ -412,7 +419,7 @@ function mountTastePane(container) {
     }
 }
 
-function mountListEditor(container, { storageKey, placeholder, tips }) {
+export function mountListEditor(container, { storageKey, placeholder, tips }) {
     let list = [...(menuValue(storageKey) || [])];
     let off = readListOff(storageKey);
     let filter = '';
@@ -465,7 +472,7 @@ function mountListEditor(container, { storageKey, placeholder, tips }) {
         menuSet(storageKey, list);
         writeListOff(storageKey, off);
         if (withLevels) writeCustomLevelMap(levelMap);
-        noiseIndex = null;
+        state.noiseIndex = null;
         renderCloud();
         renderLevelBar();
     };
@@ -662,7 +669,7 @@ function mountListEditor(container, { storageKey, placeholder, tips }) {
     persist();
 }
 
-function mountLexiconEditor(container) {
+export function mountLexiconEditor(container) {
     let lex = getActiveLexicon();
     const buckets = NOISE_CATEGORIES.map(cat => ({
         id: cat.id,
@@ -855,7 +862,7 @@ function mountLexiconEditor(container) {
     render();
 }
 
-function mountIoPane(container) {
+export function mountIoPane(container) {
     const snap = snapshotSettings();
     const compactText = JSON.stringify(snap);
     const prettyText = JSON.stringify(snap, null, 2);

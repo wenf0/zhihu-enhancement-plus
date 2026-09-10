@@ -1,3 +1,7 @@
+import { GM_getValue, GM_setValue, GM_info } from '$';
+import { SCRIPT_VERSION } from './version';
+import { state } from './state';
+
 'use strict';
 
 /**
@@ -11,13 +15,13 @@
 /* 配置                                                                       */
 /* -------------------------------------------------------------------------- */
 
-const DEFAULT_BLOCK_USERS = [
+export const DEFAULT_BLOCK_USERS = [
     '故事档案局', '盐选推荐', '盐选科普', '盐选成长计划', '知乎盐选会员', '知乎盐选创作者',
     '盐选心理', '盐选健康必修课', '盐选奇妙物语', '盐选生活馆', '盐选职场', '盐选文学甄选',
     '盐选作者小管家', '盐选博物馆', '盐选点金', '盐选测评室', '盐选科技前沿', '盐选会员精品'
 ];
 
-const DEFAULT_BLOCK_KEYWORDS = [
+export const DEFAULT_BLOCK_KEYWORDS = [
     '长鑫科技', '地铁安检', '张凌赫', '上海地铁', '俄罗斯', '小红书',
     '《崩坏星穹铁道》', '《鸣潮》', '曲婉婷', '邹市明', '理想汽车', '闲鱼',
     '拉丁舞', '问界', '国内暗网', '理想L9livis', '王师傅和小毛毛', '流萤',
@@ -34,7 +38,7 @@ const DEFAULT_BLOCK_KEYWORDS = [
     '今日俄罗斯'
 ];
 
-const MENU_ITEMS = [
+export const MENU_ITEMS = [
     /* 外观 */
     { key: 'menu_lowProfile',          label: '低饱和模式',           tip: '把链接、按钮、关注等改成灰调，页面更素、少抢眼。', def: true },
     { key: 'menu_fullWidth',           label: '隐藏右侧栏',           tip: '去掉推荐关注、相关问题等侧栏，主栏居中加宽。', def: true },
@@ -97,28 +101,21 @@ const MENU_ITEMS = [
     { key: 'menu_blockTypeLiveHot', label: '热榜杂项（文章 / 直播 / 广告）', tip: '热榜文章、直播、广告等 [热榜]',       def: true,  kind: 'hidden' }
 ];
 
-const cache = Object.create(null);
-const menuCommandIds = [];
-let noiseIndex = null;
-let tasteCache = null;
-let noiseRescan = null;
-let noiseTasteGen = 1;
-
 /* GM_setValue 跟脚本安装 ID 绑定，卸载重装会丢。再备份到知乎域名 localStorage。 */
-const SETTINGS_BACKUP_KEY = 'zhihu-enhancement-plus:settings:v1';
-const SETTINGS_GM_FLAG = 'zhihu_plus_persist_v1';
-const SETTINGS_KIND = 'zhihu-enhancement-plus-settings';
-const LEXICON_KEY = 'noise_lexicon_v1';
-const TASTE_KEY = 'noise_taste_v1';
-const USERS_OFF_KEY = 'menu_customBlockUsersOff';
-const KEYWORDS_OFF_KEY = 'menu_customBlockKeywordsOff';
-const KEYWORDS_LEVEL_KEY = 'menu_customBlockKeywordsLevel';
-const KEYWORDS_LEVELS_KEY = 'menu_customBlockKeywordsLevels';
-const CUSTOM_LEVEL_IDS = ['hide', 'demote', 'weight'];
-const CUSTOM_LEVEL_LABELS = { hide: '隐藏', demote: '降权', weight: '加权' };
-const SETTINGS_EXTRA_KEYS = ['menu_kw_pack_v1', LEXICON_KEY, TASTE_KEY, USERS_OFF_KEY, KEYWORDS_OFF_KEY, KEYWORDS_LEVEL_KEY, KEYWORDS_LEVELS_KEY];
+export const SETTINGS_BACKUP_KEY = 'zhihu-enhancement-plus:settings:v1';
+export const SETTINGS_GM_FLAG = 'zhihu_plus_persist_v1';
+export const SETTINGS_KIND = 'zhihu-enhancement-plus-settings';
+export const LEXICON_KEY = 'noise_lexicon_v1';
+export const TASTE_KEY = 'noise_taste_v1';
+export const USERS_OFF_KEY = 'menu_customBlockUsersOff';
+export const KEYWORDS_OFF_KEY = 'menu_customBlockKeywordsOff';
+export const KEYWORDS_LEVEL_KEY = 'menu_customBlockKeywordsLevel';
+export const KEYWORDS_LEVELS_KEY = 'menu_customBlockKeywordsLevels';
+export const CUSTOM_LEVEL_IDS = ['hide', 'demote', 'weight'];
+export const CUSTOM_LEVEL_LABELS = { hide: '隐藏', demote: '降权', weight: '加权' };
+export const SETTINGS_EXTRA_KEYS = ['menu_kw_pack_v1', LEXICON_KEY, TASTE_KEY, USERS_OFF_KEY, KEYWORDS_OFF_KEY, KEYWORDS_LEVEL_KEY, KEYWORDS_LEVELS_KEY];
 
-function pageLocalStorage() {
+export function pageLocalStorage() {
     try {
         return window.localStorage;
     } catch (err) {
@@ -126,7 +123,7 @@ function pageLocalStorage() {
     }
 }
 
-function readSettingsBackup() {
+export function readSettingsBackup() {
     const ls = pageLocalStorage();
     if (!ls) return null;
     try {
@@ -137,26 +134,26 @@ function readSettingsBackup() {
     }
 }
 
-function settingsKnownKeys() {
+export function settingsKnownKeys() {
     const keys = new Set(SETTINGS_EXTRA_KEYS);
     for (const item of MENU_ITEMS) keys.add(item.key);
     return keys;
 }
 
-function plainJson(value) {
+export function plainJson(value) {
     return JSON.parse(JSON.stringify(value));
 }
 
-function snapshotLexicon() {
+export function snapshotLexicon() {
     try {
-        return plainJson(getActiveLexicon());
+        return plainJson(state.getActiveLexicon());
     } catch (err) {
         const saved = GM_getValue(LEXICON_KEY);
         return saved != null ? plainJson(saved) : null;
     }
 }
 
-function normalizeImportedLexicon(value) {
+export function normalizeImportedLexicon(value) {
     if (!value || typeof value !== 'object' || Array.isArray(value)) return value;
     const touched = new Set(value.touched || []);
     if (value.cats && typeof value.cats === 'object') {
@@ -169,7 +166,7 @@ function normalizeImportedLexicon(value) {
     return Object.assign({}, value, { touched: [...touched] });
 }
 
-function snapshotSettings() {
+export function snapshotSettings() {
     const values = {};
     for (const item of MENU_ITEMS) {
         if (item.kind === 'group' || item.kind === 'lexicon') continue;
@@ -186,11 +183,11 @@ function snapshotSettings() {
     return { v: 1, kind: SETTINGS_KIND, script, t: Date.now(), values };
 }
 
-function scriptVersion() {
-    return (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version) || '';
+export function scriptVersion() {
+    return (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version) || SCRIPT_VERSION;
 }
 
-function utf8Bytes(text) {
+export function utf8Bytes(text) {
     try {
         return new TextEncoder().encode(String(text || '')).length;
     } catch (err) {
@@ -198,7 +195,7 @@ function utf8Bytes(text) {
     }
 }
 
-function formatBytes(n) {
+export function formatBytes(n) {
     const size = Math.max(0, Number(n) || 0);
     if (size < 1024) return size + ' B';
     if (size < 1024 * 1024) {
@@ -208,19 +205,19 @@ function formatBytes(n) {
     return (size / (1024 * 1024)).toFixed(1) + ' MB';
 }
 
-function settingsJsonBytes(pretty) {
+export function settingsJsonBytes(pretty) {
     const json = pretty ? JSON.stringify(snapshotSettings(), null, 2) : JSON.stringify(snapshotSettings());
     return utf8Bytes(json);
 }
 
-function settingsMetaText() {
+export function settingsMetaText() {
     const ver = scriptVersion() || '—';
     const handler = (typeof GM_info !== 'undefined' && GM_info.scriptHandler) || '';
     const size = formatBytes(settingsJsonBytes(false));
     return handler ? `v${ver} · ${handler} · 配置 ${size}` : `v${ver} · 配置 ${size}`;
 }
 
-function writeSettingsBackup() {
+export function writeSettingsBackup() {
     const ls = pageLocalStorage();
     if (!ls) return;
     try {
@@ -228,7 +225,7 @@ function writeSettingsBackup() {
     } catch (err) { /* 隐私模式或配额 */ }
 }
 
-function isValidSettingValue(key, value) {
+export function isValidSettingValue(key, value) {
     if (key === 'menu_kw_pack_v1') return typeof value === 'boolean';
     if (key === LEXICON_KEY) return !!(value && typeof value === 'object' && !Array.isArray(value));
     if (key === TASTE_KEY) {
@@ -256,7 +253,7 @@ function isValidSettingValue(key, value) {
     return typeof value === 'boolean';
 }
 
-function parseSettingsJson(text) {
+export function parseSettingsJson(text) {
     const data = JSON.parse(text);
     if (!data || typeof data !== 'object' || Array.isArray(data)) throw new Error('format');
     if (data.kind && data.kind !== SETTINGS_KIND) throw new Error('kind');
@@ -270,31 +267,31 @@ function parseSettingsJson(text) {
     return values;
 }
 
-function applyImportedSettings(values) {
+export function applyImportedSettings(values) {
     const known = settingsKnownKeys();
     let n = 0;
     for (const [key, value] of Object.entries(values)) {
         if (!known.has(key) || !isValidSettingValue(key, value)) continue;
         const next = key === LEXICON_KEY ? normalizeImportedLexicon(value) : value;
-        cache[key] = next;
+        state.cache[key] = next;
         GM_setValue(key, next);
         n++;
     }
     if (n) {
-        noiseIndex = null;
-        tasteCache = null;
+        state.noiseIndex = null;
+        state.tasteCache = null;
         writeSettingsBackup();
     }
     return n;
 }
 
-function settingsExportFilename() {
+export function settingsExportFilename() {
     const d = new Date();
     const pad = n => String(n).padStart(2, '0');
     return `zhihu-enhancement-plus-${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}.json`;
 }
 
-function downloadJsonFile(filename, text) {
+export function downloadJsonFile(filename, text) {
     const blob = new Blob([text], { type: 'application/json;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -306,7 +303,7 @@ function downloadJsonFile(filename, text) {
     setTimeout(() => URL.revokeObjectURL(url), 2000);
 }
 
-function restoreSettingsIfNeeded() {
+export function restoreSettingsIfNeeded() {
     if (GM_getValue(SETTINGS_GM_FLAG)) return;
     const backup = readSettingsBackup();
     if (backup) {
@@ -332,27 +329,27 @@ for (const item of MENU_ITEMS) {
     } else if (GM_getValue(item.key) == null) {
         GM_setValue(item.key, item.def);
     }
-    cache[item.key] = GM_getValue(item.key);
+    state.cache[item.key] = GM_getValue(item.key);
 }
 writeSettingsBackup();
 
-function menuValue(key) {
-    return cache[key];
+export function menuValue(key) {
+    return state.cache[key];
 }
 
-function menuSet(key, value) {
-    cache[key] = value;
+export function menuSet(key, value) {
+    state.cache[key] = value;
     GM_setValue(key, value);
     writeSettingsBackup();
 }
 
-function listOffKey(storageKey) {
+export function listOffKey(storageKey) {
     if (storageKey === 'menu_customBlockUsers') return USERS_OFF_KEY;
     if (storageKey === 'menu_customBlockKeywords') return KEYWORDS_OFF_KEY;
     return '';
 }
 
-function isPackedListItem(storageKey, word) {
+export function isPackedListItem(storageKey, word) {
     if (storageKey === 'menu_customBlockUsers') return DEFAULT_BLOCK_USERS.includes(word);
     if (storageKey === 'menu_customBlockKeywords') {
         const k = String(word).toLowerCase();
@@ -361,34 +358,34 @@ function isPackedListItem(storageKey, word) {
     return false;
 }
 
-function readListOff(storageKey) {
+export function readListOff(storageKey) {
     const key = listOffKey(storageKey);
     const raw = key ? GM_getValue(key) : [];
     return new Set(Array.isArray(raw) ? raw : []);
 }
 
-function writeListOff(storageKey, off) {
+export function writeListOff(storageKey, off) {
     const key = listOffKey(storageKey);
     if (!key) return;
     GM_setValue(key, [...off]);
     writeSettingsBackup();
 }
 
-function normalizeCustomLevel(value) {
+export function normalizeCustomLevel(value) {
     return CUSTOM_LEVEL_IDS.includes(value) ? value : '';
 }
 
-function readCustomDefaultLevel() {
+export function readCustomDefaultLevel() {
     return normalizeCustomLevel(GM_getValue(KEYWORDS_LEVEL_KEY)) || 'hide';
 }
 
-function writeCustomDefaultLevel(level) {
+export function writeCustomDefaultLevel(level) {
     GM_setValue(KEYWORDS_LEVEL_KEY, normalizeCustomLevel(level) || 'hide');
     writeSettingsBackup();
-    noiseIndex = null;
+    state.noiseIndex = null;
 }
 
-function readCustomLevelMap() {
+export function readCustomLevelMap() {
     const raw = GM_getValue(KEYWORDS_LEVELS_KEY);
     if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
     const out = {};
@@ -399,13 +396,13 @@ function readCustomLevelMap() {
     return out;
 }
 
-function writeCustomLevelMap(map) {
+export function writeCustomLevelMap(map) {
     GM_setValue(KEYWORDS_LEVELS_KEY, map && typeof map === 'object' ? map : {});
     writeSettingsBackup();
-    noiseIndex = null;
+    state.noiseIndex = null;
 }
 
-function customLevelFor(word, fallback) {
+export function customLevelFor(word, fallback) {
     const map = readCustomLevelMap();
     if (map[word]) return map[word];
     const low = String(word || '').toLowerCase();
@@ -415,7 +412,7 @@ function customLevelFor(word, fallback) {
     return fallback || readCustomDefaultLevel();
 }
 
-function dropCustomLevel(map, word) {
+export function dropCustomLevel(map, word) {
     delete map[word];
     const low = String(word || '').toLowerCase();
     for (const key of Object.keys(map)) {
@@ -424,19 +421,19 @@ function dropCustomLevel(map, word) {
     return map;
 }
 
-function readFilterMode() {
+export function readFilterMode() {
     const value = menuValue('menu_blockKeywords');
     if (value === 'off' || value === 'demote' || value === 'hide') return value;
     if (value === false) return 'off';
     return 'hide';
 }
 
-function defaultKeywordLevel(word, fallback) {
+export function defaultKeywordLevel(word, fallback) {
     if (String(word || '').length < 2) return 'weight';
     return normalizeCustomLevel(fallback) || readCustomDefaultLevel();
 }
 
-function normalizeKeywordList(raw) {
+export function normalizeKeywordList(raw) {
     const fallback = readCustomDefaultLevel();
     const off = readListOff('menu_customBlockKeywords');
     const list = Array.isArray(raw) ? raw : [];
@@ -463,35 +460,35 @@ function normalizeKeywordList(raw) {
     return out;
 }
 
-function readKeywordEntries() {
+export function readKeywordEntries() {
     return normalizeKeywordList(menuValue('menu_customBlockKeywords'));
 }
 
-function writeKeywordEntries(list) {
+export function writeKeywordEntries(list) {
     menuSet('menu_customBlockKeywords', normalizeKeywordList(list));
-    noiseIndex = null;
+    state.noiseIndex = null;
 }
 
-function activeKeywordEntries() {
+export function activeKeywordEntries() {
     return readKeywordEntries().filter(item => item.on && item.word);
 }
 
-function hydrateNoiseSettings() {
+export function hydrateNoiseSettings() {
     const keywords = normalizeKeywordList(GM_getValue('menu_customBlockKeywords'));
-    cache.menu_customBlockKeywords = keywords;
+    state.cache.menu_customBlockKeywords = keywords;
     GM_setValue('menu_customBlockKeywords', keywords);
     const filter = GM_getValue('menu_blockKeywords');
     const mode = filter === 'off' || filter === 'demote' || filter === 'hide'
         ? filter
         : filter === false ? 'off' : 'hide';
-    cache.menu_blockKeywords = mode;
+    state.cache.menu_blockKeywords = mode;
     GM_setValue('menu_blockKeywords', mode);
     writeSettingsBackup();
 }
 
 hydrateNoiseSettings();
 
-function activeListValues(storageKey) {
+export function activeListValues(storageKey) {
     const off = readListOff(storageKey);
     return (menuValue(storageKey) || []).filter(word => word && !off.has(word));
 }

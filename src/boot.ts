@@ -1,10 +1,27 @@
+import { GM_info } from '$';
+import { menuValue } from './config';
+import { page, addUrlChangeEvent, injectStyle } from './utils';
+import { registerMenuCommand } from './settings-panel';
+import { ensureJieba } from './noise-jieba';
+import {
+    collapsedAnswer, collapsedNowAnswer, defaultCollapsedAnswer, closeFloatingComments, backToTop
+} from './collapse';
+import { blockUsers } from './block-users';
+import { blockKeywords } from './noise-ui';
+import { blockType, blockYanXuan, blockHotOther } from './block-types';
+import {
+    fullWidthLayout, lowProfileMode, blankTitleAndFavicon, removeLogin, cleanTitles,
+    bindEmptySearchPlaceholder, removeHighlightLink, enhanceMediaAndLinks, cleanSearch,
+    watchTopTime, addTypeTips, addToQuestion, questionRichTextMore, questionTime,
+    questionAuthor, questionInvitation, topTimePost
+} from './enhance';
+
 /* -------------------------------------------------------------------------- */
 /* 路由                                                                       */
 /* -------------------------------------------------------------------------- */
 
-registerMenuCommand();
-
-(function boot() {
+export function boot() {
+    registerMenuCommand();
     ensureJieba();
     if (window.onurlchange === undefined) addUrlChangeEvent();
 
@@ -45,9 +62,9 @@ registerMenuCommand();
     } else {
         start();
     }
-})();
+}
 
-function start() {
+export function start() {
     const p = page();
     if (menuValue('menu_lowProfile') || menuValue('menu_cleanSearch')) bindEmptySearchPlaceholder();
     removeHighlightLink();

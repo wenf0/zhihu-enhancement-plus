@@ -1,26 +1,30 @@
+import { GM_xmlhttpRequest } from '$';
+import { menuValue, menuSet, isPackedListItem, readListOff, writeListOff, activeListValues } from './config';
+import { observeTree, forAddedElements, hideClosest, notify, page } from './utils';
+
 /* -------------------------------------------------------------------------- */
 /* 屏蔽用户 / 关键词                                                          */
 /* -------------------------------------------------------------------------- */
 
-function authorFromZop(item) {
+export function authorFromZop(item) {
     const zop = item && item.dataset && item.dataset.zop;
     if (!zop) return '';
     const m = zop.match(/authorName":"([^"]+)"/);
     return m ? m[1] : '';
 }
 
-function userBlocked(name) {
+export function userBlocked(name) {
     return !!(name && activeListValues('menu_customBlockUsers').includes(name));
 }
 
-function hideBlockedCard(card, item) {
+export function hideBlockedCard(card, item) {
     const name = authorFromZop(item);
     if (!userBlocked(name)) return false;
     card.hidden = true;
     return true;
 }
 
-function blockUsers(type) {
+export function blockUsers(type) {
     if (!menuValue('menu_blockUsers')) return;
     const list = menuValue('menu_customBlockUsers');
     if (!list || !list.length) return;
@@ -46,7 +50,7 @@ function blockUsers(type) {
     blockUsersHoverButton();
 }
 
-function blockUsersFeed(selector, className) {
+export function blockUsersFeed(selector, className) {
     const scan = () => {
         document.querySelectorAll(selector).forEach(card => {
             hideBlockedCard(card, card.querySelector('.ContentItem.AnswerItem, .ContentItem.ArticleItem'));
@@ -63,7 +67,7 @@ function blockUsersFeed(selector, className) {
     });
 }
 
-function blockUsersQuestion() {
+export function blockUsersQuestion() {
     const hideItem = item => {
         const answer = item.querySelector('.ContentItem.AnswerItem');
         if (answer) hideBlockedCard(item, answer);
@@ -81,7 +85,7 @@ function blockUsersQuestion() {
     document.querySelectorAll('.List-item, .Card.AnswerCard').forEach(hideItem);
 }
 
-function blockUsersSearch() {
+export function blockUsersSearch() {
     const scan = () => {
         if (!location.search.includes('type=content')) return;
         document.querySelectorAll('.Card.SearchResult-Card[data-za-detail-view-path-module="AnswerItem"], .Card.SearchResult-Card[data-za-detail-view-path-module="PostItem"]').forEach(card => {
@@ -100,7 +104,7 @@ function blockUsersSearch() {
     });
 }
 
-function blockUsersComment() {
+export function blockUsersComment() {
     observeTree(mutations => {
         forAddedElements(mutations, target => {
             const item = target.querySelector('img.Avatar[width="24"]');
@@ -111,7 +115,7 @@ function blockUsersComment() {
     });
 }
 
-function blockUsersHoverButton() {
+export function blockUsersHoverButton() {
     observeTree(mutations => {
         forAddedElements(mutations, target => {
             const cn = typeof target.className === 'string' ? target.className : '';
@@ -133,11 +137,11 @@ function blockUsersHoverButton() {
     });
 }
 
-function blockUserButtonHtml(name, userid, style, text) {
+export function blockUserButtonHtml(name, userid, style, text) {
     return `<button type="button" data-name="${name}" data-userid="${userid}" class="Button FollowButton Button--primary Button--red" style="${style}"><span style="display: inline-flex; align-items: center;">​<svg class="Zi Zi--Plus FollowButton-icon" fill="currentColor" viewBox="0 0 24 24" width="1.2em" height="1.2em"><path d="M18.376 5.624c-3.498-3.499-9.254-3.499-12.752 0-3.499 3.498-3.499 9.254 0 12.752 3.498 3.499 9.254 3.499 12.752 0 3.499-3.498 3.499-9.14 0-12.752zm-1.693 1.693c2.37 2.37 2.596 6.094.678 8.69l-9.367-9.48c2.708-1.919 6.32-1.58 8.69.79zm-9.48 9.48c-2.37-2.37-2.595-6.095-.676-8.69l9.48 9.48c-2.822 1.918-6.433 1.58-8.803-.79z" fill-rule="evenodd"></path></svg></span>${text}</button>`;
 }
 
-function blockUsersButtonPeople() {
+export function blockUsersButtonPeople() {
     const item = document.querySelector('.MemberButtonGroup.ProfileButtonGroup.ProfileHeader-buttons');
     const nameEl = document.querySelector('.ProfileHeader-name');
     if (!item || !nameEl) return;
@@ -157,7 +161,7 @@ function blockUsersButtonPeople() {
     };
 }
 
-function blockUsersAdd(name, userid, reload) {
+export function blockUsersAdd(name, userid, reload) {
     if (!name || !userid) return;
     const users = menuValue('menu_customBlockUsers') || [];
     const off = readListOff('menu_customBlockUsers');
@@ -179,7 +183,7 @@ function blockUsersAdd(name, userid, reload) {
     else notify('该用户已被屏蔽~\n刷新网页后生效~');
 }
 
-function blockUsersDel(name, userid, reload) {
+export function blockUsersDel(name, userid, reload) {
     if (!name || !userid) return;
     const users = menuValue('menu_customBlockUsers') || [];
     const index = users.indexOf(name);

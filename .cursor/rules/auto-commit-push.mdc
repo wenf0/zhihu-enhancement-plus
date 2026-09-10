@@ -21,7 +21,7 @@ alwaysApply: true
 ## 怎么做
 
 1. 并行看 `git status`、`git diff`、`git log` 近期说明
-2. 脚本有行为变化时，先 bump `src/meta.js` 的 `@version`，再 `node scripts/pack.mjs`
+2. 脚本有行为变化时，先 bump `src/version.ts`，再 `npm run build`
 3. `git add` 相关文件；commit 用 HEREDOC，英文 1–2 句写清 **why**，风格对齐近期 log
 4. `git push -u origin HEAD`（已跟踪则普通 push）
 5. 用 `git status` 确认干净，并回报提交哈希

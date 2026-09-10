@@ -1,8 +1,11 @@
+import { menuValue } from './config';
+import { observeTree, forAddedElements, eachMatch, injectStyle, isElementInViewport, isElementInViewportPartial, getXpath, qsa, qs, cardWrap, page } from './utils';
+
 /* -------------------------------------------------------------------------- */
 /* 收起回答                                                                   */
 /* -------------------------------------------------------------------------- */
 
-function getCollapsedAnswerObserver() {
+export function getCollapsedAnswerObserver() {
     if (window._collapsedAnswerObserver) return window._collapsedAnswerObserver;
 
     const observer = new MutationObserver(mutations => {
@@ -50,13 +53,13 @@ function getCollapsedAnswerObserver() {
     return observer;
 }
 
-function defaultCollapsedAnswer() {
+export function defaultCollapsedAnswer() {
     if (!menuValue('menu_defaultCollapsedAnswer')) return;
     const observer = getCollapsedAnswerObserver();
     if (!location.href.includes('/answer/')) observer.start();
 }
 
-function setCollapsedCornerStyle(css) {
+export function setCollapsedCornerStyle(css) {
     let el = document.getElementById('zhihu-plus-collapsed-btn');
     if (!el) {
         el = document.createElement('style');
@@ -67,7 +70,7 @@ function setCollapsedCornerStyle(css) {
 }
 
 /* 看山就在角标组里。改 bottom 会把外壳撑高，回到顶部仍按原高度排，叠在看山上。 */
-function watchCollapsedCornerStyle() {
+export function watchCollapsedCornerStyle() {
     if (window._zhihuPlusCornerStyleWatch) return;
     window._zhihuPlusCornerStyleWatch = true;
     setCollapsedCornerStyle(`
@@ -97,7 +100,7 @@ function watchCollapsedCornerStyle() {
     `);
 }
 
-function collapsedAnswer() {
+export function collapsedAnswer() {
     if (!menuValue('menu_collapsedAnswer')) return;
     watchCollapsedCornerStyle();
     const corner = document.querySelector('.CornerAnimayedFlex:not(.CornerAnimayedFlex--kanshanEntry)');
@@ -145,7 +148,7 @@ function collapsedAnswer() {
     };
 }
 
-function collapsedNowAnswer(selectors) {
+export function collapsedNowAnswer(selectors) {
     backToTop(selectors);
     if (!menuValue('menu_collapsedNowAnswer')) return;
     const root = document.querySelector(selectors);
@@ -228,7 +231,7 @@ function collapsedNowAnswer(selectors) {
     };
 }
 
-function backToTop(selectors) {
+export function backToTop(selectors) {
     if (!menuValue('menu_backToTop')) return;
     const root = document.querySelector(selectors);
     if (!root) return;
@@ -239,7 +242,7 @@ function backToTop(selectors) {
     };
 }
 
-function closeFloatingComments() {
+export function closeFloatingComments() {
     observeTree(mutations => {
         forAddedElements(mutations, () => {
             const button = document.querySelector('button[aria-label="关闭"]');

@@ -8,6 +8,7 @@ Thumbs.db
 .env.*
 *.log
 node_modules/
+dist/
 todolist.md
 todolist
 TODO.md

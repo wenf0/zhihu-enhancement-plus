@@ -1,7 +1,7 @@
 /* jieba-wasm 2.4.0 web glue (MIT, fengkx/jieba-wasm), adapted to IIFE for userscripts.
  * Official ESM uses import.meta.url; we only instantiate from bytes.
  */
-var ZhihuPlusJiebaWasm = (function () {
+const ZhihuPlusJiebaWasm = (function () {
 let wasm;
 
 let cachedUint8ArrayMemory0 = null;
@@ -441,3 +441,5 @@ async function __wbg_init(module_or_path) {
 
     return { cut: cut, cut_for_search: cut_for_search, tag: tag, add_word: add_word, initSync: initSync, init: __wbg_init };
 })();
+
+export default ZhihuPlusJiebaWasm;

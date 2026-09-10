@@ -1,8 +1,11 @@
+import { menuValue } from './config';
+import { injectStyle, observeTree, forAddedElements, onReadyNodes, getUTC8, qs, qsa, eachMatch, on, getXpath, page } from './utils';
+
 /* -------------------------------------------------------------------------- */
 /* 界面增强                                                                   */
 /* -------------------------------------------------------------------------- */
 
-function fullWidthLayout() {
+export function fullWidthLayout() {
     if (!menuValue('menu_fullWidth')) return;
     injectStyle('zhihu-plus-full-width', `
         .RightSideBar,
@@ -55,7 +58,7 @@ function fullWidthLayout() {
     `);
 }
 
-function lowProfileMode() {
+export function lowProfileMode() {
     if (!menuValue('menu_lowProfile')) return;
     injectStyle('zhihu-plus-low-profile', `
         a { color: #888 !important; }
@@ -118,7 +121,7 @@ function lowProfileMode() {
     bindEmptySearchPlaceholder();
 }
 
-function bindEmptySearchPlaceholder() {
+export function bindEmptySearchPlaceholder() {
     const nodes = document.querySelectorAll('.SearchBar-input > input, input#Popover1-toggle');
     nodes.forEach(el => {
         if (el.dataset.zhihuPlusPlaceholderBound) return;
@@ -130,7 +133,7 @@ function bindEmptySearchPlaceholder() {
     });
 }
 
-function removeHighlightLink() {
+export function removeHighlightLink() {
     const replaceLink = el => {
         if (el.parentElement) el.parentElement.replaceWith(el.textContent);
     };
@@ -143,7 +146,7 @@ function removeHighlightLink() {
     document.querySelectorAll('span > a[data-za-not-track-link][href^="https://www.zhihu.com/search?q="]').forEach(replaceLink);
 }
 
-function addTypeTips() {
+export function addTypeTips() {
     if (!menuValue('menu_typeTips')) return;
     const margin = location.pathname === '/search' ? '2' : '4';
     const style = `font-weight: bold;font-size: 13px;padding: 1px 4px 0;border-radius: 2px;display: inline-block;vertical-align: top;margin: ${margin}px 4px 0 0;`;
@@ -155,7 +158,7 @@ function addTypeTips() {
 .ArticleItem .ContentItem-title a::before {content:'文章';color: #2196F3;background-color: #2196F333;${style}}`);
 }
 
-function addToQuestion() {
+export function addToQuestion() {
     if (!menuValue('menu_toQuestion')) return;
     const css = location.pathname === '/search'
         ? `a.zhihu_e_toQuestion {font-size: 13px !important;font-weight: normal !important;padding: 1px 6px 0 !important;border-radius: 2px !important;display: inline-block !important;vertical-align: top !important;height: 20.67px !important;line-height: 20.67px !important;margin-top: 2px !important;}`
@@ -181,13 +184,13 @@ function addToQuestion() {
     on(window, 'urlchange', () => onReadyNodes(titleSel, decorate));
 }
 
-function questionRichTextMore() {
+export function questionRichTextMore() {
     if (!menuValue('menu_questionRichTextMore')) return;
     const button = document.querySelector('button.QuestionRichText-more');
     if (button) button.click();
 }
 
-function removeLogin() {
+export function removeLogin() {
     const removeLoginModal = mutations => {
         forAddedElements(mutations, target => {
             if (target.querySelector('.signFlowModal')) {
@@ -212,7 +215,7 @@ function removeLogin() {
     if (loginBtn) loginBtn.outerHTML = '<a class="Button AppHeader-login Button--blue" href="https://www.zhihu.com/signin" target="_blank">登录/注册</a>';
 }
 
-function cleanTitles() {
+export function cleanTitles() {
     if (!menuValue('menu_cleanTitles')) return;
     if (menuValue('menu_blankTitleFavicon')) return;
     const elTitle = document.head.querySelector('title');
@@ -223,7 +226,7 @@ function cleanTitles() {
     }).observe(elTitle, { childList: true });
 }
 
-function blankTitleAndFavicon() {
+export function blankTitleAndFavicon() {
     if (!menuValue('menu_blankTitleFavicon')) return;
 
     const BLANK_ICON = "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg'/>";
@@ -286,13 +289,13 @@ function blankTitleAndFavicon() {
     waitHead.observe(document.documentElement, { childList: true });
 }
 
-function cleanSearch() {
+export function cleanSearch() {
     if (!menuValue('menu_cleanSearch')) return;
     bindEmptySearchPlaceholder();
     injectStyle('zhihu-plus-clean-search', '.AutoComplete-group > .SearchBar-label:not(.SearchBar-label--history), .AutoComplete-group > [id^="AutoComplete2-topSearch-"], .AutoComplete-group > [id^="AutoComplete3-topSearch-"] {display: none !important;}');
 }
 
-function questionAuthor() {
+export function questionAuthor() {
     if (document.querySelector('.BrandQuestionSymbol, .QuestionAuthor')) return;
     const boot = document.querySelector('#js-initialData');
     const topics = document.querySelector('.QuestionHeader-topics');
@@ -304,7 +307,7 @@ function questionAuthor() {
     } catch (e) { /* 页面结构变化时忽略 */ }
 }
 
-function topTime(css, classs) {
+export function topTime(css, classs) {
     document.querySelectorAll(css).forEach(_this => {
         const t = _this.querySelector('.ContentItem-time');
         if (!t || t.classList.contains('full') || !t.querySelector('span') || t.querySelector('span').textContent == null) return;
@@ -313,7 +316,7 @@ function topTime(css, classs) {
     });
 }
 
-function topTimePost() {
+export function topTimePost() {
     const t = document.querySelector('.ContentItem-time:not(.xiu-time)');
     if (!t) return;
     if (t.textContent.includes('编辑于') && !t.classList.contains('xiu-time')) {
@@ -330,7 +333,7 @@ function topTimePost() {
     }
 }
 
-function topTimeAllTime(t) {
+export function topTimeAllTime(t) {
     const span = t.querySelector('span');
     if (t.textContent.includes('发布于') && !t.textContent.includes('编辑于')) {
         span.textContent = span.dataset.tooltip;
@@ -341,7 +344,7 @@ function topTimeAllTime(t) {
     }
 }
 
-function topTimePublishTop(t, _this, _class) {
+export function topTimePublishTop(t, _this, _class) {
     if (!menuValue('menu_publishTop')) return;
     if (t.parentNode.classList.contains(_class)) return;
     const temp = t.cloneNode(true);
@@ -351,7 +354,7 @@ function topTimePublishTop(t, _this, _class) {
     if (host) host.insertAdjacentElement('beforeEnd', temp);
 }
 
-function questionTime() {
+export function questionTime() {
     if (document.querySelector('.QuestionPage .QuestionHeader-side .QuestionTime-xiu')) return;
     const side = document.querySelector('.QuestionPage .QuestionHeader-side');
     const created = document.querySelector('.QuestionPage > meta[itemprop=dateCreated]');
@@ -360,7 +363,7 @@ function questionTime() {
     side.insertAdjacentHTML('beforeEnd', `<div class="QuestionTime-xiu" style="color: #9098ac; margin-top: 5px; font-size: 13px; font-style: italic;"><p>创建时间：${getUTC8(new Date(created.content))}</p><p>最后编辑：${getUTC8(new Date(modified.content))}</p></div>`);
 }
 
-function questionInvitation() {
+export function questionInvitation() {
     const time = setInterval(() => {
         const q = document.querySelector('.QuestionInvitation-content');
         if (!q) return;
@@ -379,20 +382,20 @@ function questionInvitation() {
     setTimeout(() => clearInterval(time), 8000);
 }
 
-function directLink(root = document) {
+export function directLink(root = document) {
     root.querySelectorAll('a.external[href*="link.zhihu.com/?target="], a.LinkCard[href*="link.zhihu.com/?target="]:not(.MCNLinkCard):not(.ZVideoLinkCard):not(.ADLinkCardContainer)').forEach(a => {
         a.href = decodeURIComponent(a.href.substring(a.href.indexOf('link.zhihu.com/?target=') + 23));
     });
 }
 
-function originalPic(root = document) {
+export function originalPic(root = document) {
     root.querySelectorAll('img[data-original]:not(.comment_sticker):not(.Avatar)').forEach(img => {
         if (img.src !== img.dataset.original) img.src = img.dataset.original;
     });
 }
 
 /* 原图 + 直链：用节流观察器替代 100ms 轮询 */
-function enhanceMediaAndLinks() {
+export function enhanceMediaAndLinks() {
     originalPic();
     directLink();
     let pending = false;
@@ -412,7 +415,7 @@ function enhanceMediaAndLinks() {
     });
 }
 
-function watchTopTime(css, classs) {
+export function watchTopTime(css, classs) {
     topTime(css, classs);
     let pending = false;
     observeTree(() => {

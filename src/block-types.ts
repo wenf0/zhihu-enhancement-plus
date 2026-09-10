@@ -1,8 +1,11 @@
+import { menuValue } from './config';
+import { injectStyle, observeTree, hideClosest, forAddedElements, eachMatch, qsa, qs, on, onReadyNodes, page } from './utils';
+
 /* -------------------------------------------------------------------------- */
 /* 屏蔽类别 / 盐选 / 热榜                                                     */
 /* -------------------------------------------------------------------------- */
 
-function blockType(type) {
+export function blockType(type) {
     let name;
     if (type === 'search') {
         if (!menuValue('menu_blockTypeVideo') && !menuValue('menu_blockTypeArticle') && !menuValue('menu_blockTypePin') && !menuValue('menu_blockTypeTopic') && !menuValue('menu_blockTypeSearch')) return;
@@ -47,7 +50,7 @@ function blockType(type) {
     });
 }
 
-function blockTypeNode(titleA) {
+export function blockTypeNode(titleA) {
     if (!titleA) return;
     const feedCard = '.Card.TopstoryItem.TopstoryItem-isRecommend';
     const searchCard = '.Card.SearchResult-Card';
@@ -90,7 +93,7 @@ function blockTypeNode(titleA) {
     }
 }
 
-function blockYanXuan() {
+export function blockYanXuan() {
     if (!menuValue('menu_blockYanXuan')) return;
     const isYanXuan = item => item.querySelector('.KfeCollection-AnswerTopCard-Container, .KfeCollection-PurchaseBtn');
     observeTree(mutations => {
@@ -109,7 +112,7 @@ function blockYanXuan() {
     });
 }
 
-function blockHotOther() {
+export function blockHotOther() {
     if (!menuValue('menu_blockTypeLiveHot')) return;
     const isQuestionItem = hotItem => {
         const linkItem = hotItem.querySelector('.HotItem-content a');
