@@ -334,15 +334,16 @@ function CategoryDislikeBars({ rows }: { rows: CategoryDislikeStat[] }) {
   );
 }
 
-type Pane = 'appearance' | 'reading' | 'filter' | 'users' | 'lexicon' | 'taste' | 'backup';
+type Pane = 'appearance' | 'reading' | 'block' | 'filter' | 'users' | 'taste' | 'lexicon' | 'backup';
 
 const NAV: Array<{ id: Pane; title: string; desc: string }> = [
   { id: 'appearance', title: '外观', desc: '配色、侧栏、标签页' },
   { id: 'reading', title: '阅读', desc: '收起、时间、标签' },
-  { id: 'filter', title: '过滤', desc: '噪音档位与类别' },
+  { id: 'block', title: '屏蔽', desc: '视频、文章、盐选等' },
+  { id: 'filter', title: '过滤', desc: '噪音评分与档位' },
   { id: 'users', title: '用户', desc: '屏蔽名单' },
-  { id: 'lexicon', title: '词库', desc: '分类词与权重' },
   { id: 'taste', title: '口味', desc: '喜欢 / 不感兴趣' },
+  { id: 'lexicon', title: '词库', desc: '分类词与权重' },
   { id: 'backup', title: '备份', desc: '导入导出' },
 ];
 
@@ -459,6 +460,14 @@ export function App() {
           </section>
         )}
 
+        {pane === 'block' && (
+          <section className="space-y-4">
+            <h2 className="text-2xl font-semibold">屏蔽</h2>
+            <p className="text-sm text-zinc-500">按内容形态整类隐藏，与下方噪音打分过滤相互独立。</p>
+            <ToggleList keys={BLOCK_TYPE_KEYS} values={settings.values} setBool={settings.setBool} />
+          </section>
+        )}
+
         {pane === 'filter' && (
           <section className="space-y-6">
             <h2 className="text-2xl font-semibold">过滤</h2>
@@ -483,14 +492,6 @@ export function App() {
               </CardHeader>
               <CardContent>
                 <ToggleList keys={NOISE_LEVEL_KEYS} values={settings.values} setBool={settings.setBool} />
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle>屏蔽类别</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ToggleList keys={BLOCK_TYPE_KEYS} values={settings.values} setBool={settings.setBool} />
               </CardContent>
             </Card>
           </section>
