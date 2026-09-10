@@ -1,7 +1,7 @@
 {
   "name": "zhihu-enhancement-plus",
   "private": true,
-  "version": "2.2.2",
+  "version": "2.2.3",
   "description": "Zhihu Chrome extension: noise scoring, feed filters, and reading tweaks",
   "type": "module",
   "scripts": {

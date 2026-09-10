@@ -56,13 +56,13 @@ export const MENU_ITEMS: MenuItem[] = [
       'menu_blockTypeLiveHot',
     ],
   },
-  { key: 'menu_blockTypeVideo', label: '视频（首页 / 搜索 / 问题）', tip: '视频（首页、搜索页、问题页）', def: true, kind: 'hidden' },
-  { key: 'menu_blockTypeArticle', label: '文章（首页 / 搜索）', tip: '文章（首页、搜索页）', def: true, kind: 'hidden' },
-  { key: 'menu_blockTypePin', label: '想法（首页）', tip: '想法（首页）', def: false, kind: 'hidden' },
-  { key: 'menu_blockTypeTopic', label: '话题（搜索）', tip: '话题（搜索页）', def: false, kind: 'hidden' },
-  { key: 'menu_blockTypeSearch', label: '杂志 / 盐选 / 相关搜索（搜索）', tip: '相关搜索、杂志、盐选等（搜索页）', def: true, kind: 'hidden' },
-  { key: 'menu_blockYanXuan', label: '盐选内容（问题）', tip: '盐选内容（问题页）', def: true, kind: 'hidden' },
-  { key: 'menu_blockTypeLiveHot', label: '热榜杂项（文章 / 直播 / 广告）', tip: '热榜文章、直播、广告等 [热榜]', def: true, kind: 'hidden' },
+  { key: 'menu_blockTypeVideo', label: '视频', tip: '隐藏首页推荐、搜索结果、问题页里的视频卡片与视频回答；首页顶栏「视频」入口一并藏掉。', def: true, kind: 'hidden' },
+  { key: 'menu_blockTypeArticle', label: '文章', tip: '隐藏首页推荐和搜索结果里链到专栏文章（zhuanlan）的卡片。', def: true, kind: 'hidden' },
+  { key: 'menu_blockTypePin', label: '想法', tip: '隐藏首页推荐信息流里的「想法」短动态，不影响回答与文章。', def: false, kind: 'hidden' },
+  { key: 'menu_blockTypeTopic', label: '话题', tip: '在搜索「综合/内容」结果里隐藏话题卡片，减少跳进话题页的入口。', def: false, kind: 'hidden' },
+  { key: 'menu_blockTypeSearch', label: '搜索商业与相关推荐', tip: '在搜索页隐藏杂志/盐选等市场类卡片，以及底部「相关搜索」推荐条。', def: true, kind: 'hidden' },
+  { key: 'menu_blockYanXuan', label: '盐选回答', tip: '在问题页隐藏带盐选购买栏或盐选顶栏的付费回答。', def: true, kind: 'hidden' },
+  { key: 'menu_blockTypeLiveHot', label: '热榜非问题', tip: '在热榜只保留指向问题的条目；文章、直播、广告等其它热点会移除并重排序号。', def: true, kind: 'hidden' },
 ];
 
 export const APPEARANCE_KEYS = [
