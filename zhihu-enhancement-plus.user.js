@@ -3,7 +3,7 @@
 // @name:zh-CN   知乎增强优化
 // @name:zh-TW   知乎增強優化
 // @name:en      Zhihu Enhancement Plus
-// @version      1.7.30
+// @version      1.7.31
 // @author       local (based on X.I.U / 知乎增强 2.2.15)
 // @description  用于知乎网页。可开关：低饱和配色、隐藏右侧栏、清空或锁定标签标题与图标、净化搜索热门、默认/一键/点空白收起回答与评论、右键回顶、展开问题描述、置顶发布时间、信息流类型标签、直达问题、按用户与噪音评分（可显示得分、可过滤）及关键词、按类别屏蔽视频/文章/想法/话题/盐选/相关搜索/热榜杂项。设置可 JSON 导入导出。始终生效：关登录弹窗、原图、站外直链、点浮层关评论、去掉搜索高亮链接。基于 XIU2「知乎增强」2.2.15（GPL-3.0），无远程外部脚本。
 // @description:zh-CN 用于知乎网页。可开关：低饱和配色、隐藏右侧栏、清空或锁定标签标题与图标、净化搜索热门、默认/一键/点空白收起回答与评论、右键回顶、展开问题描述、置顶发布时间、信息流类型标签、直达问题、按用户与噪音评分（可显示得分、可过滤）及关键词、按类别屏蔽视频/文章/想法/话题/盐选/相关搜索/热榜杂项。设置可 JSON 导入导出。始终生效：关登录弹窗、原图、站外直链、点浮层关评论、去掉搜索高亮链接。基于 XIU2「知乎增强」2.2.15（GPL-3.0），无远程外部脚本。
@@ -90,7 +90,7 @@ const MENU_ITEMS = [
     { key: 'menu_noiseScore',          label: '噪音评分',             tip: '给信息流打噪音分。过滤和显示得分都要先开这项。', def: true },
     { key: 'menu_blockKeywords',       label: '噪音过滤',             tip: '按分数隐藏高噪音、降权中噪音。必须先开启评分。', def: true },
     { key: 'menu_noiseBadge',          label: '显示噪音得分',         tip: '每条内容显示分数，0 分不标。分越高标识越鲜艳。必须先开启评分。', def: true },
-    { key: 'menu_customBlockKeywords', label: '编辑屏蔽关键词',       tip: '命中即提到隐藏线并屏蔽。单字会大面积命中，建议关掉。', def: DEFAULT_BLOCK_KEYWORDS, kind: 'keywords' },
+    { key: 'menu_customBlockKeywords', label: '编辑屏蔽关键词',       tip: '可设隐藏 / 降权 / 加权。未单独改的词跟随列表默认。', def: DEFAULT_BLOCK_KEYWORDS, kind: 'keywords' },
     {
         key: 'menu_noiseLevel',
         label: '噪音过滤档位',
@@ -139,7 +139,11 @@ const SETTINGS_KIND = 'zhihu-enhancement-plus-settings';
 const LEXICON_KEY = 'noise_lexicon_v1';
 const USERS_OFF_KEY = 'menu_customBlockUsersOff';
 const KEYWORDS_OFF_KEY = 'menu_customBlockKeywordsOff';
-const SETTINGS_EXTRA_KEYS = ['menu_kw_pack_v1', LEXICON_KEY, USERS_OFF_KEY, KEYWORDS_OFF_KEY];
+const KEYWORDS_LEVEL_KEY = 'menu_customBlockKeywordsLevel';
+const KEYWORDS_LEVELS_KEY = 'menu_customBlockKeywordsLevels';
+const CUSTOM_LEVEL_IDS = ['hide', 'demote', 'weight'];
+const CUSTOM_LEVEL_LABELS = { hide: '隐藏', demote: '降权', weight: '加权' };
+const SETTINGS_EXTRA_KEYS = ['menu_kw_pack_v1', LEXICON_KEY, USERS_OFF_KEY, KEYWORDS_OFF_KEY, KEYWORDS_LEVEL_KEY, KEYWORDS_LEVELS_KEY];
 
 function pageLocalStorage() {
     try {
@@ -256,6 +260,11 @@ function isValidSettingValue(key, value) {
     if (key === LEXICON_KEY) return !!(value && typeof value === 'object' && !Array.isArray(value));
     if (key === USERS_OFF_KEY || key === KEYWORDS_OFF_KEY) {
         return Array.isArray(value) && value.every(x => typeof x === 'string');
+    }
+    if (key === KEYWORDS_LEVEL_KEY) return CUSTOM_LEVEL_IDS.includes(value);
+    if (key === KEYWORDS_LEVELS_KEY) {
+        return !!(value && typeof value === 'object' && !Array.isArray(value)
+            && Object.values(value).every(x => CUSTOM_LEVEL_IDS.includes(x)));
     }
     const item = MENU_ITEMS.find(x => x.key === key);
     if (!item) return false;
@@ -381,6 +390,56 @@ function writeListOff(storageKey, off) {
     if (!key) return;
     GM_setValue(key, [...off]);
     writeSettingsBackup();
+}
+
+function normalizeCustomLevel(value) {
+    return CUSTOM_LEVEL_IDS.includes(value) ? value : '';
+}
+
+function readCustomDefaultLevel() {
+    return normalizeCustomLevel(GM_getValue(KEYWORDS_LEVEL_KEY)) || 'hide';
+}
+
+function writeCustomDefaultLevel(level) {
+    GM_setValue(KEYWORDS_LEVEL_KEY, normalizeCustomLevel(level) || 'hide');
+    writeSettingsBackup();
+    noiseIndex = null;
+}
+
+function readCustomLevelMap() {
+    const raw = GM_getValue(KEYWORDS_LEVELS_KEY);
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
+    const out = {};
+    for (const [word, level] of Object.entries(raw)) {
+        const lv = normalizeCustomLevel(level);
+        if (word && lv) out[word] = lv;
+    }
+    return out;
+}
+
+function writeCustomLevelMap(map) {
+    GM_setValue(KEYWORDS_LEVELS_KEY, map && typeof map === 'object' ? map : {});
+    writeSettingsBackup();
+    noiseIndex = null;
+}
+
+function customLevelFor(word, fallback) {
+    const map = readCustomLevelMap();
+    if (map[word]) return map[word];
+    const low = String(word || '').toLowerCase();
+    for (const [key, level] of Object.entries(map)) {
+        if (key.toLowerCase() === low) return level;
+    }
+    return fallback || readCustomDefaultLevel();
+}
+
+function dropCustomLevel(map, word) {
+    delete map[word];
+    const low = String(word || '').toLowerCase();
+    for (const key of Object.keys(map)) {
+        if (key.toLowerCase() === low) delete map[key];
+    }
+    return map;
 }
 
 function activeListValues(storageKey) {
@@ -605,14 +664,14 @@ function settingsNoiseFormulaHtml() {
         <div class="zhihuE_FxKicker">评分公式</div>
         <div class="zhihuE_FxMain">分数 = clamp(${n(w.k)}K + ${n(w.c)}C + ${n(w.e)}E + ${n(w.s)}S + ${n(w.b)}B − ${n(w.v)}V, 0, 100)</div>
         <div class="zhihuE_FxGrid">
-            <div class="zhihuE_FxItem"><b>K</b>关键词饱和<span>K = 100(1 − e<sup>−k/20</sup>)。k 为命中词权重和；自定义词每条 +${NOISE_CUSTOM_K}，且分数至少提到隐藏线；分类单字仅在已有长词命中时计 0.35。</span></div>
+            <div class="zhihuE_FxItem"><b>K</b>关键词饱和<span>K = 100(1 − e<sup>−k/20</sup>)。k 为命中词权重和。自定义词按级别：隐藏 +${CUSTOM_LEVELS.hide.k} 且分数≥${CUSTOM_LEVELS.hide.floor}；降权 +${CUSTOM_LEVELS.demote.k} 且≥${CUSTOM_LEVELS.demote.floor}；加权 +${CUSTOM_LEVELS.weight.k} 不保底。分类单字仅在已有长词命中时计 0.35。</span></div>
             <div class="zhihuE_FxItem"><b>C</b>分类系数<span>取命中档位的最大 c。该分类有排除词则 ×0.35。无关键词但 E+B ≥ 16 时，C 至少为 42。</span></div>
             <div class="zhihuE_FxItem"><b>E</b>情绪<span>命中情绪词的权重和，上限 25。</span></div>
             <div class="zhihuE_FxItem"><b>S</b>争议<span>6 × 争议词命中数，上限 30。</span></div>
             <div class="zhihuE_FxItem"><b>B</b>标题党<span>5 × 标题党词命中数，上限 25。</span></div>
             <div class="zhihuE_FxItem"><b>V</b>价值<span>白名单权重和，上限 50，从总分里减去。</span></div>
         </div>
-        <p class="zhihuE_FxNote">信息流卡片取 max(标题分, 0.72×标题 + 0.28×摘要)。${NOISE_DEMOTE} 以下保留，${NOISE_DEMOTE}–${NOISE_HIDE} 降权，${NOISE_HIDE} 及以上隐藏。命中启用的自定义词时，分数至少为 ${NOISE_HIDE}，直接隐藏。</p>
+        <p class="zhihuE_FxNote">信息流卡片取 max(标题分, 0.72×标题 + 0.28×摘要)。${NOISE_DEMOTE} 以下保留，${NOISE_DEMOTE}–${NOISE_HIDE} 降权，${NOISE_HIDE} 及以上隐藏。自定义词的级别可在「自定义词」里改。</p>
     </div>`;
 }
 
@@ -676,10 +735,19 @@ function mountNoiseTestPane(container) {
         board.className = `zhihuE_TsBoard is-${verdict.id}`;
         const filterOn = !!menuValue('menu_blockKeywords');
         const badgeOn = !!menuValue('menu_noiseBadge');
+        const customFloor = Math.max(titleScore.customFloor || 0, bodyScore.customFloor || 0);
         if (titleScore.customHit || bodyScore.customHit) {
-            hintEl.textContent = filterOn
-                ? '命中自定义词，分数已提到隐藏线。信息流刷新后会直接屏蔽。'
-                : '命中自定义词，分数已提到隐藏线。过滤仍关闭，信息流不会隐藏。';
+            if (customFloor >= NOISE_HIDE) {
+                hintEl.textContent = filterOn
+                    ? '命中「隐藏」级自定义词，刷新后会直接屏蔽。'
+                    : '命中「隐藏」级自定义词。过滤仍关闭，信息流不会隐藏。';
+            } else if (customFloor >= NOISE_DEMOTE) {
+                hintEl.textContent = filterOn
+                    ? '命中「降权」级自定义词，刷新后会变淡。'
+                    : '命中「降权」级自定义词。过滤仍关闭，信息流外观不变。';
+            } else {
+                hintEl.textContent = '命中「加权」级自定义词，只加分，不保底隐藏或降权。';
+            }
         } else if (filterOn) {
             hintEl.textContent = '分项来自标题。信息流刷新后才会按此结果隐藏或降权。';
         } else if (badgeOn) {
@@ -697,8 +765,18 @@ function mountListEditor(container, { storageKey, placeholder, tips }) {
     let list = [...(menuValue(storageKey) || [])];
     let off = readListOff(storageKey);
     let filter = '';
+    const withLevels = storageKey === 'menu_customBlockKeywords';
+    let defaultLevel = withLevels ? readCustomDefaultLevel() : '';
+    let levelMap = withLevels ? readCustomLevelMap() : {};
+    const levelBar = withLevels ? `<div class="zhihuE_KwBar">
+        <span class="zhihuE_KwBarLabel">默认处理</span>
+        <div class="zhihuE_KwSeg">${CUSTOM_LEVEL_IDS.map(id =>
+            `<button type="button" class="zhihuE_KwSegBtn${id === defaultLevel ? ' zhihuE_isOn' : ''}" data-level="${id}">${CUSTOM_LEVEL_LABELS[id]}</button>`
+        ).join('')}</div>
+    </div>` : '';
     container.insertAdjacentHTML('beforeend', `<div class="zhihuE_ListMount">
         ${tips ? `<p class="zhihuE_StPaneTips">${escapeHtml(tips)}</p>` : ''}
+        ${levelBar}
         <div class="zhihuE_DlgAdd">
             <input class="zhihuE_DlgInput" type="text" placeholder="${escapeHtml(placeholder)}" />
             <button type="button" class="zhihuE_DlgAddBtn">添加</button>
@@ -735,8 +813,17 @@ function mountListEditor(container, { storageKey, placeholder, tips }) {
     const persist = () => {
         menuSet(storageKey, list);
         writeListOff(storageKey, off);
+        if (withLevels) writeCustomLevelMap(levelMap);
         noiseIndex = null;
         renderCloud();
+        renderLevelBar();
+    };
+
+    const renderLevelBar = () => {
+        if (!withLevels) return;
+        root.querySelectorAll('.zhihuE_KwSegBtn').forEach(btn => {
+            btn.classList.toggle('zhihuE_isOn', btn.dataset.level === defaultLevel);
+        });
     };
 
     const renderCloud = () => {
@@ -754,9 +841,13 @@ function mountListEditor(container, { storageKey, placeholder, tips }) {
         cloud.innerHTML = items.map(({ word, index }) => {
             const packed = isPackedListItem(storageKey, word);
             const disabled = off.has(word);
+            const level = withLevels ? customLevelFor(word, defaultLevel) : '';
             const title = packed ? '预置词，点击开关' : '自定义词，点击开关，× 删除';
+            const lv = withLevels
+                ? `<button type="button" class="zhihuE_DlgChipLv is-${level}" data-index="${index}" data-level="${level}" title="点击切换隐藏 / 降权 / 加权">${CUSTOM_LEVEL_LABELS[level]}</button>`
+                : '';
             const del = packed ? '' : `<button type="button" class="zhihuE_DlgChipDel" data-index="${index}" aria-label="删除">×</button>`;
-            return `<span class="zhihuE_DlgChip${packed ? ' is-pack' : ''}${disabled ? ' is-off' : ''}" data-index="${index}" title="${escapeHtml(title)}"><span>${escapeHtml(word)}</span>${del}</span>`;
+            return `<span class="zhihuE_DlgChip${packed ? ' is-pack' : ''}${disabled ? ' is-off' : ''}" data-index="${index}" title="${escapeHtml(title)}"><span>${escapeHtml(word)}</span>${lv}${del}</span>`;
         }).join('');
     };
 
@@ -856,6 +947,16 @@ function mountListEditor(container, { storageKey, placeholder, tips }) {
         }
     };
 
+    if (withLevels) {
+        root.querySelector('.zhihuE_KwSeg').addEventListener('click', event => {
+            const btn = event.target.closest('.zhihuE_KwSegBtn');
+            if (!btn || !CUSTOM_LEVEL_IDS.includes(btn.dataset.level)) return;
+            defaultLevel = btn.dataset.level;
+            writeCustomDefaultLevel(defaultLevel);
+            renderCloud();
+            renderLevelBar();
+        });
+    }
     root.querySelector('.zhihuE_DlgAddBtn').onclick = addFromInput;
     root.querySelector('.zhihuE_DlgCopyAll').onclick = copyAll;
     root.querySelector('.zhihuE_DlgImportBtn').onclick = importFromPaste;
@@ -879,6 +980,22 @@ function mountListEditor(container, { storageKey, placeholder, tips }) {
             if (isPackedListItem(storageKey, word)) return;
             list.splice(index, 1);
             off.delete(word);
+            if (withLevels) dropCustomLevel(levelMap, word);
+            persist();
+            return;
+        }
+        const lvBtn = event.target.closest('.zhihuE_DlgChipLv');
+        if (lvBtn && withLevels) {
+            const index = Number(lvBtn.dataset.index);
+            if (Number.isNaN(index)) return;
+            const word = list[index];
+            const current = customLevelFor(word, defaultLevel);
+            const next = CUSTOM_LEVEL_IDS[(CUSTOM_LEVEL_IDS.indexOf(current) + 1) % CUSTOM_LEVEL_IDS.length];
+            if (next === defaultLevel) dropCustomLevel(levelMap, word);
+            else {
+                dropCustomLevel(levelMap, word);
+                levelMap[word] = next;
+            }
             persist();
             return;
         }
@@ -1300,11 +1417,20 @@ button,input,textarea {font:inherit;color:inherit;}
 .zhihuE_DlgAddBtn:hover {opacity:.88;}
 .zhihuE_DlgFilterWrap {flex:none;}
 .zhihuE_DlgCloud {flex:1;min-height:0;overflow:auto;padding:6px 2px 12px;display:flex;flex-wrap:wrap;align-content:flex-start;gap:10px;}
+.zhihuE_KwBar {display:flex;align-items:center;justify-content:space-between;gap:12px;flex:none;}
+.zhihuE_KwBarLabel {font-size:13px;color:#8a8a8a;}
+.zhihuE_KwSeg {display:flex;flex-wrap:wrap;gap:6px;}
+.zhihuE_KwSegBtn {height:30px;padding:0 12px;border:1px solid #eee;border-radius:999px;background:#fff;color:#666;cursor:pointer;font:inherit;font-size:12px;}
+.zhihuE_KwSegBtn.zhihuE_isOn {background:#1d1d1f;border-color:#1d1d1f;color:#fff;}
 .zhihuE_DlgChip {display:inline-flex;align-items:center;gap:8px;max-width:100%;padding:8px 8px 8px 14px;border:1px solid #ececec;border-radius:999px;background:#f7f7f7;font-size:13px;line-height:1.3;color:#333;cursor:pointer;}
 .zhihuE_DlgChip.is-pack {padding-right:14px;}
 .zhihuE_DlgChip.is-off {opacity:.4;}
 .zhihuE_DlgChip:hover {background:#fff;border-color:#d4d4d4;box-shadow:0 4px 12px rgba(0,0,0,.04);}
 .zhihuE_DlgChip span {overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.zhihuE_DlgChipLv {flex:none;height:22px;padding:0 8px;border:0;border-radius:999px;font:inherit;font-size:11px;line-height:22px;cursor:pointer;}
+.zhihuE_DlgChipLv.is-hide {background:#f3e8e8;color:#a33;}
+.zhihuE_DlgChipLv.is-demote {background:#f3eee4;color:#9a6b20;}
+.zhihuE_DlgChipLv.is-weight {background:#ececec;color:#666;}
 .zhihuE_DlgChipDel {flex:none;width:22px;height:22px;border:0;border-radius:50%;background:transparent;color:#999;font-size:16px;line-height:22px;cursor:pointer;}
 .zhihuE_DlgChipDel:hover {background:#1d1d1f;color:#fff;}
 .zhihuE_DlgEmpty {width:100%;padding:80px 0;text-align:center;color:#b0b0b0;font-size:14px;}
@@ -1361,7 +1487,11 @@ button,input,textarea {font:inherit;color:inherit;}
 [data-theme="dark"] .zhihuE_StNavBtn.zhihuE_isOn span {color:rgba(29,29,31,.55);}
 [data-theme="dark"] [data-zplus-switch] {background:#4a5260;}
 [data-theme="dark"] .zhihuE_StLink:hover {color:#fff;}
-[data-theme="dark"] .zhihuE_StTab {background:#343a44;border-color:#3c434d;color:#c5ced8;}
+[data-theme="dark"] .zhihuE_StTab,[data-theme="dark"] .zhihuE_KwSegBtn {background:#343a44;border-color:#3c434d;color:#c5ced8;}
+[data-theme="dark"] .zhihuE_KwSegBtn.zhihuE_isOn {background:#e8edf2;border-color:#e8edf2;color:#1d1d1f;}
+[data-theme="dark"] .zhihuE_DlgChipLv.is-hide {background:#4a3535;color:#f0b6b6;}
+[data-theme="dark"] .zhihuE_DlgChipLv.is-demote {background:#4a4030;color:#e6c48a;}
+[data-theme="dark"] .zhihuE_DlgChipLv.is-weight {background:#3c434d;color:#c5ced8;}
 [data-theme="dark"] .zhihuE_LvTag {background:#e8edf2;color:#1d1d1f;}
 [data-theme="dark"] .zhihuE_LvChip {background:#2b2f36;color:#c5ced8;}
 [data-theme="dark"] .zhihuE_Fx {background:#343a44;border-color:#3c434d;}
@@ -1477,7 +1607,7 @@ button,input,textarea {font:inherit;color:inherit;}
                 mountListEditor(pane, {
                     storageKey: 'menu_customBlockKeywords',
                     placeholder: '例如：广告, 引流, [捂脸]',
-                    tips: '预置词只能开关，自己加的可以开关或删除。不区分大小写。命中启用的自定义词后分数至少到隐藏线，信息流会直接屏蔽。单字容易误伤。'
+                    tips: '预置词只能开关。点词条上的级别可单独改；没改过的跟随上方默认。隐藏保底 60，降权保底 30，加权只加分。单字容易误伤。'
                 });
             } else if (wordTab === 'lexicon') {
                 mountLexiconEditor(pane);
@@ -2038,7 +2168,11 @@ function blockUsersDel(name, userid, reload) {
 const NOISE_WEIGHTS = { k: 0.30, c: 0.25, e: 0.15, s: 0.15, b: 0.15, v: 0.30 };
 const NOISE_HIDE = 60;
 const NOISE_DEMOTE = 30;
-const NOISE_CUSTOM_K = 48;
+const CUSTOM_LEVELS = {
+    hide: { id: 'hide', name: '隐藏', k: 48, floor: NOISE_HIDE },
+    demote: { id: 'demote', name: '降权', k: 24, floor: NOISE_DEMOTE },
+    weight: { id: 'weight', name: '加权', k: 12, floor: 0 }
+};
 
 function noiseWords(weight, list) {
     const out = Object.create(null);
@@ -2245,7 +2379,8 @@ function compileNoiseIndex() {
         if (!word) continue;
         const k = String(word).toLowerCase();
         if (customOff.has(k)) continue;
-        custom.push(k);
+        const level = customLevelFor(word);
+        custom.push({ k, word: String(word), level: CUSTOM_LEVELS[level] ? level : 'hide' });
     }
     const toPairs = map => Object.keys(map).map(k => ({ k: k.toLowerCase(), w: map[k] }));
     noiseIndex = {
@@ -2264,7 +2399,7 @@ function scoreText(raw) {
         return {
             final: 0, K: 0, C: 0, E: 0, S: 0, B: 0, V: 0, kRaw: 0,
             hits: { words: [], custom: [], emotion: [], controversy: [], clickbait: [], value: [] },
-            winningCat: '', exclude: '', cFallback: false, customHit: false
+            winningCat: '', exclude: '', cFallback: false, customHit: false, customFloor: 0
         };
     }
     const text = String(raw).toLowerCase();
@@ -2310,14 +2445,18 @@ function scoreText(raw) {
     }
 
     let customHit = false;
+    let customFloor = 0;
     const customHits = [];
-    for (const word of idx.custom) {
+    for (const item of idx.custom) {
+        const word = item && item.k;
         if (!word || !text.includes(word)) continue;
+        const spec = CUSTOM_LEVELS[item.level] || CUSTOM_LEVELS.hide;
         customHit = true;
-        customHits.push({ word, w: NOISE_CUSTOM_K, cat: '自定义', source: 'custom' });
-        if (!wordHits.some(item => item.word === word)) {
-            kRaw += NOISE_CUSTOM_K;
-            wordHits.push({ word, w: NOISE_CUSTOM_K, cat: '自定义', source: 'custom' });
+        customFloor = Math.max(customFloor, spec.floor);
+        customHits.push({ word: item.word || word, w: spec.k, level: spec.id, cat: '自定义', source: 'custom' });
+        if (!wordHits.some(hit => hit.word === word || hit.word === item.word)) {
+            kRaw += spec.k;
+            wordHits.push({ word: item.word || word, w: spec.k, level: spec.id, cat: '自定义', source: 'custom' });
         }
     }
 
@@ -2360,11 +2499,11 @@ function scoreText(raw) {
 
     const noise = NOISE_WEIGHTS.k * K + NOISE_WEIGHTS.c * bestC + NOISE_WEIGHTS.e * E + NOISE_WEIGHTS.s * S + NOISE_WEIGHTS.b * B;
     let final = Math.max(0, Math.min(100, noise - NOISE_WEIGHTS.v * V));
-    if (customHit) final = Math.max(final, NOISE_HIDE);
+    if (customFloor) final = Math.max(final, customFloor);
     return {
         final, K, C: bestC, E, S, B, V, kRaw,
         hits: { words: wordHits, custom: customHits, emotion, controversy, clickbait, value },
-        winningCat, exclude, cFallback, customHit
+        winningCat, exclude, cFallback, customHit, customFloor
     };
 }
 
@@ -2372,7 +2511,8 @@ function scoreFeedNoise(title, body) {
     const titleScore = scoreText(title);
     const bodyScore = scoreText(String(body || '').slice(0, 280));
     let final = Math.max(titleScore.final, titleScore.final * 0.72 + bodyScore.final * 0.28);
-    if (titleScore.customHit || bodyScore.customHit) final = Math.max(final, NOISE_HIDE);
+    const customFloor = Math.max(titleScore.customFloor || 0, bodyScore.customFloor || 0);
+    if (customFloor) final = Math.max(final, customFloor);
     return { final, titleScore, bodyScore };
 }
 
@@ -2492,7 +2632,18 @@ function noiseExplainHtml(title, body, result, href) {
     if (titleScore.winningCat) notes.push(`分类取「${titleScore.winningCat}」`);
     if (titleScore.exclude) notes.push(`排除词「${titleScore.exclude}」使 C ×0.35`);
     if (titleScore.cFallback) notes.push('无关键词但情绪和标题党偏高，C 保底 42');
-    if (customHits.length) notes.push(`命中自定义词「${customHits.map(item => item.word).join('、')}」，分数提到隐藏线`);
+    if (customHits.length) {
+        const names = customHits.map(item => {
+            const label = (CUSTOM_LEVELS[item.level] || CUSTOM_LEVELS.weight).name;
+            return `${item.word}（${label}）`;
+        }).join('、');
+        const floor = Math.max(0, ...customHits.map(item => (CUSTOM_LEVELS[item.level] || {}).floor || 0));
+        notes.push(floor >= NOISE_HIDE
+            ? `命中自定义词「${names}」，分数提到隐藏线`
+            : floor >= NOISE_DEMOTE
+                ? `命中自定义词「${names}」，分数提到降权线`
+                : `命中自定义词「${names}」，只加权`);
+    }
     if (!filterOn) notes.push('过滤已关闭，信息流只打分不处理');
     const bar = row => {
         const pct = Math.max(0, Math.min(100, row.v));
@@ -2505,7 +2656,12 @@ function noiseExplainHtml(title, body, result, href) {
             <div class="zhihuE_NxMath">${n(row.weight)} × ${n(row.v)} <b>${row.sign < 0 ? '−' : '+'}${n(Math.abs(row.contrib))}</b></div>
         </div>`;
     };
-    const chip = item => `<span class="zhihuE_NxChip"><em>${escapeHtml(item.word)}</em>${item.w != null ? `<b>${item.w % 1 ? item.w.toFixed(1) : item.w}</b>` : ''}</span>`;
+    const chip = item => {
+        const tag = item.level && CUSTOM_LEVELS[item.level]
+            ? CUSTOM_LEVELS[item.level].name
+            : (item.w != null ? (item.w % 1 ? item.w.toFixed(1) : item.w) : '');
+        return `<span class="zhihuE_NxChip"><em>${escapeHtml(item.word)}</em>${tag !== '' ? `<b>${escapeHtml(String(tag))}</b>` : ''}</span>`;
+    };
     return `<div class="zhihuE_NxHead">
         <div>
             <p class="zhihuE_NxKicker">Noise Score</p>
