@@ -174,6 +174,102 @@ function LearnedWordTags({
   );
 }
 
+function UserTags({
+  users,
+  onRename,
+  onDelete,
+}: {
+  users: string[];
+  onRename: (from: string, to: string) => void;
+  onDelete: (name: string) => void;
+}) {
+  const [editing, setEditing] = useState<string | null>(null);
+  const [draft, setDraft] = useState('');
+
+  useEffect(() => {
+    if (editing) setDraft(editing);
+  }, [editing]);
+
+  useEffect(() => {
+    if (editing && !users.includes(editing)) setEditing(null);
+  }, [users, editing]);
+
+  const commitRename = () => {
+    if (!editing) return;
+    const next = draft.replace(/\s+/g, '').trim();
+    if (!next || next === editing) {
+      setDraft(editing);
+      setEditing(null);
+      return;
+    }
+    onRename(editing, next);
+    setEditing(next);
+  };
+
+  if (!users.length) {
+    return <p className="text-sm text-zinc-500">还没有屏蔽用户。上方可添加用户名。</p>;
+  }
+
+  return (
+    <div className="flex flex-wrap gap-2">
+      {users.map(name => {
+        if (editing === name) {
+          return (
+            <div
+              key={name}
+              className="inline-flex max-w-full flex-wrap items-center gap-1 rounded-full border border-zinc-300 bg-white py-0.5 pr-1 pl-2 shadow-sm"
+            >
+              <input
+                autoFocus
+                className="h-6 w-28 min-w-0 border-0 bg-transparent text-xs outline-none"
+                value={draft}
+                onChange={e => setDraft(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    commitRename();
+                  }
+                  if (e.key === 'Escape') setEditing(null);
+                }}
+                aria-label="编辑用户名"
+              />
+              <button
+                type="button"
+                className="rounded-full px-1.5 text-xs text-red-600 hover:bg-red-50"
+                onClick={() => {
+                  onDelete(name);
+                  setEditing(null);
+                }}
+              >
+                删除
+              </button>
+              <button
+                type="button"
+                className="rounded-full bg-zinc-900 px-2 py-0.5 text-xs text-white hover:bg-zinc-800"
+                onClick={commitRename}
+              >
+                完成
+              </button>
+            </div>
+          );
+        }
+
+        return (
+          <button
+            key={name}
+            type="button"
+            title="点击编辑或删除"
+            onClick={() => setEditing(name)}
+            className="rounded-full"
+          >
+            <Badge className="cursor-pointer transition hover:bg-zinc-200">{name}</Badge>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 type Pane = 'appearance' | 'reading' | 'filter' | 'users' | 'lexicon' | 'taste' | 'backup';
 
 const NAV: Array<{ id: Pane; title: string; desc: string }> = [
@@ -321,25 +417,43 @@ export function App() {
           <section className="space-y-4">
             <h2 className="text-2xl font-semibold">屏蔽用户</h2>
             <Card>
-              <CardContent className="flex gap-2">
-                <Input value={userDraft} onChange={e => setUserDraft(e.target.value)} placeholder="用户名，逗号分隔" />
-                <Button onClick={() => {
-                  const added = uniqueWords(parseWords(userDraft));
-                  void settings.setUsers(uniqueWords([...settings.users, ...added]));
-                  setUserDraft('');
-                }}>添加</Button>
+              <CardContent className="space-y-3">
+                <p className="text-sm text-zinc-500">共 {settings.users.length} 人 · 点击标签可改名或删除</p>
+                <div className="flex gap-2">
+                  <Input
+                    value={userDraft}
+                    onChange={e => setUserDraft(e.target.value)}
+                    placeholder="用户名，逗号分隔"
+                    onKeyDown={e => {
+                      if (e.key !== 'Enter') return;
+                      e.preventDefault();
+                      const added = uniqueWords(parseWords(userDraft));
+                      if (!added.length) return;
+                      void settings.setUsers(uniqueWords([...settings.users, ...added]));
+                      setUserDraft('');
+                    }}
+                  />
+                  <Button onClick={() => {
+                    const added = uniqueWords(parseWords(userDraft));
+                    if (!added.length) return;
+                    void settings.setUsers(uniqueWords([...settings.users, ...added]));
+                    setUserDraft('');
+                  }}>添加</Button>
+                </div>
               </CardContent>
             </Card>
-            <div className="space-y-2">
-              {settings.users.map(name => (
-                <Card key={name}>
-                  <CardContent className="flex items-center justify-between py-3">
-                    <span>{name}</span>
-                    <Button size="sm" variant="ghost" onClick={() => void settings.setUsers(settings.users.filter(x => x !== name))}>删除</Button>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+            <UserTags
+              users={settings.users}
+              onRename={(from, to) => {
+                const next = settings.users
+                  .map(name => (name === from ? to : name))
+                  .filter((name, index, list) => list.findIndex(x => x.toLowerCase() === name.toLowerCase()) === index);
+                void settings.setUsers(next);
+              }}
+              onDelete={name => {
+                void settings.setUsers(settings.users.filter(x => x !== name));
+              }}
+            />
           </section>
         )}
 
