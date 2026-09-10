@@ -611,7 +611,33 @@ export function App() {
             <Card>
               <CardContent className="flex flex-wrap gap-2">
                 <Button onClick={() => downloadJsonFile(settingsExportFilename(), settings.exportText())}>导出 JSON</Button>
+                <Button
+                  variant="outline"
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(settings.exportText());
+                      setNotice('已复制当前配置 JSON');
+                    } catch {
+                      setNotice('复制失败，请手动全选复制下方 JSON');
+                    }
+                  }}
+                >
+                  复制 JSON
+                </Button>
                 <Button variant="outline" onClick={() => void settings.resetAll()}>恢复默认</Button>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>当前配置</CardTitle>
+                <CardDescription>实时反映本地 chrome.storage 导出快照，改设置后这里会跟着变。</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Textarea
+                  readOnly
+                  value={settings.exportText()}
+                  className="min-h-80 font-mono text-xs"
+                />
               </CardContent>
             </Card>
             <Card>

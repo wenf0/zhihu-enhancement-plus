@@ -57,11 +57,11 @@ export const MENU_ITEMS: MenuItem[] = [
     ],
   },
   { key: 'menu_blockTypeVideo', label: '视频（首页 / 搜索 / 问题）', tip: '视频（首页、搜索页、问题页）', def: true, kind: 'hidden' },
-  { key: 'menu_blockTypeArticle', label: '文章（首页 / 搜索）', tip: '文章（首页、搜索页）', def: false, kind: 'hidden' },
+  { key: 'menu_blockTypeArticle', label: '文章（首页 / 搜索）', tip: '文章（首页、搜索页）', def: true, kind: 'hidden' },
   { key: 'menu_blockTypePin', label: '想法（首页）', tip: '想法（首页）', def: false, kind: 'hidden' },
   { key: 'menu_blockTypeTopic', label: '话题（搜索）', tip: '话题（搜索页）', def: false, kind: 'hidden' },
-  { key: 'menu_blockTypeSearch', label: '杂志 / 盐选 / 相关搜索（搜索）', tip: '相关搜索、杂志、盐选等（搜索页）', def: false, kind: 'hidden' },
-  { key: 'menu_blockYanXuan', label: '盐选内容（问题）', tip: '盐选内容（问题页）', def: false, kind: 'hidden' },
+  { key: 'menu_blockTypeSearch', label: '杂志 / 盐选 / 相关搜索（搜索）', tip: '相关搜索、杂志、盐选等（搜索页）', def: true, kind: 'hidden' },
+  { key: 'menu_blockYanXuan', label: '盐选内容（问题）', tip: '盐选内容（问题页）', def: true, kind: 'hidden' },
   { key: 'menu_blockTypeLiveHot', label: '热榜杂项（文章 / 直播 / 广告）', tip: '热榜文章、直播、广告等 [热榜]', def: true, kind: 'hidden' },
 ];
 
