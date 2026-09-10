@@ -3,7 +3,7 @@
 // @name:zh-CN   知乎增强优化
 // @name:zh-TW   知乎增強優化
 // @name:en      Zhihu Enhancement Plus
-// @version      1.7.31
+// @version      1.7.32
 // @author       local (based on X.I.U / 知乎增强 2.2.15)
 // @description  用于知乎网页。可开关：低饱和配色、隐藏右侧栏、清空或锁定标签标题与图标、净化搜索热门、默认/一键/点空白收起回答与评论、右键回顶、展开问题描述、置顶发布时间、信息流类型标签、直达问题、按用户与噪音评分（可显示得分、可过滤）及关键词、按类别屏蔽视频/文章/想法/话题/盐选/相关搜索/热榜杂项。设置可 JSON 导入导出。始终生效：关登录弹窗、原图、站外直链、点浮层关评论、去掉搜索高亮链接。基于 XIU2「知乎增强」2.2.15（GPL-3.0），无远程外部脚本。
 // @description:zh-CN 用于知乎网页。可开关：低饱和配色、隐藏右侧栏、清空或锁定标签标题与图标、净化搜索热门、默认/一键/点空白收起回答与评论、右键回顶、展开问题描述、置顶发布时间、信息流类型标签、直达问题、按用户与噪音评分（可显示得分、可过滤）及关键词、按类别屏蔽视频/文章/想法/话题/盐选/相关搜索/热榜杂项。设置可 JSON 导入导出。始终生效：关登录弹窗、原图、站外直链、点浮层关评论、去掉搜索高亮链接。基于 XIU2「知乎增强」2.2.15（GPL-3.0），无远程外部脚本。
@@ -2398,7 +2398,7 @@ function scoreText(raw) {
     if (!raw) {
         return {
             final: 0, K: 0, C: 0, E: 0, S: 0, B: 0, V: 0, kRaw: 0,
-            hits: { words: [], custom: [], emotion: [], controversy: [], clickbait: [], value: [] },
+            hits: { words: [], custom: [], cats: [], emotion: [], controversy: [], clickbait: [], value: [] },
             winningCat: '', exclude: '', cFallback: false, customHit: false, customFloor: 0
         };
     }
@@ -2409,6 +2409,7 @@ function scoreText(raw) {
     let winningCat = '';
     let exclude = '';
     const wordHits = [];
+    const catHits = [];
 
     for (const cat of idx.cats) {
         let longHits = 0;
@@ -2441,6 +2442,7 @@ function scoreText(raw) {
             }
             kRaw += catW;
             wordHits.push(...local);
+            catHits.push({ word: cat.name, w: c, level: cat.level, exclude: hitEx });
         }
     }
 
@@ -2495,14 +2497,17 @@ function scoreText(raw) {
     V = Math.min(50, V);
 
     const cFallback = kRaw === 0 && E + B >= 16;
-    if (cFallback) bestC = Math.max(bestC, 42);
+    if (cFallback) {
+        bestC = Math.max(bestC, 42);
+        if (!catHits.length) catHits.push({ word: '情绪保底', w: bestC });
+    }
 
     const noise = NOISE_WEIGHTS.k * K + NOISE_WEIGHTS.c * bestC + NOISE_WEIGHTS.e * E + NOISE_WEIGHTS.s * S + NOISE_WEIGHTS.b * B;
     let final = Math.max(0, Math.min(100, noise - NOISE_WEIGHTS.v * V));
     if (customFloor) final = Math.max(final, customFloor);
     return {
         final, K, C: bestC, E, S, B, V, kRaw,
-        hits: { words: wordHits, custom: customHits, emotion, controversy, clickbait, value },
+        hits: { words: wordHits, custom: customHits, cats: catHits, emotion, controversy, clickbait, value },
         winningCat, exclude, cFallback, customHit, customFloor
     };
 }
@@ -2625,8 +2630,9 @@ function noiseExplainHtml(title, body, result, href) {
     const rows = noisePartRows(titleScore);
     const w = NOISE_WEIGHTS;
     const n = x => (Math.round(x * 10) / 10).toFixed(1);
-    const hits = titleScore.hits || { words: [], custom: [], emotion: [], controversy: [], clickbait: [], value: [] };
+    const hits = titleScore.hits || { words: [], custom: [], cats: [], emotion: [], controversy: [], clickbait: [], value: [] };
     const customHits = mergeNoiseHits(hits.custom, bodyScore.hits && bodyScore.hits.custom);
+    const classHits = mergeNoiseHits(hits.cats, bodyScore.hits && bodyScore.hits.cats);
     const catHits = (hits.words || []).filter(item => item.source !== 'custom');
     const notes = [];
     if (titleScore.winningCat) notes.push(`分类取「${titleScore.winningCat}」`);
@@ -2659,8 +2665,13 @@ function noiseExplainHtml(title, body, result, href) {
     const chip = item => {
         const tag = item.level && CUSTOM_LEVELS[item.level]
             ? CUSTOM_LEVELS[item.level].name
-            : (item.w != null ? (item.w % 1 ? item.w.toFixed(1) : item.w) : '');
+            : (item.cat && item.source !== 'custom' ? item.cat : (item.w != null ? (item.w % 1 ? item.w.toFixed(1) : item.w) : ''));
         return `<span class="zhihuE_NxChip"><em>${escapeHtml(item.word)}</em>${tag !== '' ? `<b>${escapeHtml(String(tag))}</b>` : ''}</span>`;
+    };
+    const classChip = item => {
+        const win = item.word === titleScore.winningCat;
+        const tag = item.w != null ? Math.round(item.w) : '';
+        return `<span class="zhihuE_NxChip${win ? ' is-win' : ''}"><em>${escapeHtml(item.word)}</em>${tag !== '' ? `<b>${tag}</b>` : ''}</span>`;
     };
     return `<div class="zhihuE_NxHead">
         <div>
@@ -2684,6 +2695,7 @@ function noiseExplainHtml(title, body, result, href) {
         </div>
         <div class="zhihuE_NxHits">
             <div class="zhihuE_NxBlock"><span>自定义</span><div>${noiseHitChips(customHits, chip)}</div></div>
+            <div class="zhihuE_NxBlock"><span>分类</span><div>${noiseHitChips(classHits, classChip)}</div></div>
             <div class="zhihuE_NxBlock"><span>关键词</span><div>${noiseHitChips(catHits, chip)}</div></div>
             <div class="zhihuE_NxBlock"><span>情绪</span><div>${noiseHitChips(hits.emotion, chip)}</div></div>
             <div class="zhihuE_NxBlock"><span>争议</span><div>${noiseHitChips(hits.controversy.map(word => ({ word })), chip)}</div></div>
@@ -2738,6 +2750,8 @@ button {font:inherit;color:inherit;}
 .zhihuE_NxBlock div {display:flex;flex-wrap:wrap;gap:6px;}
 .zhihuE_NxChip {display:inline-flex;align-items:center;gap:6px;padding:4px 8px 4px 10px;border-radius:999px;background:#f6f6f6;font-size:12px;}
 .zhihuE_NxChip b {font-weight:650;color:#888;}
+.zhihuE_NxChip.is-win {background:#1d1d1f;color:#fff;}
+.zhihuE_NxChip.is-win b {color:rgba(255,255,255,.72);}
 .zhihuE_NxEmpty,.zhihuE_NxMore {font-size:12px;color:#bbb;}
 .zhihuE_NxQuote {margin:20px 0 0;font-size:14px;line-height:1.65;color:#666;}
 .zhihuE_NxLink {margin:6px 0 0;font-size:12px;line-height:1.5;color:#8a8a8a;word-break:break-all;user-select:all;}
@@ -2748,6 +2762,8 @@ button {font:inherit;color:inherit;}
 }
 [data-theme="dark"] .zhihuE_NxCard {background:#2b2f36;color:#e8edf2;}
 [data-theme="dark"] .zhihuE_NxClose,[data-theme="dark"] .zhihuE_NxChip,[data-theme="dark"] .zhihuE_NxTrack {background:#343a44;color:#c5ced8;}
+[data-theme="dark"] .zhihuE_NxChip.is-win {background:#e8edf2;color:#1d1d1f;}
+[data-theme="dark"] .zhihuE_NxChip.is-win b {color:rgba(29,29,31,.55);}
 [data-theme="dark"] .zhihuE_NxClose:hover {background:#e8edf2;color:#1d1d1f;}
 [data-theme="dark"] .zhihuE_NxHero {border-color:#3c434d;}
 [data-theme="dark"] .zhihuE_NxHero.is-keep {background:#2f3a34;border-color:#3d5244;}
