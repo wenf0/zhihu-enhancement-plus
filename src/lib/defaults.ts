@@ -19,8 +19,8 @@ export const MENU_ITEMS: MenuItem[] = [
   { key: 'menu_backToTop', label: '右键两侧回顶', tip: '在页面左右空白处点右键，快速滚回顶部。', def: true },
   { key: 'menu_questionRichTextMore', label: '展开问题描述', tip: '进入问题页时自动点开「显示全部」，完整展示题干。', def: false },
   { key: 'menu_publishTop', label: '置顶显示时间', tip: '把发布/编辑时间提到标题附近，不用滚到底才看到。', def: true },
-  { key: 'menu_typeTips', label: '区分问题文章', tip: '信息流标题前加「问题 / 文章 / 视频 / 想法」标签。', def: true },
-  { key: 'menu_toQuestion', label: '直达问题按钮', tip: '回答卡片旁加按钮，直接打开对应问题页，而不是该回答。', def: true },
+  { key: 'menu_typeTips', label: '区分问题文章', tip: '信息流标题旁加「问题 / 文章 / 视频 / 想法」圆角标签。', def: true },
+  { key: 'menu_toQuestion', label: '直达问题按钮', tip: '回答标题旁加圆角按钮，直接打开对应问题页，而不是该回答。', def: true },
 
   { key: 'menu_blockUsers', label: '屏蔽指定用户', tip: '隐藏黑名单用户的回答、文章和评论。可在下方编辑名单。', def: true },
   { key: 'menu_customBlockUsers', label: '编辑屏蔽用户', tip: '自定义屏蔽用户', def: DEFAULT_BLOCK_USERS, kind: 'users' },

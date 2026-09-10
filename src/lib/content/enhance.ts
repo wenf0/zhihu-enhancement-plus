@@ -106,6 +106,7 @@ export function lowProfileMode() {
         .zhihu_e_toQuestion {
             color: #888 !important;
             text-decoration: none !important;
+            background-color: #8882 !important;
         }
 
         .ContentItem-action { color: #888 !important; }
@@ -171,6 +172,77 @@ function clearTypeTips() {
     qsa(`.${TYPE_TIP_CLASS}`).forEach(el => el.remove());
 }
 
+function titleTagFeaturesOn() {
+    return !!(menuValue('menu_typeTips') || menuValue('menu_toQuestion'));
+}
+
+/** 标题行 flex 对齐 + 清掉旧版 ::before 双标签 + 圆角 pill 基底 */
+function syncTitleTagChrome() {
+    if (!titleTagFeaturesOn()) {
+        removeStyle('zhihu-plus-title-chrome');
+        return;
+    }
+    injectStyle('zhihu-plus-title-chrome', `
+h2.ContentItem-title {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  gap: 8px !important;
+  line-height: 1.5 !important;
+}
+h2.ContentItem-title > a:not(.zhihu_e_toQuestion) {
+  flex: 0 1 auto !important;
+  max-width: 100% !important;
+}
+/* 清掉旧版挂在 title / a 上的 ::before「问题」等，避免双标签 */
+.AnswerItem .ContentItem-title::before,
+.TopstoryQuestionAskItem .ContentItem-title::before,
+.ZVideoItem .ContentItem-title::before,
+.ZvideoItem .ContentItem-title::before,
+.PinItem .ContentItem-title::before,
+.ArticleItem .ContentItem-title::before,
+.AnswerItem .ContentItem-title a:not(.zhihu_e_toQuestion)::before,
+.TopstoryQuestionAskItem .ContentItem-title a:not(.zhihu_e_toQuestion)::before,
+.ZVideoItem .ContentItem-title a::before,
+.ZvideoItem .ContentItem-title a::before,
+.PinItem .ContentItem-title a::before,
+.ArticleItem .ContentItem-title a::before {
+  content: none !important;
+  display: none !important;
+}
+.${TYPE_TIP_CLASS},
+a.zhihu_e_toQuestion {
+  box-sizing: border-box !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex: 0 0 auto !important;
+  height: 22px !important;
+  padding: 0 10px !important;
+  margin: 0 !important;
+  border: none !important;
+  border-radius: 999px !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  line-height: 1 !important;
+  letter-spacing: 0.02em !important;
+  text-decoration: none !important;
+  white-space: nowrap !important;
+  vertical-align: middle !important;
+  box-shadow: none !important;
+  background-image: none !important;
+}
+a.zhihu_e_toQuestion {
+  color: #5b6abf !important;
+  background-color: #5b6abf1f !important;
+}
+a.zhihu_e_toQuestion:hover {
+  color: #3f4fa8 !important;
+  background-color: #5b6abf33 !important;
+}
+`);
+}
+
 function decorateTypeTip(titleEl) {
     if (!menuValue('menu_typeTips')) return;
     if (!titleEl || titleEl.querySelector(`.${TYPE_TIP_CLASS}`)) return;
@@ -180,35 +252,30 @@ function decorateTypeTip(titleEl) {
     tip.className = `${TYPE_TIP_CLASS} ${TYPE_TIP_CLASS}--${kind.mod}`;
     tip.textContent = kind.text;
     tip.setAttribute('aria-hidden', 'true');
-    titleEl.insertAdjacentElement('afterbegin', tip);
+    const toQ = titleEl.querySelector('a.zhihu_e_toQuestion');
+    if (toQ) {
+        toQ.insertAdjacentElement('beforebegin', tip);
+        return;
+    }
+    const titleA = titleEl.querySelector('a:not(.zhihu_e_toQuestion)');
+    if (titleA) titleA.insertAdjacentElement('afterend', tip);
+    else titleEl.appendChild(tip);
 }
 
 let typeTipsBound = false;
 
 export function addTypeTips() {
+    syncTitleTagChrome();
     if (!menuValue('menu_typeTips')) {
         clearTypeTips();
         return;
     }
-    const marginY = location.pathname === '/search' ? '2' : '4';
-    injectStyle('zhihu-plus-type-tips', `/* 区分问题文章 */
-.${TYPE_TIP_CLASS} {
-  font-weight: bold;
-  font-size: 13px;
-  padding: 1px 4px 0;
-  border-radius: 2px;
-  display: inline-block;
-  vertical-align: top;
-  margin: ${marginY}px 8px 0 0;
-  line-height: 1.4;
-  pointer-events: none;
-  user-select: none;
-}
-.${TYPE_TIP_CLASS}--question { color: #f68b83; background-color: #f68b8333; }
-.${TYPE_TIP_CLASS}--questionAsk { color: #ff5a4e; background-color: #ff5a4e33; }
-.${TYPE_TIP_CLASS}--video { color: #00BCD4; background-color: #00BCD433; }
-.${TYPE_TIP_CLASS}--pin { color: #4CAF50; background-color: #4CAF5033; }
-.${TYPE_TIP_CLASS}--article { color: #2196F3; background-color: #2196F333; }
+    injectStyle('zhihu-plus-type-tips', `
+.${TYPE_TIP_CLASS}--question { color: #e85d4c !important; background-color: #e85d4c1f !important; }
+.${TYPE_TIP_CLASS}--questionAsk { color: #e23b2e !important; background-color: #e23b2e1f !important; }
+.${TYPE_TIP_CLASS}--video { color: #0aa2b8 !important; background-color: #0aa2b81f !important; }
+.${TYPE_TIP_CLASS}--pin { color: #2f9e44 !important; background-color: #2f9e441f !important; }
+.${TYPE_TIP_CLASS}--article { color: #1b7fd1 !important; background-color: #1b7fd11f !important; }
 `);
 
     const titleSel = 'h2.ContentItem-title';
@@ -222,6 +289,7 @@ export function addTypeTips() {
         forAddedElements(mutations, target => eachMatch(target, titleSel, decorateTypeTip));
     });
     on(window, 'urlchange', () => {
+        syncTitleTagChrome();
         if (!menuValue('menu_typeTips')) {
             clearTypeTips();
             return;
@@ -233,25 +301,29 @@ export function addTypeTips() {
 let toQuestionBound = false;
 
 export function addToQuestion() {
+    syncTitleTagChrome();
     if (!menuValue('menu_toQuestion')) {
         removeStyle('zhihu-plus-to-question');
         qsa('a.zhihu_e_toQuestion').forEach(el => el.remove());
+        if (!menuValue('menu_typeTips')) removeStyle('zhihu-plus-title-chrome');
         return;
     }
-    const css = location.pathname === '/search'
-        ? `a.zhihu_e_toQuestion {font-size: 13px !important;font-weight: normal !important;padding: 1px 6px 0 !important;border-radius: 2px !important;display: inline-block !important;vertical-align: top !important;height: 20.67px !important;line-height: 20.67px !important;margin-top: 2px !important;margin-left: 8px !important;}`
-        : `a.zhihu_e_toQuestion {font-size: 13px !important;font-weight: normal !important;padding: 1px 6px 0 !important;border-radius: 2px !important;display: inline-block !important;vertical-align: top !important;margin-top: 4px !important;margin-left: 8px !important;}`;
-    injectStyle('zhihu-plus-to-question', css);
+    // 样式已在 title-chrome；保留空壳 id 便于开关拆除时对齐
+    injectStyle('zhihu-plus-to-question', `a.zhihu_e_toQuestion { cursor: pointer !important; }`);
 
     const decorate = titleA => {
         if (!menuValue('menu_toQuestion')) return;
         if (!titleA || titleA.classList.contains('zhihu_e_toQuestion')) return;
         if (!titleA.parentElement || titleA.parentElement.querySelector('a.zhihu_e_toQuestion')) return;
-        if (titleA.textContent.includes('?')) titleA.innerHTML = titleA.innerHTML.replace('?', '？');
+        if (titleA.textContent.includes('?')) {
+            titleA.textContent = titleA.textContent.replace(/\?/g, '？');
+        }
         if (!/answer\/\d+/.test(titleA.href)) return;
         const meta = titleA.parentElement.querySelector('meta[itemprop="url"]');
         if (!meta) return;
-        titleA.insertAdjacentHTML('afterend', `<a class="zhihu_e_toQuestion VoteButton" href="${meta.content}" target="_blank">直达问题</a>`);
+        const tip = titleA.parentElement.querySelector(`.${TYPE_TIP_CLASS}`);
+        const anchor = tip || titleA;
+        anchor.insertAdjacentHTML('afterend', `<a class="zhihu_e_toQuestion" href="${meta.content}" target="_blank">直达问题</a>`);
     };
 
     const titleSel = 'h2.ContentItem-title a:not(.zhihu_e_toQuestion)';
@@ -265,6 +337,7 @@ export function addToQuestion() {
         forAddedElements(mutations, target => eachMatch(target, titleSel, decorate));
     });
     on(window, 'urlchange', () => {
+        syncTitleTagChrome();
         if (!menuValue('menu_toQuestion')) return;
         onReadyNodes(titleSel, decorate);
     });
