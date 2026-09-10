@@ -17,7 +17,7 @@ export const MENU_ITEMS: MenuItem[] = [
   { key: 'menu_collapsedAnswer', label: '一键收起全部', tip: '右下角加按钮，一次收起当前页所有展开的回答和评论。', def: true },
   { key: 'menu_collapsedNowAnswer', label: '点击两侧收起', tip: '点击页面左右空白区域，收起当前展开的回答或评论。', def: true },
   { key: 'menu_backToTop', label: '右键两侧回顶', tip: '在页面左右空白处点右键，快速滚回顶部。', def: true },
-  { key: 'menu_questionRichTextMore', label: '展开问题描述', tip: '进入问题页时自动点开「显示全部」，完整展示题干。', def: false },
+  { key: 'menu_questionRichTextMore', label: '展开问题描述', tip: '进入问题页时自动点开「显示全部」，完整展示题干。', def: true },
   { key: 'menu_publishTop', label: '置顶显示时间', tip: '把发布/编辑时间提到标题附近，不用滚到底才看到。', def: true },
   { key: 'menu_typeTips', label: '区分问题文章', tip: '信息流标题旁加「问题 / 文章 / 视频 / 想法」圆角标签。', def: true },
   { key: 'menu_toQuestion', label: '直达问题按钮', tip: '回答标题旁加圆角按钮，直接打开对应问题页，而不是该回答。', def: true },
