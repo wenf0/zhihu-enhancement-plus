@@ -52,71 +52,120 @@ function sortLearnedEntries(learned: Record<string, TasteEntry>) {
   });
 }
 
-function LearnedWordRow({
-  word,
-  entry,
+function LearnedWordTags({
+  items,
   onRename,
   onDelta,
   onDelete,
 }: {
-  word: string;
-  entry: TasteEntry;
+  items: Array<[string, TasteEntry]>;
   onRename: (from: string, to: string) => void;
   onDelta: (word: string, delta: number) => void;
   onDelete: (word: string) => void;
 }) {
-  const [draft, setDraft] = useState(word);
+  const [editing, setEditing] = useState<string | null>(null);
+  const [draft, setDraft] = useState('');
 
   useEffect(() => {
-    setDraft(word);
-  }, [word]);
+    if (editing) setDraft(editing);
+  }, [editing]);
+
+  useEffect(() => {
+    if (editing && !items.some(([word]) => word === editing)) setEditing(null);
+  }, [items, editing]);
 
   const commitRename = () => {
+    if (!editing) return;
     const next = draft.replace(/\s+/g, '').trim();
-    if (!next || next === word) {
-      setDraft(word);
+    if (!next || next === editing) {
+      setDraft(editing);
+      setEditing(null);
       return;
     }
-    onRename(word, next);
+    onRename(editing, next);
+    setEditing(next);
   };
 
+  if (!items.length) {
+    return <p className="text-sm text-zinc-500">还没有口味新词。在信息流点「喜欢 / 不感兴趣」，或上方手动添加。</p>;
+  }
+
   return (
-    <Card>
-      <CardContent className="flex flex-wrap items-center gap-3 py-3">
-        <Input
-          className="min-w-32 flex-1"
-          value={draft}
-          onChange={e => setDraft(e.target.value)}
-          onBlur={commitRename}
-          onKeyDown={e => {
-            if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
-            if (e.key === 'Escape') setDraft(word);
-          }}
-          aria-label="口味词"
-        />
-        <div className="flex items-center gap-1">
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={(entry.delta || 0) <= LEARNED_DELTA_RANGE[0]}
-            onClick={() => onDelta(word, (entry.delta || 0) - 1)}
+    <div className="flex flex-wrap gap-2">
+      {items.map(([word, entry]) => {
+        if (editing === word) {
+          return (
+            <div
+              key={word}
+              className="inline-flex max-w-full flex-wrap items-center gap-1 rounded-full border border-zinc-300 bg-white py-0.5 pr-1 pl-2 shadow-sm"
+            >
+              <input
+                autoFocus
+                className="h-6 w-24 min-w-0 border-0 bg-transparent text-xs outline-none"
+                value={draft}
+                onChange={e => setDraft(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    commitRename();
+                  }
+                  if (e.key === 'Escape') setEditing(null);
+                }}
+                aria-label="编辑口味词"
+              />
+              <button
+                type="button"
+                className="h-5 w-5 rounded-full text-xs text-zinc-500 hover:bg-zinc-100 disabled:opacity-40"
+                disabled={(entry.delta || 0) <= LEARNED_DELTA_RANGE[0]}
+                onClick={() => onDelta(word, (entry.delta || 0) - 1)}
+              >
+                −
+              </button>
+              <span className="min-w-6 text-center text-xs tabular-nums text-zinc-600">{formatDelta(entry.delta || 0)}</span>
+              <button
+                type="button"
+                className="h-5 w-5 rounded-full text-xs text-zinc-500 hover:bg-zinc-100 disabled:opacity-40"
+                disabled={(entry.delta || 0) >= LEARNED_DELTA_RANGE[1]}
+                onClick={() => onDelta(word, (entry.delta || 0) + 1)}
+              >
+                +
+              </button>
+              <button
+                type="button"
+                className="rounded-full px-1.5 text-xs text-red-600 hover:bg-red-50"
+                onClick={() => {
+                  onDelete(word);
+                  setEditing(null);
+                }}
+              >
+                删除
+              </button>
+              <button
+                type="button"
+                className="rounded-full bg-zinc-900 px-2 py-0.5 text-xs text-white hover:bg-zinc-800"
+                onClick={commitRename}
+              >
+                完成
+              </button>
+            </div>
+          );
+        }
+
+        return (
+          <button
+            key={word}
+            type="button"
+            title="点击编辑或删除"
+            onClick={() => setEditing(word)}
+            className="rounded-full"
           >
-            −
-          </Button>
-          <span className="w-10 text-center text-sm tabular-nums text-zinc-600">{formatDelta(entry.delta || 0)}</span>
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={(entry.delta || 0) >= LEARNED_DELTA_RANGE[1]}
-            onClick={() => onDelta(word, (entry.delta || 0) + 1)}
-          >
-            +
-          </Button>
-        </div>
-        <span className="text-xs text-zinc-400">赞 {entry.like || 0} · 踩 {entry.dislike || 0}</span>
-        <Button size="sm" variant="ghost" onClick={() => onDelete(word)}>删除</Button>
-      </CardContent>
-    </Card>
+            <Badge className="cursor-pointer transition hover:bg-zinc-200">
+              {word} {formatDelta(entry.delta || 0)}
+            </Badge>
+          </button>
+        );
+      })}
+    </div>
   );
 }
 
@@ -390,8 +439,8 @@ export function App() {
                 <p>已记录 {settings.taste.clicks} 次喜欢 / 不感兴趣。</p>
                 <p className="text-sm text-zinc-500">
                   噪音词 {Object.keys(settings.taste.words).length} · 分类 {Object.keys(settings.taste.cats).length} · 新词 {learnedList.length}
+                  {' · '}点击标签可改词、调权或删除
                 </p>
-                <p className="text-sm text-zinc-500">分词不准时可改词名、调权重，或删掉无效词；改完立即写入本地口味。</p>
                 <div className="flex gap-2">
                   <Input
                     value={tasteDraft}
@@ -422,45 +471,36 @@ export function App() {
                     });
                     setTasteDraft('');
                   }}>添加</Button>
+                  <Button variant="outline" onClick={() => void settings.resetTaste()}>清空</Button>
                 </div>
-                <Button variant="outline" onClick={() => void settings.resetTaste()}>清空口味</Button>
               </CardContent>
             </Card>
-            <div className="space-y-2">
-              {learnedList.length === 0 && (
-                <p className="text-sm text-zinc-500">还没有口味新词。在信息流点「喜欢 / 不感兴趣」，或上方手动添加。</p>
-              )}
-              {learnedList.map(([word, entry]) => (
-                <LearnedWordRow
-                  key={word}
-                  word={word}
-                  entry={entry}
-                  onRename={(from, to) => {
-                    patchLearned(learned => {
-                      if (!learned[from] || from === to) return;
-                      const cur = learned[from];
-                      delete learned[from];
-                      learned[to] = learned[to] ? mergeTasteEntries(learned[to], cur) : cur;
-                    });
-                  }}
-                  onDelta={(target, delta) => {
-                    patchLearned(learned => {
-                      const cur = learned[target];
-                      if (!cur) return;
-                      learned[target] = {
-                        ...cur,
-                        delta: clampLearnedDelta(delta),
-                      };
-                    });
-                  }}
-                  onDelete={target => {
-                    patchLearned(learned => {
-                      delete learned[target];
-                    });
-                  }}
-                />
-              ))}
-            </div>
+            <LearnedWordTags
+              items={learnedList}
+              onRename={(from, to) => {
+                patchLearned(learned => {
+                  if (!learned[from] || from === to) return;
+                  const cur = learned[from];
+                  delete learned[from];
+                  learned[to] = learned[to] ? mergeTasteEntries(learned[to], cur) : cur;
+                });
+              }}
+              onDelta={(target, delta) => {
+                patchLearned(learned => {
+                  const cur = learned[target];
+                  if (!cur) return;
+                  learned[target] = {
+                    ...cur,
+                    delta: clampLearnedDelta(delta),
+                  };
+                });
+              }}
+              onDelete={target => {
+                patchLearned(learned => {
+                  delete learned[target];
+                });
+              }}
+            />
           </section>
         )}
 
