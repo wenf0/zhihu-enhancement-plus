@@ -19,6 +19,11 @@ import { settingsExportFilename } from '@/lib/storage';
 import { useSettings } from '@/lib/use-settings';
 import { EXT_VERSION } from '@/lib/version';
 import { NOISE_CATEGORIES } from '@/lib/noise/lexicon';
+import {
+  parseTasteImport,
+  serializeTasteBackup,
+  tasteExportFilename,
+} from '@/lib/taste-io';
 
 /** 与 src/lib/noise/taste.ts 的 TASTE_LEARNED_RANGE 保持一致 */
 const LEARNED_DELTA_RANGE = [-8, 12] as const;
@@ -215,6 +220,7 @@ export function App() {
   const [notice, setNotice] = useState('');
   const [catId, setCatId] = useState(NOISE_CATEGORIES[0]?.id || 'celebrity');
   const [tasteDraft, setTasteDraft] = useState('');
+  const [tasteImportDraft, setTasteImportDraft] = useState('');
 
   const cat = useMemo(() => settings.lexicon?.cats[catId], [settings.lexicon, catId]);
   const learnedList = useMemo(
@@ -405,6 +411,54 @@ export function App() {
                     setTasteDraft('');
                   }}>添加</Button>
                   <Button variant="outline" onClick={() => void settings.resetTaste()}>清空</Button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => downloadJsonFile(
+                      tasteExportFilename(),
+                      JSON.stringify(serializeTasteBackup(settings.taste), null, 2),
+                    )}
+                  >
+                    导出口味
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>导入口味</CardTitle>
+                <CardDescription>
+                  支持口味备份、完整设置 JSON、旧关键词备份，或纯词数组。合并会累加已有词；替换会整份覆盖口味。
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Textarea
+                  value={tasteImportDraft}
+                  onChange={e => setTasteImportDraft(e.target.value)}
+                  placeholder="粘贴 JSON"
+                />
+                <div className="flex flex-wrap gap-2">
+                  <Button onClick={async () => {
+                    try {
+                      const result = parseTasteImport(tasteImportDraft, settings.taste, 'merge');
+                      await settings.updateTaste(result.taste);
+                      setNotice(`已合并口味（${result.source}）· ${result.added} 项`);
+                      setTasteImportDraft('');
+                    } catch {
+                      setNotice('导入口味失败：JSON 格式不对');
+                    }
+                  }}>合并导入</Button>
+                  <Button variant="outline" onClick={async () => {
+                    try {
+                      const result = parseTasteImport(tasteImportDraft, settings.taste, 'replace');
+                      await settings.updateTaste(result.taste);
+                      setNotice(`已替换口味（${result.source}）· ${result.added} 项`);
+                      setTasteImportDraft('');
+                    } catch {
+                      setNotice('导入口味失败：JSON 格式不对');
+                    }
+                  }}>替换导入</Button>
                 </div>
               </CardContent>
             </Card>
