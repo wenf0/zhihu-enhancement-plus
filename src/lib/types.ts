@@ -1,11 +1,11 @@
 export type FilterMode = 'off' | 'demote' | 'hide';
-export type MenuKind = 'users' | 'filter' | 'group' | 'lexicon' | 'hidden';
+export type MenuKind = 'users' | 'filter' | 'group' | 'lexicon' | 'hidden' | 'chars';
 
 export interface MenuItem {
   key: string;
   label: string;
   tip: string;
-  def: boolean | string | string[];
+  def: boolean | number | string | string[];
   kind?: MenuKind;
   children?: string[];
 }

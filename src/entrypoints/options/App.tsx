@@ -334,6 +334,8 @@ function CategoryDislikeBars({ rows }: { rows: CategoryDislikeStat[] }) {
   );
 }
 
+const SHORT_EXPAND_CHAR_OPTIONS = [200, 300, 450, 700, 1000];
+
 type Pane = 'appearance' | 'reading' | 'block' | 'filter' | 'users' | 'taste' | 'lexicon' | 'backup';
 
 const NAV: Array<{ id: Pane; title: string; desc: string }> = [
@@ -411,6 +413,7 @@ export function App() {
   }
 
   const filter = (settings.values.menu_blockKeywords || 'off') as FilterMode;
+  const shortExpandChars = Number(settings.values.menu_autoExpandShortChars) || 450;
 
   return (
     <div className="mx-auto flex min-h-screen max-w-6xl">
@@ -460,9 +463,26 @@ export function App() {
         )}
 
         {pane === 'reading' && (
-          <section>
-            <h2 className="mb-4 text-2xl font-semibold">阅读</h2>
+          <section className="space-y-4">
+            <h2 className="text-2xl font-semibold">阅读</h2>
             <ToggleList keys={READING_KEYS} values={settings.values} setBool={settings.setBool} />
+            <Card>
+              <CardHeader>
+                <CardTitle>短内容字数上限</CardTitle>
+                <CardDescription>自动展开后全文超过这个字数就收回，只留摘要。</CardDescription>
+              </CardHeader>
+              <CardContent className="flex gap-2">
+                {SHORT_EXPAND_CHAR_OPTIONS.map(n => (
+                  <Button
+                    key={n}
+                    variant={shortExpandChars === n ? 'default' : 'outline'}
+                    onClick={() => void settings.setNumber('menu_autoExpandShortChars', n)}
+                  >
+                    {n} 字
+                  </Button>
+                ))}
+              </CardContent>
+            </Card>
           </section>
         )}
 

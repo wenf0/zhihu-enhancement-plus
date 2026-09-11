@@ -170,6 +170,7 @@ export function isValidSettingValue(key: string, value: unknown) {
   if (!item) return false;
   if (item.kind === 'users') return Array.isArray(value) && value.every(x => typeof x === 'string');
   if (item.kind === 'filter') return value === 'off' || value === 'demote' || value === 'hide' || typeof value === 'boolean';
+  if (item.kind === 'chars') return typeof value === 'number' && Number.isFinite(value) && value > 0;
   if (item.kind === 'group' || item.kind === 'lexicon') return typeof value === 'string';
   return typeof value === 'boolean';
 }

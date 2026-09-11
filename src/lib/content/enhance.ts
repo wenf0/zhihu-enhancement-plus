@@ -637,16 +637,47 @@ export function watchTopTime(css, classs) {
 /* -------------------------------------------------------------------------- */
 
 const SHORT_EXPAND_MARK = 'zhihuEShortExpand';
+const SHORT_EXPAND_TRIES = 'zhihuEShortExpandTries';
+const SHORT_EXPAND_CLAMP_CLASS = 'zhihu-plus-short-clamped';
+const SHORT_EXPAND_MORE_CLASS = 'zhihu-plus-short-more';
+/** 这些标记已成定局，扫描时直接跳过 */
+const SHORT_EXPAND_SETTLED = new Set(['open', 'long', 'none', 'probe']);
 /** CSS 截断：隐藏高度不超过约 N 行才直接展开 */
 const SHORT_EXPAND_MAX_LINES = 3;
 /** 探测展开后：正文高度不超过约 N 行才保留 */
 const SHORT_EXPAND_KEEP_LINES = 12;
-/** 探测展开后：全文不超过该字数才保留 */
+/** 全文字数上限的兜底值，设置项没读到时用 */
 const SHORT_EXPAND_KEEP_CHARS = 450;
 /** 摘要已超过该字数则不再探测 */
 const SHORT_EXPAND_PREVIEW_PROBE_MAX = 220;
 /** 段/图/标题过多视为长文 */
 const SHORT_EXPAND_KEEP_BLOCK_MAX = 10;
+/** 只处理视口上下这个像素范围内的卡片，避免整页都去点展开 */
+const SHORT_EXPAND_VIEWPORT_MARGIN = 600;
+/** 正文长度连续这么久没变，算加载完 */
+const SHORT_EXPAND_STABLE_MS = 220;
+/** 等展开结果的总上限 */
+const SHORT_EXPAND_TIMEOUT_MS = 2500;
+
+function shortExpandKeepChars() {
+    const n = Number(menuValue('menu_autoExpandShortChars'));
+    return Number.isFinite(n) && n > 0 ? n : SHORT_EXPAND_KEEP_CHARS;
+}
+
+/** 问题页开着「默认收起回答」时让路：两个功能会对同一批回答一个点开一个点收。 */
+function shortExpandAllowed() {
+    if (!menuValue('menu_autoExpandShort')) return false;
+    const p = page();
+    if (p.isQuestion && !p.isAnswer && !p.isQuestionWaiting && menuValue('menu_defaultCollapsedAnswer')) return false;
+    return true;
+}
+
+function nearViewport(el) {
+    const rect = el.getBoundingClientRect();
+    if (rect.width <= 0 && rect.height <= 0) return false;
+    const vh = window.innerHeight || document.documentElement.clientHeight;
+    return rect.top < vh + SHORT_EXPAND_VIEWPORT_MARGIN && rect.bottom > -SHORT_EXPAND_VIEWPORT_MARGIN;
+}
 
 function shortExpandLineHeight(el) {
     const style = getComputedStyle(el);
@@ -680,21 +711,26 @@ function findRetractButton(scope) {
     return null;
 }
 
-function richPreviewText(inner) {
-    const rt = inner.querySelector('.RichText, [itemprop="text"], [itemprop="articleBody"]') || inner;
-    return (rt.textContent || '').replace(/\s+/g, ' ').trim();
+function richTextNode(inner) {
+    return inner.querySelector('.RichText, [itemprop="text"], [itemprop="articleBody"]') || inner;
 }
 
-function charLen(text) {
-    return Array.from(text || '').length;
+/** 只在判断「正文还在不在变」时用：不做归一化，长文上省下整轮正则。 */
+function rawTextLen(inner) {
+    return (richTextNode(inner).textContent || '').length;
+}
+
+/** 真正拿来和字数上限比的长度，按码点算。 */
+function normalizedCharLen(inner) {
+    const text = (richTextNode(inner).textContent || '').replace(/\s+/g, ' ').trim();
+    return Array.from(text).length;
 }
 
 function isExpandedShortEnough(inner) {
     if (!(inner instanceof HTMLElement)) return false;
-    const text = richPreviewText(inner);
-    const chars = charLen(text);
+    const chars = normalizedCharLen(inner);
     if (chars <= 0) return false;
-    if (chars > SHORT_EXPAND_KEEP_CHARS) return false;
+    if (chars > shortExpandKeepChars()) return false;
 
     const line = shortExpandLineHeight(inner);
     const maxH = line * SHORT_EXPAND_KEEP_LINES + 8;
@@ -706,16 +742,61 @@ function isExpandedShortEnough(inner) {
     return true;
 }
 
+/** 没有「收起」按钮可点时的兜底：自己把正文夹住，并补一个展开入口。 */
+function clampLongRich(rich) {
+    if (rich.classList.contains(SHORT_EXPAND_CLAMP_CLASS)) return;
+    injectStyle('zhihu-plus-short-clamp', `
+        .${SHORT_EXPAND_CLAMP_CLASS} .RichContent-inner {
+            max-height: ${SHORT_EXPAND_KEEP_LINES}em;
+            overflow: hidden;
+        }
+        .${SHORT_EXPAND_MORE_CLASS} {
+            display: block;
+            margin-top: 4px;
+            padding: 0;
+            border: 0;
+            background: none;
+            color: #175199;
+            font-size: 15px;
+            cursor: pointer;
+        }
+    `);
+    rich.classList.add(SHORT_EXPAND_CLAMP_CLASS);
+    const more = document.createElement('button');
+    more.type = 'button';
+    more.className = SHORT_EXPAND_MORE_CLASS;
+    more.textContent = '阅读全文';
+    more.addEventListener('click', event => {
+        event.preventDefault();
+        event.stopPropagation();
+        rich.classList.remove(SHORT_EXPAND_CLAMP_CLASS);
+        more.remove();
+    });
+    rich.appendChild(more);
+}
+
+/** 收回长文：先点知乎自己的「收起」，点不动就自己夹住，别把长文摊在那。 */
 function retractExpandedRich(rich) {
     const item = rich.closest('.ContentItem') || rich;
     const retract = findRetractButton(rich) || findRetractButton(item);
-    if (retract) retract.click();
     rich.dataset[SHORT_EXPAND_MARK] = 'long';
+    if (!retract) {
+        clampLongRich(rich);
+        return;
+    }
+    retract.click();
+    setTimeout(() => {
+        if (!rich.isConnected || rich.dataset[SHORT_EXPAND_MARK] !== 'long') return;
+        if (rich.classList.contains('is-collapsed')) return;
+        const inner = rich.querySelector('.RichContent-inner') || rich;
+        if (!isExpandedShortEnough(inner)) clampLongRich(rich);
+    }, 300);
 }
 
-/** 已误标 open 的长文：再量一次，过长则收回。 */
+/** 已标 open 的卡片：再量一次，过长则收回。 */
 function recheckOpenShort(rich) {
-    if (!(rich instanceof HTMLElement) || rich.dataset[SHORT_EXPAND_MARK] !== 'open') return;
+    if (!(rich instanceof HTMLElement) || !rich.isConnected) return;
+    if (rich.dataset[SHORT_EXPAND_MARK] !== 'open') return;
     if (rich.classList.contains('is-collapsed')) return;
     const inner = rich.querySelector('.RichContent-inner') || rich;
     if (!isExpandedShortEnough(inner)) retractExpandedRich(rich);
@@ -732,6 +813,14 @@ function measureHiddenPx(inner) {
 
     const clone = inner.cloneNode(true);
     if (!(clone instanceof HTMLElement)) return 0;
+    // 克隆出来的图片/视频会再走一遍加载，且未定尺寸时高度为 0；换成等高占位块
+    const mediaSelector = 'img, video, iframe, canvas';
+    const media = [...inner.querySelectorAll(mediaSelector)];
+    clone.querySelectorAll(mediaSelector).forEach((node, i) => {
+        const spacer = document.createElement('div');
+        spacer.style.height = `${Math.round(media[i] ? media[i].getBoundingClientRect().height : 0)}px`;
+        node.replaceWith(spacer);
+    });
     clone.querySelectorAll('button.ContentItem-more, button.ContentItem-expandButton, .ContentItem-more, script, style').forEach(n => n.remove());
     clone.style.cssText = [
         'position:absolute',
@@ -739,6 +828,7 @@ function measureHiddenPx(inner) {
         'top:0',
         'visibility:hidden',
         'pointer-events:none',
+        'contain:layout style',
         `width:${width}px`,
         'height:auto',
         'max-height:none',
@@ -755,13 +845,13 @@ function measureHiddenPx(inner) {
 
 function scheduleShortExpandRetry(rich) {
     if (rich.dataset[SHORT_EXPAND_MARK] === 'wait') return;
-    const tries = Number(rich.dataset.zhihuEShortExpandTries || 0);
+    const tries = Number(rich.dataset[SHORT_EXPAND_TRIES] || 0);
     if (tries >= 2) {
         delete rich.dataset[SHORT_EXPAND_MARK];
         tryProbeExpandShort(rich);
         return;
     }
-    rich.dataset.zhihuEShortExpandTries = String(tries + 1);
+    rich.dataset[SHORT_EXPAND_TRIES] = String(tries + 1);
     rich.dataset[SHORT_EXPAND_MARK] = 'wait';
     setTimeout(() => {
         if (rich.dataset[SHORT_EXPAND_MARK] !== 'wait') return;
@@ -770,11 +860,60 @@ function scheduleShortExpandRetry(rich) {
     }, 400);
 }
 
+/**
+ * 点开后等正文加载完：盯着子树变动，正文长度连续 SHORT_EXPAND_STABLE_MS 没变就算稳。
+ * 长度还跟摘要一样说明全文没送到，不启动稳定计时，交给总超时兜底。
+ */
+function waitExpandSettled(rich, previewLen, onSettled) {
+    let finished = false;
+    let lastLen = -1;
+    let stableTimer = 0;
+
+    const observer = new MutationObserver(check);
+
+    function finish() {
+        if (finished) return;
+        finished = true;
+        clearTimeout(stableTimer);
+        clearTimeout(deadline);
+        observer.disconnect();
+        if (rich.isConnected) onSettled();
+    }
+
+    function check() {
+        if (!rich.isConnected) {
+            finish();
+            return;
+        }
+        const inner = rich.querySelector('.RichContent-inner') || rich;
+        const len = rawTextLen(inner);
+        if (len === lastLen) return;
+        lastLen = len;
+        clearTimeout(stableTimer);
+        if (len <= previewLen + 8) return;
+        stableTimer = setTimeout(finish, SHORT_EXPAND_STABLE_MS);
+    }
+
+    const deadline = setTimeout(finish, SHORT_EXPAND_TIMEOUT_MS);
+    observer.observe(rich, { childList: true, subtree: true, characterData: true });
+    check();
+}
+
+/** 量最终尺寸：够短就留着，长了就收回。 */
+function settleShortResult(rich) {
+    const inner = rich.querySelector('.RichContent-inner') || rich;
+    if (isExpandedShortEnough(inner)) {
+        rich.dataset[SHORT_EXPAND_MARK] = 'open';
+        setTimeout(() => recheckOpenShort(rich), 600);
+        return;
+    }
+    retractExpandedRich(rich);
+}
+
 /** 知乎信息流常截断 DOM 正文；点开后等正文稳定，再按字数/高度决定是否收回。 */
 function tryProbeExpandShort(rich) {
     if (!(rich instanceof HTMLElement)) return;
-    const mark = rich.dataset[SHORT_EXPAND_MARK];
-    if (mark === 'open' || mark === 'long' || mark === 'none' || mark === 'probe') return;
+    if (SHORT_EXPAND_SETTLED.has(rich.dataset[SHORT_EXPAND_MARK])) return;
 
     const more = findReadMoreButton(rich);
     if (!more) {
@@ -785,81 +924,30 @@ function tryProbeExpandShort(rich) {
     const inner = rich.querySelector('.RichContent-inner') || rich;
     if (!(inner instanceof HTMLElement)) return;
 
-    const preview = richPreviewText(inner);
-    if (charLen(preview) > SHORT_EXPAND_PREVIEW_PROBE_MAX) {
+    if (normalizedCharLen(inner) > SHORT_EXPAND_PREVIEW_PROBE_MAX) {
         rich.dataset[SHORT_EXPAND_MARK] = 'long';
         return;
     }
 
     rich.dataset[SHORT_EXPAND_MARK] = 'probe';
-    const previewLen = charLen(preview);
+    const previewLen = rawTextLen(inner);
     more.click();
 
-    let settled = false;
-    let lastLen = -1;
-    let stableHits = 0;
-
-    const decide = () => {
-        if (settled || !rich.isConnected) return;
-        settled = true;
-        if (isExpandedShortEnough(inner)) {
-            rich.dataset[SHORT_EXPAND_MARK] = 'open';
-            setTimeout(() => recheckOpenShort(rich), 400);
-            setTimeout(() => recheckOpenShort(rich), 1200);
+    waitExpandSettled(rich, previewLen, () => {
+        // 展开压根没生效，留给下一轮扫描
+        if (rich.classList.contains('is-collapsed') && findReadMoreButton(rich)) {
+            rich.dataset[SHORT_EXPAND_MARK] = 'skip';
             return;
         }
-        retractExpandedRich(rich);
-    };
-
-    const settle = (attempt = 0) => {
-        if (settled || !rich.isConnected) return;
-
-        const stillCollapsed = rich.classList.contains('is-collapsed') && findReadMoreButton(rich);
-        if (stillCollapsed) {
-            if (attempt < 20) setTimeout(() => settle(attempt + 1), 60);
-            else {
-                settled = true;
-                rich.dataset[SHORT_EXPAND_MARK] = 'skip';
-            }
-            return;
-        }
-
-        const len = charLen(richPreviewText(inner));
-        // 正文仍像摘要（几乎没变）时再等几拍
-        if (len <= previewLen + 8 && attempt < 24) {
-            setTimeout(() => settle(attempt + 1), 80);
-            return;
-        }
-
-        if (len === lastLen && len > previewLen + 8) {
-            stableHits += 1;
-        } else {
-            stableHits = 0;
-            lastLen = len;
-        }
-
-        if (stableHits >= 1 || attempt >= 28) {
-            decide();
-            return;
-        }
-        setTimeout(() => settle(attempt + 1), 80);
-    };
-
-    requestAnimationFrame(() => requestAnimationFrame(() => settle(0)));
-    setTimeout(() => settle(0), 150);
+        settleShortResult(rich);
+    });
 }
 
 function tryAutoExpandShort(rich) {
     if (!(rich instanceof HTMLElement)) return;
     const mark = rich.dataset[SHORT_EXPAND_MARK];
 
-    // 已展开但可能误留长文
-    if (mark === 'open') {
-        recheckOpenShort(rich);
-        return;
-    }
-
-    // 旧版 skip：信息流摘要截断会误标，允许再走探测
+    // skip 是上一轮点展开没生效留下的，卡片还折着就再试一次
     if (mark === 'skip' && rich.classList.contains('is-collapsed') && findReadMoreButton(rich)) {
         delete rich.dataset[SHORT_EXPAND_MARK];
     } else if (mark && mark !== 'wait') {
@@ -886,9 +974,9 @@ function tryAutoExpandShort(rich) {
     const maxHidden = shortExpandLineHeight(inner) * SHORT_EXPAND_MAX_LINES + 4;
     if (hidden > 0 && hidden <= maxHidden) {
         rich.dataset[SHORT_EXPAND_MARK] = 'open';
+        const previewLen = rawTextLen(inner);
         more.click();
-        setTimeout(() => recheckOpenShort(rich), 400);
-        setTimeout(() => recheckOpenShort(rich), 1200);
+        waitExpandSettled(rich, previewLen, () => recheckOpenShort(rich));
         return;
     }
     if (hidden > maxHidden) {
@@ -905,32 +993,68 @@ function tryAutoExpandShort(rich) {
 
 let autoExpandShortBound = false;
 
-/** 短折叠自动展开：只保留真正短的正文；长文探测后收回。 */
-export function autoExpandShortContent() {
-    if (!menuValue('menu_autoExpandShort')) return;
+/** 只碰视口附近、还没定论的卡片：整页点展开既卡又会给知乎刷一堆已读埋点。 */
+function scanShortExpand(root) {
+    eachMatch(root || document, '.RichContent', rich => {
+        if (SHORT_EXPAND_SETTLED.has(rich.dataset[SHORT_EXPAND_MARK])) return;
+        if (!nearViewport(rich)) return;
+        tryAutoExpandShort(rich);
+    });
+}
 
-    const scan = root => eachMatch(root || document, '.RichContent', tryAutoExpandShort);
-    scan(document);
-
+/** 观察器只挂一次，开关和页面判断放在回调里，切页/改设置后才能自己恢复。 */
+function bindShortExpand() {
     if (autoExpandShortBound) return;
     autoExpandShortBound = true;
+
     let pending = false;
     let pendingRoots = [];
-    observeTree(mutations => {
-        if (!menuValue('menu_autoExpandShort')) return;
-        forAddedElements(mutations, target => pendingRoots.push(target));
+    const pendingOpen = new Set();
+    const flush = () => {
+        pending = false;
+        const roots = pendingRoots;
+        pendingRoots = [];
+        for (const root of roots) scanShortExpand(root);
+        for (const rich of pendingOpen) recheckOpenShort(rich);
+        pendingOpen.clear();
+    };
+    const schedule = () => {
         if (pending) return;
         pending = true;
-        requestAnimationFrame(() => {
-            pending = false;
-            const roots = pendingRoots;
-            pendingRoots = [];
-            for (const root of roots) scan(root);
+        requestAnimationFrame(flush);
+    };
+
+    observeTree(mutations => {
+        if (!shortExpandAllowed()) return;
+        forAddedElements(mutations, target => {
+            pendingRoots.push(target);
+            // 内容晚到的已展开卡片：只有它收到插入时才复查，避免全页轮询
+            const host = target.closest('.RichContent');
+            if (host && host.dataset[SHORT_EXPAND_MARK] === 'open') pendingOpen.add(host);
         });
+        schedule();
     });
+
+    // 滚动进视口的卡片不会触发 DOM 插入，得自己补一轮
+    let scrollTimer = 0;
+    on(window, 'scroll', () => {
+        if (scrollTimer) return;
+        scrollTimer = setTimeout(() => {
+            scrollTimer = 0;
+            if (shortExpandAllowed()) scanShortExpand(document);
+        }, 300);
+    }, { passive: true });
+
     on(window, 'urlchange', () => {
-        if (!menuValue('menu_autoExpandShort')) return;
-        requestAnimationFrame(() => scan(document));
+        if (!shortExpandAllowed()) return;
+        requestAnimationFrame(() => scanShortExpand(document));
     });
+}
+
+/** 短折叠自动展开：只保留真正短的正文；长文探测后收回。 */
+export function autoExpandShortContent() {
+    bindShortExpand();
+    if (!shortExpandAllowed()) return;
+    scanShortExpand(document);
 }
 

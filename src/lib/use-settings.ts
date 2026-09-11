@@ -48,6 +48,11 @@ export function useSettings() {
     setValues(prev => ({ ...prev, [key]: value }));
   }, []);
 
+  const setNumber = useCallback(async (key: string, value: number) => {
+    await setSetting(key, value);
+    setValues(prev => ({ ...prev, [key]: value }));
+  }, []);
+
   const setFilter = useCallback(async (mode: FilterMode) => {
     await setSetting('menu_blockKeywords', mode);
     setValues(prev => ({ ...prev, menu_blockKeywords: mode }));
@@ -108,6 +113,7 @@ export function useSettings() {
     users,
     items: MENU_ITEMS,
     setBool,
+    setNumber,
     setFilter,
     setUsers,
     updateTaste,
