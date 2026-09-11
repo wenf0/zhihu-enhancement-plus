@@ -631,3 +631,143 @@ export function watchTopTime(css, classs) {
         });
     });
 }
+
+/* -------------------------------------------------------------------------- */
+/* 短内容自动展开「阅读全文」                                                   */
+/* -------------------------------------------------------------------------- */
+
+const SHORT_EXPAND_MARK = 'zhihuEShortExpand';
+/** 隐藏高度不超过约 N 行才自动展开 */
+const SHORT_EXPAND_MAX_LINES = 3;
+
+function shortExpandLineHeight(el) {
+    const style = getComputedStyle(el);
+    const lh = parseFloat(style.lineHeight);
+    if (Number.isFinite(lh) && lh > 0) return lh;
+    const fs = parseFloat(style.fontSize);
+    return (Number.isFinite(fs) && fs > 0 ? fs : 15) * 1.6;
+}
+
+function findReadMoreButton(scope) {
+    if (!(scope instanceof Element)) return null;
+    const named = scope.querySelector('button.ContentItem-more, button.ContentItem-expandButton, .ContentItem-more');
+    if (named) return named;
+    for (const el of scope.querySelectorAll('button, a')) {
+        const text = (el.textContent || '').replace(/\s+/g, '');
+        if (text.includes('阅读全文') || text.includes('展开全文')) return el;
+    }
+    return null;
+}
+
+/** 估算折叠态相对全文多藏了多少像素（优先 scrollHeight；否则去 clamp 克隆测量）。 */
+function measureHiddenPx(inner) {
+    if (!(inner instanceof HTMLElement)) return 0;
+    const byScroll = inner.scrollHeight - inner.clientHeight;
+    if (byScroll > 1) return byScroll;
+
+    const width = inner.clientWidth;
+    if (width <= 0) return 0;
+
+    const clone = inner.cloneNode(true);
+    if (!(clone instanceof HTMLElement)) return 0;
+    clone.querySelectorAll('button.ContentItem-more, button.ContentItem-expandButton, .ContentItem-more, script, style').forEach(n => n.remove());
+    clone.style.cssText = [
+        'position:absolute',
+        'left:-99999px',
+        'top:0',
+        'visibility:hidden',
+        'pointer-events:none',
+        `width:${width}px`,
+        'height:auto',
+        'max-height:none',
+        'overflow:visible',
+        '-webkit-line-clamp:unset',
+        'line-clamp:unset',
+        'display:block',
+    ].join(';');
+    document.body.appendChild(clone);
+    const full = clone.getBoundingClientRect().height;
+    clone.remove();
+    return Math.max(0, full - inner.getBoundingClientRect().height);
+}
+
+function scheduleShortExpandRetry(rich) {
+    if (rich.dataset[SHORT_EXPAND_MARK] === 'wait') return;
+    const tries = Number(rich.dataset.zhihuEShortExpandTries || 0);
+    if (tries >= 2) {
+        rich.dataset[SHORT_EXPAND_MARK] = 'skip';
+        return;
+    }
+    rich.dataset.zhihuEShortExpandTries = String(tries + 1);
+    rich.dataset[SHORT_EXPAND_MARK] = 'wait';
+    setTimeout(() => {
+        if (rich.dataset[SHORT_EXPAND_MARK] !== 'wait') return;
+        delete rich.dataset[SHORT_EXPAND_MARK];
+        tryAutoExpandShort(rich);
+    }, 400);
+}
+
+function tryAutoExpandShort(rich) {
+    if (!(rich instanceof HTMLElement)) return;
+    if (rich.dataset[SHORT_EXPAND_MARK] && rich.dataset[SHORT_EXPAND_MARK] !== 'wait') return;
+
+    const more = findReadMoreButton(rich);
+    if (!more) {
+        if (rich.classList.contains('is-collapsed')) {
+            scheduleShortExpandRetry(rich);
+            return;
+        }
+        rich.dataset[SHORT_EXPAND_MARK] = 'none';
+        return;
+    }
+
+    const inner = rich.querySelector('.RichContent-inner') || rich;
+    if (!(inner instanceof HTMLElement) || inner.clientHeight <= 0) {
+        scheduleShortExpandRetry(rich);
+        return;
+    }
+
+    const hidden = measureHiddenPx(inner);
+    const maxHidden = shortExpandLineHeight(inner) * SHORT_EXPAND_MAX_LINES + 4;
+    if (hidden > 0 && hidden <= maxHidden) {
+        rich.dataset[SHORT_EXPAND_MARK] = 'open';
+        more.click();
+        return;
+    }
+    if (hidden <= 0 && rich.classList.contains('is-collapsed')) {
+        scheduleShortExpandRetry(rich);
+        return;
+    }
+    rich.dataset[SHORT_EXPAND_MARK] = hidden > maxHidden ? 'long' : 'skip';
+}
+
+let autoExpandShortBound = false;
+
+/** 折叠后只多出约两三行时自动点「阅读全文」；长文保持折叠。 */
+export function autoExpandShortContent() {
+    if (!menuValue('menu_autoExpandShort')) return;
+
+    const scan = root => eachMatch(root || document, '.RichContent', tryAutoExpandShort);
+    scan(document);
+
+    if (autoExpandShortBound) return;
+    autoExpandShortBound = true;
+    let pending = false;
+    let pendingRoots = [];
+    observeTree(mutations => {
+        if (!menuValue('menu_autoExpandShort')) return;
+        forAddedElements(mutations, target => pendingRoots.push(target));
+        if (pending) return;
+        pending = true;
+        requestAnimationFrame(() => {
+            pending = false;
+            const roots = pendingRoots;
+            pendingRoots = [];
+            for (const root of roots) scan(root);
+        });
+    });
+    on(window, 'urlchange', () => {
+        if (!menuValue('menu_autoExpandShort')) return;
+        requestAnimationFrame(() => scan(document));
+    });
+}

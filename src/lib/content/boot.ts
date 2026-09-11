@@ -13,7 +13,7 @@ import {
     fullWidthLayout, lowProfileMode, blankTitleAndFavicon, removeLogin, cleanTitles,
     bindEmptySearchPlaceholder, removeHighlightLink, enhanceMediaAndLinks, cleanSearch,
     watchTopTime, addTypeTips, addToQuestion, questionRichTextMore, questionTime,
-    questionAuthor, questionInvitation, topTimePost
+    questionAuthor, questionInvitation, topTimePost, autoExpandShortContent
 } from './enhance';
 
 /* -------------------------------------------------------------------------- */
@@ -29,6 +29,7 @@ export function syncUiFromSettings() {
     addToQuestion();
     collapsedAnswer();
     defaultCollapsedAnswer();
+    autoExpandShortContent();
     bindSideGestures();
     if (!menuValue('menu_blockTypeVideo')) removeStyle('zhihu-plus-hide-zvideo-tab');
     else if (page().isHome || page().isFollow || page().isHot) {
@@ -92,6 +93,7 @@ export function start() {
     }
     closeFloatingComments();
     blockKeywords('comment');
+    autoExpandShortContent();
 
     if (p.isQuestion) {
         if (!p.isQuestionWaiting) {
