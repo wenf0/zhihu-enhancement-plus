@@ -639,12 +639,14 @@ export function watchTopTime(css, classs) {
 const SHORT_EXPAND_MARK = 'zhihuEShortExpand';
 /** CSS 截断：隐藏高度不超过约 N 行才直接展开 */
 const SHORT_EXPAND_MAX_LINES = 3;
-/** 摘要探测：展开后增高不超过约 N 行则保留 */
-const SHORT_EXPAND_PROBE_KEEP_LINES = 8;
-/** 摘要探测：展开后全文不超过该字数则保留 */
-const SHORT_EXPAND_KEEP_CHARS = 400;
-/** 摘要已超过该字数则不再探测（全文几乎一定更长） */
+/** 探测展开后：正文高度不超过约 N 行才保留 */
+const SHORT_EXPAND_KEEP_LINES = 12;
+/** 探测展开后：全文不超过该字数才保留 */
+const SHORT_EXPAND_KEEP_CHARS = 450;
+/** 摘要已超过该字数则不再探测 */
 const SHORT_EXPAND_PREVIEW_PROBE_MAX = 220;
+/** 段/图/标题过多视为长文 */
+const SHORT_EXPAND_KEEP_BLOCK_MAX = 10;
 
 function shortExpandLineHeight(el) {
     const style = getComputedStyle(el);
@@ -679,12 +681,44 @@ function findRetractButton(scope) {
 }
 
 function richPreviewText(inner) {
-    const rt = inner.querySelector('.RichText, [itemprop="text"]') || inner;
+    const rt = inner.querySelector('.RichText, [itemprop="text"], [itemprop="articleBody"]') || inner;
     return (rt.textContent || '').replace(/\s+/g, ' ').trim();
 }
 
 function charLen(text) {
     return Array.from(text || '').length;
+}
+
+function isExpandedShortEnough(inner) {
+    if (!(inner instanceof HTMLElement)) return false;
+    const text = richPreviewText(inner);
+    const chars = charLen(text);
+    if (chars <= 0) return false;
+    if (chars > SHORT_EXPAND_KEEP_CHARS) return false;
+
+    const line = shortExpandLineHeight(inner);
+    const maxH = line * SHORT_EXPAND_KEEP_LINES + 8;
+    const h = Math.max(inner.scrollHeight, inner.getBoundingClientRect().height);
+    if (h > maxH) return false;
+
+    const blocks = inner.querySelectorAll('p, li, h2, h3, h4, figure, img').length;
+    if (blocks > SHORT_EXPAND_KEEP_BLOCK_MAX) return false;
+    return true;
+}
+
+function retractExpandedRich(rich) {
+    const item = rich.closest('.ContentItem') || rich;
+    const retract = findRetractButton(rich) || findRetractButton(item);
+    if (retract) retract.click();
+    rich.dataset[SHORT_EXPAND_MARK] = 'long';
+}
+
+/** 已误标 open 的长文：再量一次，过长则收回。 */
+function recheckOpenShort(rich) {
+    if (!(rich instanceof HTMLElement) || rich.dataset[SHORT_EXPAND_MARK] !== 'open') return;
+    if (rich.classList.contains('is-collapsed')) return;
+    const inner = rich.querySelector('.RichContent-inner') || rich;
+    if (!isExpandedShortEnough(inner)) retractExpandedRich(rich);
 }
 
 /** 估算折叠态相对全文多藏了多少像素（优先 scrollHeight；否则去 clamp 克隆测量）。 */
@@ -723,7 +757,6 @@ function scheduleShortExpandRetry(rich) {
     if (rich.dataset[SHORT_EXPAND_MARK] === 'wait') return;
     const tries = Number(rich.dataset.zhihuEShortExpandTries || 0);
     if (tries >= 2) {
-        // 布局仍不稳时改为摘要探测，避免旧逻辑直接 skip
         delete rich.dataset[SHORT_EXPAND_MARK];
         tryProbeExpandShort(rich);
         return;
@@ -737,7 +770,7 @@ function scheduleShortExpandRetry(rich) {
     }, 400);
 }
 
-/** 知乎信息流常截断 DOM 正文（带 …），量不到 CSS 溢出；先点开再按增高/字数决定是否收回。 */
+/** 知乎信息流常截断 DOM 正文；点开后等正文稳定，再按字数/高度决定是否收回。 */
 function tryProbeExpandShort(rich) {
     if (!(rich instanceof HTMLElement)) return;
     const mark = rich.dataset[SHORT_EXPAND_MARK];
@@ -758,59 +791,74 @@ function tryProbeExpandShort(rich) {
         return;
     }
 
-    const line = shortExpandLineHeight(inner);
-    const keepDelta = line * SHORT_EXPAND_PROBE_KEEP_LINES + 4;
-    const h0 = rich.getBoundingClientRect().height;
     rich.dataset[SHORT_EXPAND_MARK] = 'probe';
+    const previewLen = charLen(preview);
     more.click();
 
     let settled = false;
+    let lastLen = -1;
+    let stableHits = 0;
+
+    const decide = () => {
+        if (settled || !rich.isConnected) return;
+        settled = true;
+        if (isExpandedShortEnough(inner)) {
+            rich.dataset[SHORT_EXPAND_MARK] = 'open';
+            setTimeout(() => recheckOpenShort(rich), 400);
+            setTimeout(() => recheckOpenShort(rich), 1200);
+            return;
+        }
+        retractExpandedRich(rich);
+    };
+
     const settle = (attempt = 0) => {
         if (settled || !rich.isConnected) return;
 
-        // 点开后可能还在拉全文
-        if (rich.querySelector('.ModalLoading-content, .CircleLoadingBar')) {
-            if (attempt < 20) {
-                setTimeout(() => settle(attempt + 1), 80);
-                return;
+        const stillCollapsed = rich.classList.contains('is-collapsed') && findReadMoreButton(rich);
+        if (stillCollapsed) {
+            if (attempt < 20) setTimeout(() => settle(attempt + 1), 60);
+            else {
+                settled = true;
+                rich.dataset[SHORT_EXPAND_MARK] = 'skip';
             }
-            settled = true;
-            rich.dataset[SHORT_EXPAND_MARK] = 'skip';
             return;
         }
 
-        if (rich.classList.contains('is-collapsed') && findReadMoreButton(rich)) {
-            if (attempt < 12) {
-                setTimeout(() => settle(attempt + 1), 50);
-                return;
-            }
-            settled = true;
-            rich.dataset[SHORT_EXPAND_MARK] = 'skip';
+        const len = charLen(richPreviewText(inner));
+        // 正文仍像摘要（几乎没变）时再等几拍
+        if (len <= previewLen + 8 && attempt < 24) {
+            setTimeout(() => settle(attempt + 1), 80);
             return;
         }
 
-        settled = true;
-        const h1 = rich.getBoundingClientRect().height;
-        const delta = Math.max(0, h1 - h0);
-        const full = richPreviewText(inner);
-        const keep = delta <= keepDelta || charLen(full) <= SHORT_EXPAND_KEEP_CHARS;
-        if (keep) {
-            rich.dataset[SHORT_EXPAND_MARK] = 'open';
+        if (len === lastLen && len > previewLen + 8) {
+            stableHits += 1;
+        } else {
+            stableHits = 0;
+            lastLen = len;
+        }
+
+        if (stableHits >= 1 || attempt >= 28) {
+            decide();
             return;
         }
-        const item = rich.closest('.ContentItem') || rich;
-        const retract = findRetractButton(rich) || findRetractButton(item);
-        if (retract) retract.click();
-        rich.dataset[SHORT_EXPAND_MARK] = 'long';
+        setTimeout(() => settle(attempt + 1), 80);
     };
 
     requestAnimationFrame(() => requestAnimationFrame(() => settle(0)));
-    setTimeout(() => settle(0), 120);
+    setTimeout(() => settle(0), 150);
 }
 
 function tryAutoExpandShort(rich) {
     if (!(rich instanceof HTMLElement)) return;
     const mark = rich.dataset[SHORT_EXPAND_MARK];
+
+    // 已展开但可能误留长文
+    if (mark === 'open') {
+        recheckOpenShort(rich);
+        return;
+    }
+
     // 旧版 skip：信息流摘要截断会误标，允许再走探测
     if (mark === 'skip' && rich.classList.contains('is-collapsed') && findReadMoreButton(rich)) {
         delete rich.dataset[SHORT_EXPAND_MARK];
@@ -839,6 +887,8 @@ function tryAutoExpandShort(rich) {
     if (hidden > 0 && hidden <= maxHidden) {
         rich.dataset[SHORT_EXPAND_MARK] = 'open';
         more.click();
+        setTimeout(() => recheckOpenShort(rich), 400);
+        setTimeout(() => recheckOpenShort(rich), 1200);
         return;
     }
     if (hidden > maxHidden) {
@@ -846,7 +896,6 @@ function tryAutoExpandShort(rich) {
         return;
     }
 
-    // 量不到溢出：多半是 DOM 摘要截断（你那张「…阅读全文」卡片）
     if (rich.classList.contains('is-collapsed') || more) {
         tryProbeExpandShort(rich);
         return;
@@ -856,7 +905,7 @@ function tryAutoExpandShort(rich) {
 
 let autoExpandShortBound = false;
 
-/** 短折叠自动展开：CSS 只多两三行直接展开；摘要截断则探测展开，偏长再收起。 */
+/** 短折叠自动展开：只保留真正短的正文；长文探测后收回。 */
 export function autoExpandShortContent() {
     if (!menuValue('menu_autoExpandShort')) return;
 
@@ -884,3 +933,4 @@ export function autoExpandShortContent() {
         requestAnimationFrame(() => scan(document));
     });
 }
+
