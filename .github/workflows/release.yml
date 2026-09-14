@@ -38,6 +38,8 @@ jobs:
           name: chrome-extension-zip
           path: .output/zhihu-enhancement-plus-*-chrome.zip
           if-no-files-found: error
+          # `.output` 以点开头，默认会被当成隐藏目录跳过
+          include-hidden-files: true
 
   github-release:
     needs: build
