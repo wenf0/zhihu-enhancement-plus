@@ -1,0 +1,28 @@
+---
+description: 用户说「发版」时 bump 版本、commit、push main 并打 v* tag 触发商店更新
+alwaysApply: true
+---
+
+# 发版（Chrome Web Store + GitHub Release）
+
+用户说 **发版 / 发布更新 / 上架商店** 时，**直接执行**下面整段，不要只给命令、不要再问是否 push。本规则覆盖 `auto-commit-push.mdc` 的「push 前先问」。
+
+商店已上架，CI 已打开。打 `v*` tag 即打包、发 GitHub Release，并上传商店送审。细节见 `docs/chrome-web-store-publish.md`。
+
+## 步骤
+
+1. `git status` / `git log`；未提交改动一并纳入本次发版
+2. **必须升高版本**（商店拒绝重复版本）。默认 bump `src/lib/version.ts` 的 patch，并同步 `package.json` 的 `version`。用户指定了版本则用指定值
+3. `npm run build`（有行为变化时）
+4. commit（英文 1–2 句，写清 why；含版本号）
+5. `git push origin HEAD`（`main` 已落后远程时先处理，禁止 `--force` 推 main）
+6. 在**刚推上去的那个 commit** 上打 tag：`git tag vX.Y.Z`（与 `EXT_VERSION` 一致，例如 `v2.3.7`）
+7. `git push origin vX.Y.Z`
+8. 回报：commit 哈希、tag、Actions 地址 `https://github.com/wenf0/zhihu-enhancement-plus/actions`
+
+## 不要
+
+- 不要在未 bump 版本时打 tag
+- 不要把 OAuth / refresh token 写入仓库
+- 不要 `--force` 推 `main`，不要 `--no-verify`
+- 不要改 git config

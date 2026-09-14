@@ -9,6 +9,8 @@ alwaysApply: true
 
 **不要**每次立刻 `git push`。commit 成功后先回报哈希，再问要不要推到远程；用户说推再 push。
 
+**例外：** 用户说「发版 / 发布更新 / 上架商店」时按 `.cursor/rules/release.mdc` 执行（含 push `main` 和 `v*` tag），不必再问。
+
 ## 何时做
 
 - 用户脚本、规则、README、LICENSE 等应入库的文件有实际改动

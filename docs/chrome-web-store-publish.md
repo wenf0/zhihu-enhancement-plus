@@ -1,28 +1,17 @@
 # Chrome 网上应用店：自动上传（CI）
 
-打 `v*` tag 时，若开启仓库变量 `CHROME_WEBSTORE_UPLOAD=true` 且配置了 Secrets，Actions 会把 zip **上传并送审**（`chrome-webstore-upload-cli` 默认 upload+publish）。
+商店已上架，仓库变量 `CHROME_WEBSTORE_UPLOAD=true` 已打开。打 `v*` tag 后，Actions 会把 zip **上传并送审**（`chrome-webstore-upload-cli` 默认 upload+publish）。
 
-> **首次上架必须在 [开发者后台](https://chrome.google.com/webstore/devconsole) 手动创建商品并上传一版。** API 只适合后续版本更新。
+- 商店商品：[知乎增强优化](https://chromewebstore.google.com/detail/hbdicbmlaoccmagflnadkemleobkfgko)
+- Extension ID：`hbdicbmlaoccmagflnadkemleobkfgko`
+- 开发者后台：<https://chrome.google.com/webstore/devconsole/69fdad1b-cac4-4d7f-b879-384507909cd1/hbdicbmlaoccmagflnadkemleobkfgko/edit>
+- 发版流水线：`.github/workflows/release.yml`（`v*` tag）
 
-## 1. 拿到 OAuth 凭证
+对话里说「发版」时按 `.cursor/rules/release.mdc` 执行：bump 版本 → commit → push `main` → 打 `vX.Y.Z` tag 并 push。
 
-按官方指引操作（推荐跟这份步骤走）：
+> API **不能**创建新商品，只更新已有扩展。密钥只放 GitHub Secrets，不要写入本仓库。
 
-[fregante/chrome-webstore-upload-keys](https://github.com/fregante/chrome-webstore-upload-keys)
-
-你会得到：
-
-| 值 | 用途 |
-|----|------|
-| Client ID | OAuth 客户端 |
-| Client Secret | OAuth 密钥 |
-| Refresh Token | 长期刷新令牌 |
-
-并在 [Chrome 开发者后台 → Account](https://chrome.google.com/webstore/devconsole) 找到 **Publisher ID**。
-
-扩展已上架后，商品详情 URL / 后台里能看到 **Extension ID**（一串固定 id）。
-
-## 2. 配置 GitHub 仓库
+## 1. GitHub Secrets / 变量（已配置）
 
 **Settings → Secrets and variables → Actions**
 
@@ -30,11 +19,11 @@
 
 | Name | 值 |
 |------|-----|
-| `CHROME_EXTENSION_ID` | 扩展 ID |
-| `CHROME_CLIENT_ID` | OAuth Client ID |
+| `CHROME_EXTENSION_ID` | `hbdicbmlaoccmagflnadkemleobkfgko` |
+| `CHROME_PUBLISHER_ID` | `69fdad1b-cac4-4d7f-b879-384507909cd1` |
+| `CHROME_CLIENT_ID` | OAuth Client ID（Google Cloud Desktop 客户端） |
 | `CHROME_CLIENT_SECRET` | OAuth Client Secret |
-| `CHROME_REFRESH_TOKEN` | Refresh Token |
-| `CHROME_PUBLISHER_ID` | Publisher ID |
+| `CHROME_REFRESH_TOKEN` | `npx chrome-webstore-upload-keys` 得到的刷新令牌 |
 
 ### Variables
 
@@ -42,36 +31,35 @@
 |------|-----|
 | `CHROME_WEBSTORE_UPLOAD` | `true` |
 
-设为 `true` 后，Release workflow 里的 `chrome-webstore` job 才会跑；未设置时只发 GitHub Release，不影响发版。
+OAuth 若过期，按 [chrome-webstore-upload-keys](https://github.com/fregante/chrome-webstore-upload-keys) 重新拿 Client / Refresh Token，再用 `gh secret set` 覆盖。并启用 [Chrome Web Store API](https://console.cloud.google.com/apis/library/chromewebstore.googleapis.com?project=chrome-webstore-upload-508607)。
 
-## 3. 发版
+## 2. 发版
+
+版本必须比商店当前版本高，且与 `src/lib/version.ts`、`package.json` 一致：
 
 ```bash
-# 版本对齐 src/lib/version.ts 与 package.json
-git tag v2.3.0
-git push origin v2.3.0
+git push origin main
+git tag v2.3.7
+git push origin v2.3.7
 ```
 
 流水线：
 
 1. `build`：typecheck + `npm run zip`
 2. `github-release`：挂 zip 到 GitHub Release
-3. `chrome-webstore`（可选）：上传商店并提交审核
+3. `chrome-webstore`：上传商店并提交审核
 
-审核仍由 Google 处理，通过后才会面向用户更新。
+审核仍由 Google 处理，通过后才会面向用户更新。同一版本号不能重复上传。
 
-## 4. 本地手动上传（可选）
+## 3. 本地手动上传（可选）
+
+凭证从本机环境变量读取，不要写进命令历史里的明文文件后提交。
 
 ```bash
-export EXTENSION_ID=...
-export CLIENT_ID=...
-export CLIENT_SECRET=...
-export REFRESH_TOKEN=...
-export PUBLISHER_ID=...
 npm run zip
 npx chrome-webstore-upload-cli@4 \
   --source .output/zhihu-enhancement-plus-*-chrome.zip \
-  --extension-id "$EXTENSION_ID"
+  --extension-id hbdicbmlaoccmagflnadkemleobkfgko
 ```
 
 只上传不送审：
@@ -79,5 +67,5 @@ npx chrome-webstore-upload-cli@4 \
 ```bash
 npx chrome-webstore-upload-cli@4 upload \
   --source .output/zhihu-enhancement-plus-*-chrome.zip \
-  --extension-id "$EXTENSION_ID"
+  --extension-id hbdicbmlaoccmagflnadkemleobkfgko
 ```

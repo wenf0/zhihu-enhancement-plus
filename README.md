@@ -8,6 +8,8 @@ Chrome 扩展（Manifest V3）：噪音评分过滤（结巴分词整词匹配�
 
 隐私政策：[docs/privacy.md](docs/privacy.md)。商店上架素材说明：[store/README.md](store/README.md)。
 
+Chrome 网上应用店：[知乎增强优化](https://chromewebstore.google.com/detail/hbdicbmlaoccmagflnadkemleobkfgko)。
+
 ## 工作流
 
 ```mermaid
@@ -49,17 +51,17 @@ flowchart TD
 打版本 tag 后，Actions 会自动 `npm run zip` 并把包挂到 [Releases](../../releases)：
 
 ```bash
-# 1. 版本号与 src/lib/version.ts、package.json 对齐
+# 1. 版本号与 src/lib/version.ts、package.json 对齐并高于商店当前版本
 # 2. 提交并推送 main
-git tag v2.3.0
-git push origin v2.3.0
+git tag v2.3.7
+git push origin v2.3.7
 ```
 
-在 Releases 下载 `zhihu-enhancement-plus-*-chrome.zip`，解压后用「加载已解压的扩展程序」选解压目录（或把 zip 交给 Chrome 商店上传）。
+在 Releases 下载 `zhihu-enhancement-plus-*-chrome.zip`，解压后用「加载已解压的扩展程序」选解压目录。
 
 ### 自动发布到 Chrome 网上应用店
 
-同一套 tag 流程可顺带上传商店并送审。需先手动在商店创建商品，再配置 Secrets / 变量，详见 [docs/chrome-web-store-publish.md](docs/chrome-web-store-publish.md)。
+同一套 tag 会打包、发 GitHub Release，并上传商店送审（仓库变量 `CHROME_WEBSTORE_UPLOAD=true` 已打开）。凭证与发版步骤见 [docs/chrome-web-store-publish.md](docs/chrome-web-store-publish.md)。
 
 ## 开发
 
@@ -71,7 +73,7 @@ git push origin v2.3.0
 - 弹层：`src/entrypoints/popup/`
 - 存储：`chrome.storage.local`
 - 结巴 WASM：`public/jieba_rs_wasm_bg.wasm`
-- 发版：`.github/workflows/release.yml`（`v*` tag → GitHub Release；可选 Chrome Web Store）
+- 发版：`.github/workflows/release.yml`（`v*` tag → GitHub Release + Chrome Web Store）
 
 ```bash
 npm install
