@@ -6,7 +6,7 @@ Chrome 扩展（Manifest V3）：噪音评分过滤（结巴分词整词匹配�
 
 互联网内容噪音屏蔽的论文精读清单（DOI / 开放 PDF）：[docs/content-noise-readings.md](docs/content-noise-readings.md)。
 
-隐私政策：[docs/privacy.md](docs/privacy.md)。商店上架素材说明：[store/README.md](store/README.md)。
+隐私政策：[docs/privacy.md](docs/privacy.md)。商店上架素材说明：[store/README.md](store/README.md)。发版流水线：[GitHub CI](#github-ci)。
 
 Chrome 网上应用店：[知乎增强优化](https://chromewebstore.google.com/detail/hbdicbmlaoccmagflnadkemleobkfgko)。
 
@@ -48,20 +48,13 @@ flowchart TD
 
 ### 从 GitHub Release（推荐给使用者）
 
-打版本 tag 后，Actions 会自动 `npm run zip` 并把包挂到 [Releases](../../releases)：
+打 `v*` tag 后，[Release workflow](#github-ci) 会把 zip 挂到 [Releases](../../releases)。下载 `zhihu-enhancement-plus-*-chrome.zip`，解压后用「加载已解压的扩展程序」选解压目录。
 
 ```bash
-# 1. 版本号与 src/lib/version.ts、package.json 对齐并高于商店当前版本
-# 2. 提交并推送 main
+# 版本号与 src/lib/version.ts、package.json 对齐，且高于商店当前版本
 git tag v2.3.7
 git push origin v2.3.7
 ```
-
-在 Releases 下载 `zhihu-enhancement-plus-*-chrome.zip`，解压后用「加载已解压的扩展程序」选解压目录。
-
-### 自动发布到 Chrome 网上应用店
-
-同一套 tag 会打包、发 GitHub Release，并上传商店送审（仓库变量 `CHROME_WEBSTORE_UPLOAD=true` 已打开）。凭证与发版步骤见 [docs/chrome-web-store-publish.md](docs/chrome-web-store-publish.md)。
 
 ## 开发
 
@@ -73,7 +66,6 @@ git push origin v2.3.7
 - 弹层：`src/entrypoints/popup/`
 - 存储：`chrome.storage.local`
 - 结巴 WASM：`public/jieba_rs_wasm_bg.wasm`
-- 发版：`.github/workflows/release.yml`（`v*` tag → GitHub Release + Chrome Web Store）
 
 ```bash
 npm install
@@ -84,3 +76,35 @@ npm run typecheck
 ```
 
 版本号只改 `src/lib/version.ts`（并同步 `package.json`）。
+
+## GitHub CI
+
+`.github/` 目前只有两份文件，没有 issue/PR 模板或其它 workflow。
+
+| 路径 | 作用 |
+|------|------|
+| [`.github/workflows/release.yml`](.github/workflows/release.yml) | 唯一 workflow：打 `v*` tag 后打包、发 GitHub Release、上传 Chrome 网上应用店 |
+| [`.github/dependabot.yml`](.github/dependabot.yml) | 每周扫一次根目录 npm 依赖，最多同时开 10 个升级 PR |
+
+跑一次记录：[Actions](https://github.com/wenf0/zhihu-enhancement-plus/actions)。商店凭证与手动上传见 [docs/chrome-web-store-publish.md](docs/chrome-web-store-publish.md)。
+
+### Release
+
+触发：推送匹配 `v*` 的 tag（例如 `v2.3.7`）。运行环境 Node 22。
+
+```mermaid
+flowchart LR
+  T["push tag v*"] --> B[build]
+  B --> R[github-release]
+  B --> S[chrome-webstore]
+```
+
+| Job | 做什么 |
+|-----|--------|
+| `build` | `npm ci` → `npm run typecheck` → `npm run zip` → 上传 `.output/zhihu-enhancement-plus-*-chrome.zip` 为 artifact |
+| `github-release` | 等 `build` 完成后，把 zip 挂到该 tag 的 GitHub Release，并自动生成 notes |
+| `chrome-webstore` | 仅当仓库变量 `CHROME_WEBSTORE_UPLOAD=true`：用 Secrets 把同一份 zip 上传商店并送审 |
+
+`chrome-webstore` 需要的 Secrets：`CHROME_EXTENSION_ID`、`CHROME_CLIENT_ID`、`CHROME_CLIENT_SECRET`、`CHROME_REFRESH_TOKEN`、`CHROME_PUBLISHER_ID`。审核仍由 Google 处理；同一版本号不能重复上传。
+
+`package.json` 里显式写了 optional `@rolldown/binding-linux-x64-gnu`：lockfile 在 macOS 生成时不会记下 Linux 原生绑定，没有它 `npm ci` 在 ubuntu runner 上会缺 rolldown。
