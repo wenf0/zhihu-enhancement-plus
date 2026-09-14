@@ -21,6 +21,8 @@ jobs:
           node-version: '22'
           cache: npm
 
+      # rolldown 的 linux 原生绑定是 optional；lockfile 在 macOS 生成时不会记下它。
+      # package.json 里显式 optionalDependencies @rolldown/binding-linux-x64-gnu，npm ci 才能在 ubuntu 装上。
       - name: Install
         run: npm ci
 
