@@ -30,16 +30,13 @@ export function fullWidthLayout() {
             border: 0 !important;
         }
 
-        :root {
-            --right-sidebar-width: 0px !important;
-            --container-gap: 0px !important;
-            --container-main-column-width: var(--container-width, 1000px) !important;
-        }
-
         .Topstory-container,
         .Question-main,
         .Search-container,
         .ContentLayout {
+            --right-sidebar-width: 0px !important;
+            --container-gap: 0px !important;
+            --container-main-column-width: var(--container-width, 1000px) !important;
             width: 100% !important;
             max-width: none !important;
             justify-content: center !important;
@@ -58,6 +55,14 @@ export function fullWidthLayout() {
             flex: 0 1 var(--container-width, 1000px) !important;
             margin-left: auto !important;
             margin-right: auto !important;
+        }
+
+        .Profile-main .ListShortcut {
+            width: auto !important;
+            max-width: 100% !important;
+            flex: 1 1 auto !important;
+            margin-left: 0 !important;
+            margin-right: 0 !important;
         }
     `);
 }
