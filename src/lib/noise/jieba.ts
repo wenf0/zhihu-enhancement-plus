@@ -149,6 +149,25 @@ export function canLearnJiebaToken(word: string, tag: string) {
   return true;
 }
 
+const TITLE_WORD_TAG_LIMIT = 12;
+
+/** 标题里可点的实词，按出现顺序去重。停用词和单字不出现。 */
+export function titleContentWords(text: string) {
+  const tagged = jiebaTagTokens(text);
+  const raw = tagged.length
+    ? tagged.filter(item => canLearnJiebaToken(item.word, item.tag)).map(item => item.word)
+    : (cutNoiseTokens(text) || []).filter(word => canLearnJiebaToken(word, ''));
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const word of raw) {
+    if (seen.has(word)) continue;
+    seen.add(word);
+    out.push(word);
+    if (out.length >= TITLE_WORD_TAG_LIMIT) break;
+  }
+  return out;
+}
+
 export function noiseHasFallback(text: string, term: string) {
   if (term.length >= 2) return text.includes(term);
   const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

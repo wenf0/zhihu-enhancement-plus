@@ -3,7 +3,7 @@ import { runtime } from '../content/state';
 import { NOISE_WEIGHTS, NOISE_HIDE, NOISE_DEMOTE } from './const';
 import { getActiveLexicon } from './lexicon';
 import { menuValue } from '../storage';
-import { getTastePrefs, tasteDelta, tasteEnabled, TASTE_LEARNED_MIN } from './taste';
+import { tasteDelta, tasteScorePrefs, TASTE_LEARNED_MIN } from './taste';
 import {
     noiseHas, noiseTokenSet, jiebaTagTokens, canLearnJiebaToken, cutNoiseTokens, syncJiebaUserDict,
     jiebaTokenCache, jiebaSetCache
@@ -86,7 +86,7 @@ export function scoreText(raw) {
     }
     const text = String(raw).toLowerCase();
     const idx = compileNoiseIndex();
-    const prefs = tasteEnabled() ? getTastePrefs() : null;
+    const prefs = tasteScorePrefs();
     const tokenSet = noiseTokenSet(text);
     const has = term => noiseHas(text, term, tokenSet);
     let kRaw = 0;

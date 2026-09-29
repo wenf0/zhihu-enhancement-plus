@@ -3,9 +3,9 @@ import { runtime } from './state';
 import { NOISE_HIDE, NOISE_DEMOTE, NOISE_WEIGHTS } from '../noise/const';
 import { menuValue, readFilterMode } from '../storage';
 import { escapeHtml, injectStyle, observeTree, forAddedElements, notify } from '../utils';
-import { ensureJieba, jiebaReady, jiebaUnavailable } from '../noise/jieba';
-import { scoreFeedNoise, scoreText, collectTasteSignals, noiseVerdict, noiseTint } from '../noise/score';
-import { getTastePrefs, saveTastePrefs, applyTasteSignals, tasteEnabled, TASTE_LEARNED_MIN } from '../noise/taste';
+import { ensureJieba, jiebaReady, jiebaUnavailable, titleContentWords } from '../noise/jieba';
+import { compileNoiseIndex, scoreFeedNoise, scoreText, collectTasteSignals, noiseVerdict, noiseTint } from '../noise/score';
+import { getTastePrefs, saveTastePrefs, applyTasteSignals, tasteEnabled, titleWordTagsEnabled, dislikeTitleWord, titleWordDisliked, TASTE_LEARNED_MIN } from '../noise/taste';
 import noiseCss from '../../assets/noise.css?inline';
 import explainCss from '../../assets/explain.css?inline';
 
@@ -299,6 +299,61 @@ export function paintTasteBar(card, titleCss) {
     bar.querySelector('[data-taste="dislike"]').classList.toggle('is-on', action === 'dislike');
 }
 
+function mountTitleChrome(card, el, afterTaste) {
+    const taste = card.querySelector('.zhihu-plus-taste');
+    if (afterTaste && taste && taste.parentElement) {
+        if (el.previousElementSibling !== taste) taste.insertAdjacentElement('afterend', el);
+        return;
+    }
+    const anchor = noiseBadgeAnchor(card);
+    const host = anchor && (anchor.closest('h2') || anchor.parentElement);
+    const qWrap = host && host.querySelector
+        ? host.querySelector('div[itemprop="zhihu:question"], div[itemtype*="Question"]')
+        : null;
+    if (qWrap) qWrap.appendChild(el);
+    else if (host) host.appendChild(el);
+    else {
+        ensureCardPosition(card);
+        card.insertAdjacentElement('afterbegin', el);
+    }
+}
+
+export function paintTitleWordTags(card, titleCss) {
+    const old = card.querySelector('.zhihu-plus-title-words');
+    if (!titleWordTagsEnabled()) {
+        if (old) old.remove();
+        return;
+    }
+    const { title } = cardNoiseText(card, titleCss);
+    const words = title ? titleContentWords(title) : [];
+    if (!words.length) {
+        if (old) old.remove();
+        return;
+    }
+    let box = old;
+    if (!box) {
+        box = document.createElement('span');
+        box.className = 'zhihu-plus-title-words';
+    }
+    const sig = words.join('\n');
+    if (box.dataset.sig !== sig) {
+        box.dataset.sig = sig;
+        box.replaceChildren();
+        for (const word of words) {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.dataset.titleWord = word;
+            btn.textContent = word;
+            btn.setAttribute('aria-label', '不喜欢 ' + word);
+            box.appendChild(btn);
+        }
+    }
+    box.querySelectorAll('[data-title-word]').forEach(btn => {
+        btn.classList.toggle('is-on', titleWordDisliked(btn.dataset.titleWord));
+    });
+    mountTitleChrome(card, box, true);
+}
+
 export let tasteClickBound = false;
 export function bindTasteClicks() {
     if (tasteClickBound) return;
@@ -312,6 +367,18 @@ export function bindTasteClicks() {
         const card = bar.closest('[data-zhihu-plus-noise]') || bar.closest('.Card, .HotItem, .List-item, .TopstoryItem');
         if (!card) return;
         applyCardTaste(card, bar.dataset.titleCss || '', btn.dataset.taste);
+    }, true);
+    document.addEventListener('click', event => {
+        const btn = event.target.closest('.zhihu-plus-title-words [data-title-word]');
+        if (!btn || !titleWordTagsEnabled()) return;
+        event.preventDefault();
+        event.stopPropagation();
+        compileNoiseIndex();
+        const marked = dislikeTitleWord(btn.dataset.titleWord);
+        if (!marked) return;
+        saveTastePrefs(getTastePrefs());
+        notify(`已记下不喜欢「${marked.key}」。`);
+        refreshNoiseFeed();
     }, true);
 }
 
@@ -472,6 +539,7 @@ export function applyNoiseToCard(card, titleCss) {
     }
     if (menuValue('menu_noiseBadge')) paintNoiseBadge(card, rounded, titleCss);
     paintTasteBar(card, titleCss);
+    paintTitleWordTags(card, titleCss);
 }
 
 export function blockKeywords(type) {

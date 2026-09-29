@@ -1,4 +1,5 @@
 import { boot, syncUiFromSettings } from '@/lib/content/boot';
+import { refreshNoiseFeed } from '@/lib/content/noise-ui';
 import { invalidateNoise } from '@/lib/content/state';
 import { loadSettings, watchSettings } from '@/lib/storage';
 
@@ -11,6 +12,7 @@ export default defineContentScript({
     watchSettings(() => {
       invalidateNoise();
       syncUiFromSettings();
+      refreshNoiseFeed();
     });
   },
 });

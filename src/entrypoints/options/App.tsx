@@ -102,7 +102,7 @@ function LearnedWordTags({
   };
 
   if (!items.length) {
-    return <p className="text-sm text-zinc-500">还没有口味新词。在信息流点「喜欢 / 不感兴趣」，或上方手动添加。</p>;
+    return <p className="text-sm text-zinc-500">还没有口味新词。在信息流点「喜欢 / 不感兴趣」或标题上的实词，或上方手动添加。</p>;
   }
 
   return (

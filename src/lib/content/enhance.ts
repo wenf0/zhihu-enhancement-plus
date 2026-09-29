@@ -281,13 +281,20 @@ a.zhihu_e_toQuestion:hover,
   border-color: #3c434d !important;
   color: #c5ced8 !important;
 }
-h2.ContentItem-title .zhihu-plus-taste {
+h2.ContentItem-title .zhihu-plus-taste,
+h2.ContentItem-title .zhihu-plus-title-words {
   display: inline-flex !important;
   align-items: center !important;
   align-self: center !important;
   gap: 6px !important;
   margin: 0 !important;
   flex: 0 0 auto !important;
+}
+h2.ContentItem-title .zhihu-plus-title-words {
+  flex-wrap: wrap !important;
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
 }
 `);
 }

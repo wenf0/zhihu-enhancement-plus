@@ -40,6 +40,29 @@ export function tasteEnabled() {
     return !!menuValue('menu_noiseScore') && menuValue('menu_noiseTaste') !== false;
 }
 
+export function titleWordTagsEnabled() {
+    return !!menuValue('menu_noiseScore') && menuValue('menu_titleWordTags') !== false;
+}
+
+/**
+ * 评分读到的口味。
+ * 喜欢 / 不感兴趣开着时整份生效。
+ * 只开标题实词时仍使用词和新词，不套用分类、价值词增量。
+ */
+export function tasteScorePrefs() {
+    if (!tasteEnabled() && !titleWordTagsEnabled()) return null;
+    const prefs = getTastePrefs();
+    if (tasteEnabled()) return prefs;
+    return {
+        words: prefs.words,
+        cats: {},
+        value: {},
+        learned: prefs.learned,
+        actions: {},
+        clicks: 0,
+    };
+}
+
 export function getTastePrefs() {
     if (runtime.tasteCache) return runtime.tasteCache;
     runtime.tasteCache = readTaste();
@@ -126,15 +149,56 @@ export function applyTasteSignals(prefs, signals, action, sign) {
     for (const word of signals.learned || []) {
         bumpTasteEntry(prefs.learned, word, field, sign, stepOf(prefs.learned, word, bases.learned, true), TASTE_LEARNED_RANGE);
     }
-    const learnedKeys = Object.keys(prefs.learned);
-    if (learnedKeys.length > 200) {
-        learnedKeys.sort((a, b) => {
-            const x = prefs.learned[a];
-            const y = prefs.learned[b];
-            return (Math.abs(x.delta || 0) + (x.like || 0) + (x.dislike || 0))
-                - (Math.abs(y.delta || 0) + (y.like || 0) + (y.dislike || 0));
-        }).slice(0, learnedKeys.length - 200).forEach(k => delete prefs.learned[k]);
+    trimLearnedMap(prefs.learned);
+}
+
+function trimLearnedMap(learned) {
+    const learnedKeys = Object.keys(learned || {});
+    if (learnedKeys.length <= 200) return;
+    learnedKeys.sort((a, b) => {
+        const x = learned[a];
+        const y = learned[b];
+        return (Math.abs(x.delta || 0) + (x.like || 0) + (x.dislike || 0))
+            - (Math.abs(y.delta || 0) + (y.like || 0) + (y.dislike || 0));
+    }).slice(0, learnedKeys.length - 200).forEach(k => delete learned[k]);
+}
+
+function tasteWordInLexicon(word) {
+    const idx = runtime.noiseIndex;
+    return !!(idx && idx.lookupNoise && idx.lookupNoise[word]);
+}
+
+/** 标题实词的单次不喜欢：只动这一个词，不改分类、价值词和卡片隐藏。 */
+export function dislikeTitleWord(word) {
+    const key = String(word || '').toLowerCase().trim();
+    if (!key) return null;
+    const prefs = getTastePrefs();
+    if (!prefs.words || typeof prefs.words !== 'object') prefs.words = {};
+    if (!prefs.learned || typeof prefs.learned !== 'object') prefs.learned = {};
+    const inLex = tasteWordInLexicon(key);
+    if (inLex) {
+        const cur = prefs.words[key] ? Number(prefs.words[key].delta) || 0 : 0;
+        const step = scaleTasteStep(TASTE_WORD_DISLIKE, cur, 1, true);
+        bumpTasteEntry(prefs.words, key, 'dislike', 1, step, TASTE_WORD_RANGE);
+    } else {
+        const cur = prefs.learned[key] ? Number(prefs.learned[key].delta) || 0 : 0;
+        const step = scaleTasteStep(TASTE_LEARNED_DISLIKE, cur, 1, true);
+        const have = ((prefs.learned[key] && prefs.learned[key].like) || 0) + ((prefs.learned[key] && prefs.learned[key].dislike) || 0);
+        const fieldDelta = have >= TASTE_LEARNED_MIN ? 1 : TASTE_LEARNED_MIN;
+        bumpTasteEntry(prefs.learned, key, 'dislike', fieldDelta, step, TASTE_LEARNED_RANGE);
+        trimLearnedMap(prefs.learned);
     }
+    return { key, lexicon: inLex };
+}
+
+export function titleWordDisliked(word) {
+    const key = String(word || '').toLowerCase();
+    if (!key) return false;
+    const prefs = getTastePrefs();
+    const entry = tasteWordInLexicon(key)
+        ? prefs.words && prefs.words[key]
+        : prefs.learned && prefs.learned[key];
+    return !!(entry && (entry.dislike || 0) > 0);
 }
 
 export function tasteDelta(map, key) {
@@ -143,7 +207,9 @@ export function tasteDelta(map, key) {
 }
 
 export function refreshLearnedWords() {
-    runtime.learnedWords = tasteEnabled() ? Object.keys(getTastePrefs().learned || {}) : [];
+    runtime.learnedWords = (tasteEnabled() || titleWordTagsEnabled())
+        ? Object.keys(getTastePrefs().learned || {})
+        : [];
 }
 
 refreshLearnedWords();
