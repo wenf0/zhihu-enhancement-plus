@@ -1,6 +1,6 @@
 # 知乎增强优化（Zhihu Enhancement Plus）
 
-Chrome 扩展（Manifest V3）：噪音评分过滤（结巴分词整词匹配）、喜欢/不感兴趣回写词权重、低饱和配色、隐藏右侧栏、清空标签标题与图标、移除登录弹窗、屏蔽视频/盐选、默认收起回答、屏蔽用户、原图与站外直链、时间置顶等。
+Chrome 扩展（Manifest V3）：噪音评分（结巴分词整词匹配，过滤可选只打分 / 仅降权 / 隐藏）、喜欢/不感兴趣回写整卡权重、标题实词单独记一个词、低饱和配色、隐藏右侧栏、清空标签标题与图标、移除登录弹窗、屏蔽视频/盐选、默认收起回答、屏蔽用户、原图与站外直链、时间置顶等。
 
 基于 [XIU2/UserScript](https://github.com/XIU2/UserScript) 的「知乎增强」2.2.15，许可证为 GPL-3.0。
 
@@ -22,7 +22,8 @@ flowchart TD
   F --> G[阅读增强<br/>收起 · 标签 · 直达 · 展开题干]
   F --> H[屏蔽<br/>用户 · 类型 · 盐选 · 热榜]
   F --> I[噪音管道<br/>分词 → 打分 → 过滤 / 徽章]
-  I --> J[口味反馈<br/>喜欢 / 不感兴趣 → 回写权重]
+  I --> J[口味反馈<br/>喜欢 / 不感兴趣 → 回写整卡权重]
+  I --> M[标题实词<br/>点一个词记不喜欢，再点撤销]
   B --> K[watchSettings]
   K --> L[syncUi + invalidateNoise]
   L -.-> G
@@ -30,7 +31,8 @@ flowchart TD
 ```
 
 - **启动**：读 `storage.local` → `boot()` → DOM 就绪后按首页 / 热榜 / 问题等路由挂功能  
-- **三条线**：阅读（收起 / 标签 / 直达）、屏蔽（用户 / 类型）、噪音（分词打分 + 口味回写）  
+- **三条线**：阅读（收起 / 标签 / 直达）、屏蔽（用户 / 类型）、噪音（分词打分 + 整卡口味 + 标题实词）  
+- **标题实词**和「喜欢 / 不感兴趣」分开：前者只记标题里点中的那一个词，不隐藏这条卡片  
 - **改开关**：选项页只写 storage；页面端 `watchSettings` 热更新，虚线表示回灌到阅读 / 噪音
 
 主路径：`src/entrypoints/content.ts` → `src/lib/content/boot.ts`。
@@ -51,9 +53,10 @@ flowchart TD
 打 `v*` tag 后，[Release workflow](#github-ci) 会把 zip 挂到 [Releases](../../releases)。下载 `zhihu-enhancement-plus-*-chrome.zip`，解压后用「加载已解压的扩展程序」选解压目录。
 
 ```bash
-# 版本号与 src/lib/version.ts、package.json 对齐，且高于商店当前版本
-git tag v2.3.7
-git push origin v2.3.7
+# 把 vX.Y.Z 换成 src/lib/version.ts 里的版本，且高于商店当前版本
+# 源码当前是 2.3.12
+git tag vX.Y.Z
+git push origin vX.Y.Z
 ```
 
 ## 开发
@@ -88,9 +91,13 @@ npm run typecheck
 
 跑一次记录：[Actions](https://github.com/wenf0/zhihu-enhancement-plus/actions)。商店凭证与手动上传见 [docs/chrome-web-store-publish.md](docs/chrome-web-store-publish.md)。
 
+### main 分支
+
+`main` 有仓库规则 [Protect main](https://github.com/wenf0/zhihu-enhancement-plus/rules/24154936)：禁止强推、禁止删除。普通 push 和 `v*` tag 照常。流水线只在 tag 上跑，所以没有要求先开 Pull Request 或等 Actions 检查。
+
 ### Release
 
-触发：推送匹配 `v*` 的 tag（例如 `v2.3.7`）。运行环境 Node 22。
+触发：推送匹配 `v*` 的 tag（例如当前源码 `v2.3.12`）。运行环境 Node 22。
 
 ```mermaid
 flowchart LR
