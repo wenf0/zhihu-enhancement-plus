@@ -1,11 +1,18 @@
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { MENU_ITEMS, QUICK_TOGGLE_KEYS } from '@/lib/defaults';
+import type { FilterMode } from '@/lib/types';
 import { useSettings } from '@/lib/use-settings';
 import { EXT_VERSION } from '@/lib/version';
 
+const FILTER_MODES: Array<{ id: FilterMode; label: string }> = [
+  { id: 'off', label: '只打分' },
+  { id: 'demote', label: '仅降权' },
+  { id: 'hide', label: '隐藏' },
+];
+
 export function App() {
-  const { ready, values, setBool } = useSettings();
+  const { ready, values, setBool, setFilter } = useSettings();
 
   if (!ready) return <div className="w-80 p-5 text-sm text-zinc-500">加载设置…</div>;
 
@@ -27,6 +34,24 @@ export function App() {
             </label>
           );
         })}
+      </div>
+      <div className="mt-3">
+        <p className="mb-1.5 text-xs text-zinc-500">噪音过滤</p>
+        <div className="grid grid-cols-3 gap-1 rounded-xl bg-zinc-100 p-1">
+          {FILTER_MODES.map(mode => {
+            const on = (values.menu_blockKeywords || 'off') === mode.id;
+            return (
+              <button
+                key={mode.id}
+                type="button"
+                className={`rounded-lg px-2 py-1.5 text-xs ${on ? 'bg-white font-medium text-zinc-900 shadow-sm' : 'text-zinc-500'}`}
+                onClick={() => void setFilter(mode.id)}
+              >
+                {mode.label}
+              </button>
+            );
+          })}
+        </div>
       </div>
       <Button className="mt-4 w-full" onClick={() => void browser.runtime.openOptionsPage()}>
         打开完整设置

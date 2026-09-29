@@ -16,12 +16,20 @@ export interface TasteEntry {
   delta: number;
 }
 
+export interface TitleWordMark {
+  step: number;
+  fieldDelta: number;
+  lexicon: boolean;
+}
+
 export interface TastePrefs {
   words: Record<string, TasteEntry>;
   cats: Record<string, TasteEntry>;
   value: Record<string, TasteEntry>;
   learned: Record<string, TasteEntry>;
   actions: Record<string, 'like' | 'dislike' | ''>;
+  /** 标题实词自己点过的不喜欢。撤销时只退这一笔，不动「不感兴趣」写入的权重。 */
+  titleMarks: Record<string, TitleWordMark>;
   clicks: number;
 }
 

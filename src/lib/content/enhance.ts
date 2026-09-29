@@ -292,7 +292,7 @@ h2.ContentItem-title .zhihu-plus-title-words {
 }
 h2.ContentItem-title .zhihu-plus-title-words {
   flex-wrap: wrap !important;
-  flex: 1 1 auto !important;
+  flex: 1 1 100% !important;
   min-width: 0 !important;
   max-width: 100% !important;
 }

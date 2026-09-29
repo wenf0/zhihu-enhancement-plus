@@ -1,10 +1,10 @@
-import { TASTE_KEY, type TasteEntry, type TastePrefs } from './types';
+import { TASTE_KEY, type TasteEntry, type TastePrefs, type TitleWordMark } from './types';
 
 export const TASTE_BACKUP_KIND = 'zhihu-enhancement-plus-taste-backup';
 export const KEYWORDS_BACKUP_KIND = 'zhihu-enhancement-plus-keywords-backup';
 
 function emptyTastePrefs(): TastePrefs {
-  return { words: {}, cats: {}, value: {}, learned: {}, actions: {}, clicks: 0 };
+  return { words: {}, cats: {}, value: {}, learned: {}, actions: {}, titleMarks: {}, clicks: 0 };
 }
 
 /** 与 taste.ts 的 TASTE_LEARNED_RANGE 一致 */
@@ -42,6 +42,21 @@ function normalizeTasteMap(raw: unknown): Record<string, TasteEntry> {
   return out;
 }
 
+function normalizeTitleMarks(raw: unknown): Record<string, TitleWordMark> {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
+  const out: Record<string, TitleWordMark> = {};
+  for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
+    const word = String(key || '').replace(/\s+/g, '').trim().toLowerCase();
+    if (!word || !value || typeof value !== 'object' || Array.isArray(value)) continue;
+    const row = value as Partial<TitleWordMark>;
+    const step = Number(row.step);
+    const fieldDelta = Number(row.fieldDelta);
+    if (!Number.isFinite(step) || !Number.isFinite(fieldDelta)) continue;
+    out[word] = { step, fieldDelta, lexicon: !!row.lexicon };
+  }
+  return out;
+}
+
 function normalizeTastePrefs(raw: unknown): TastePrefs | null {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
   const data = raw as Partial<TastePrefs>;
@@ -55,6 +70,7 @@ function normalizeTastePrefs(raw: unknown): TastePrefs | null {
         Object.entries(data.actions).filter(([, v]) => v === 'like' || v === 'dislike' || v === ''),
       ) as TastePrefs['actions']
       : {},
+    titleMarks: normalizeTitleMarks(data.titleMarks),
     clicks: Math.max(0, Math.floor(Number(data.clicks) || 0)),
   };
 }
@@ -131,6 +147,7 @@ export function serializeTasteBackup(taste: TastePrefs) {
       value: taste.value || {},
       learned: taste.learned || {},
       actions: taste.actions || {},
+      titleMarks: taste.titleMarks || {},
       clicks: taste.clicks || 0,
     },
   };
@@ -213,6 +230,7 @@ export function parseTasteImport(text: string, current: TastePrefs, mode: TasteI
     value: { ...(current.value || {}) },
     learned: { ...(current.learned || {}) },
     actions: { ...(current.actions || {}) },
+    titleMarks: { ...(current.titleMarks || {}) },
     clicks: Math.max(current.clicks || 0, incoming.clicks || 0),
   };
 
@@ -240,6 +258,12 @@ export function parseTasteImport(text: string, current: TastePrefs, mode: TasteI
   mergeMap(base.cats, incoming.cats);
   mergeMap(base.value, incoming.value);
   mergeMap(base.learned, incoming.learned);
+  for (const [key, mark] of Object.entries(incoming.titleMarks || {})) {
+    if (!base.titleMarks[key]) {
+      base.titleMarks[key] = mark;
+      added += 1;
+    }
+  }
   for (const [key, action] of Object.entries(incoming.actions || {})) {
     if (!base.actions[key]) {
       base.actions[key] = action;

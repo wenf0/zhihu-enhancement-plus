@@ -30,7 +30,7 @@ export const MENU_ITEMS: MenuItem[] = [
   { key: 'menu_blockKeywords', label: '噪音过滤', tip: '只打分不处理信息流；仅降权会变淡；隐藏会移出信息流并可复查。', def: 'off', kind: 'filter' },
   { key: 'menu_noiseBadge', label: '显示噪音得分', tip: '每条内容显示模型分，0 分不标。', def: true },
   { key: 'menu_noiseTaste', label: '喜欢 / 不感兴趣', tip: '对卡片分词后对照词库，回写权重；多次出现的新实词也会学进去。', def: true },
-  { key: 'menu_titleWordTags', label: '标题实词', tip: '标题结巴分词后列出实词。点某个词只给这个词记不喜欢，不隐藏这条，也不改分类。', def: true },
+  { key: 'menu_titleWordTags', label: '标题实词', tip: '标题结巴分词后列出实词。点一次只给这个词记不喜欢，再点一次撤销。不隐藏这条，也不改分类。', def: true },
   {
     key: 'menu_noiseLevel',
     label: '噪音过滤档位',

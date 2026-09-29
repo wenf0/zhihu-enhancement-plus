@@ -37,9 +37,10 @@ h2.ContentItem-title > div[itemtype*="Question"] > a:not(.zhihu_e_toQuestion) {
 [data-theme="dark"] .zhihu-plus-taste button {background:#343a44;border-color:#3c434d;color:#c5ced8;}
 [data-theme="dark"] .zhihu-plus-taste button.is-on[data-taste="like"] {background:#2f3a34;color:#8fd19a;border-color:#3d5244;}
 [data-theme="dark"] .zhihu-plus-taste button.is-on[data-taste="dislike"] {background:#3a3232;color:#f0b6b6;border-color:#534040;}
-.zhihu-plus-title-words {display:inline-flex !important;flex-wrap:wrap;align-items:center;gap:6px;margin:0;vertical-align:middle;position:relative;z-index:7;flex:1 1 auto;min-width:0;max-width:100%;}
-.zhihu-plus-title-words button {height:22px;padding:0 8px;border:1px solid rgba(0,0,0,.08);border-radius:999px;background:#fff;color:#666;font:11px/22px -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;cursor:pointer;}
-.zhihu-plus-title-words button:hover {border-color:#bbb;color:#1d1d1f;}
-.zhihu-plus-title-words button.is-on {background:#fce8e8;color:#a33;border-color:#f0cfcf;}
-[data-theme="dark"] .zhihu-plus-title-words button {background:#2c323b;border-color:#3c434d;color:#c5ced8;}
-[data-theme="dark"] .zhihu-plus-title-words button.is-on {background:#3a3232;color:#f0b6b6;border-color:#534040;}
+.zhihu-plus-title-words {display:inline-flex !important;flex-wrap:wrap;align-items:center;gap:4px 6px;margin:0;vertical-align:middle;position:relative;z-index:7;flex:1 1 100%;min-width:0;max-width:100%;}
+.zhihu-plus-title-words button {height:20px;padding:0 2px;border:0;border-radius:999px;background:transparent;color:#8a8a8a;font:11px/20px -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;cursor:pointer;}
+.zhihu-plus-title-words button:hover {background:#f4f4f5;color:#1d1d1f;}
+.zhihu-plus-title-words button.is-on {padding:0 6px;background:#fce8e8;color:#a33;}
+[data-theme="dark"] .zhihu-plus-title-words button {background:transparent;color:#9aa3ad;}
+[data-theme="dark"] .zhihu-plus-title-words button:hover {background:#343a44;color:#e7edf2;}
+[data-theme="dark"] .zhihu-plus-title-words button.is-on {background:#3a3232;color:#f0b6b6;}

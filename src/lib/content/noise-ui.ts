@@ -5,7 +5,7 @@ import { menuValue, readFilterMode } from '../storage';
 import { escapeHtml, injectStyle, observeTree, forAddedElements, notify, bindOnce } from '../utils';
 import { ensureJieba, jiebaReady, jiebaUnavailable, titleContentWords } from '../noise/jieba';
 import { compileNoiseIndex, scoreFeedNoise, scoreText, collectTasteSignals, noiseVerdict, noiseTint } from '../noise/score';
-import { getTastePrefs, saveTastePrefs, applyTasteSignals, tasteEnabled, titleWordTagsEnabled, dislikeTitleWord, titleWordDisliked, TASTE_LEARNED_MIN } from '../noise/taste';
+import { getTastePrefs, saveTastePrefs, applyTasteSignals, tasteEnabled, titleWordTagsEnabled, toggleTitleWord, titleWordDisliked, TASTE_LEARNED_MIN } from '../noise/taste';
 import noiseCss from '../../assets/noise.css?inline';
 import explainCss from '../../assets/explain.css?inline';
 
@@ -344,12 +344,15 @@ export function paintTitleWordTags(card, titleCss) {
             btn.type = 'button';
             btn.dataset.titleWord = word;
             btn.textContent = word;
-            btn.setAttribute('aria-label', '不喜欢 ' + word);
             box.appendChild(btn);
         }
     }
     box.querySelectorAll('[data-title-word]').forEach(btn => {
-        btn.classList.toggle('is-on', titleWordDisliked(btn.dataset.titleWord));
+        const on = titleWordDisliked(btn.dataset.titleWord);
+        const word = btn.dataset.titleWord || '';
+        btn.classList.toggle('is-on', on);
+        btn.title = on ? '已不喜欢，再点撤销' : '不喜欢这个词';
+        btn.setAttribute('aria-label', on ? '撤销不喜欢 ' + word : '不喜欢 ' + word);
     });
     mountTitleChrome(card, box, true);
 }
@@ -374,11 +377,11 @@ export function bindTasteClicks() {
         event.preventDefault();
         event.stopPropagation();
         compileNoiseIndex();
-        const marked = dislikeTitleWord(btn.dataset.titleWord);
+        const marked = toggleTitleWord(btn.dataset.titleWord);
         if (!marked) return;
         markLocalTasteWrite();
         saveTastePrefs(getTastePrefs()).catch(() => consumeLocalTasteWrite());
-        notify(`已记下不喜欢「${marked.key}」。`);
+        notify(marked.on ? `已记下不喜欢「${marked.key}」。再点一次撤销。` : `已撤销「${marked.key}」。`);
         refreshNoiseFeed();
     }, true);
 }

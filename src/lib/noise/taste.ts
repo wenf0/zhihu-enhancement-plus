@@ -33,7 +33,7 @@ export const TASTE_TITLE_MUL = 1.5;
 export const TASTE_DIMINISH_SPAN = 6;
 
 export function emptyTastePrefs() {
-    return { words: {}, cats: {}, value: {}, learned: {}, actions: {}, clicks: 0 };
+    return { words: {}, cats: {}, value: {}, learned: {}, actions: {}, titleMarks: {}, clicks: 0 };
 }
 
 export function tasteEnabled() {
@@ -168,37 +168,57 @@ function tasteWordInLexicon(word) {
     return !!(idx && idx.lookupNoise && idx.lookupNoise[word]);
 }
 
-/** 标题实词的单次不喜欢：只动这一个词，不改分类、价值词和卡片隐藏。 */
-export function dislikeTitleWord(word) {
+function ensureTitleMarks(prefs) {
+    if (!prefs.titleMarks || typeof prefs.titleMarks !== 'object') prefs.titleMarks = {};
+    return prefs.titleMarks;
+}
+
+/**
+ * 标题实词：点一次只给这个词记不喜欢，再点一次按当时的步长撤回。
+ * 不改分类、价值词、卡片隐藏，也不动「不感兴趣」写下的其它增量。
+ */
+export function toggleTitleWord(word) {
     const key = String(word || '').toLowerCase().trim();
     if (!key) return null;
     const prefs = getTastePrefs();
     if (!prefs.words || typeof prefs.words !== 'object') prefs.words = {};
     if (!prefs.learned || typeof prefs.learned !== 'object') prefs.learned = {};
+    const marks = ensureTitleMarks(prefs);
+    const mark = marks[key];
+    if (mark) {
+        const map = mark.lexicon ? prefs.words : prefs.learned;
+        const range = mark.lexicon ? TASTE_WORD_RANGE : TASTE_LEARNED_RANGE;
+        if (map && map[key]) {
+            bumpTasteEntry(map, key, 'dislike', -(Number(mark.fieldDelta) || 0), -(Number(mark.step) || 0), range);
+        }
+        delete marks[key];
+        return { key, on: false, lexicon: !!mark.lexicon };
+    }
     const inLex = tasteWordInLexicon(key);
+    let step = 0;
+    let fieldDelta = 1;
     if (inLex) {
         const cur = prefs.words[key] ? Number(prefs.words[key].delta) || 0 : 0;
-        const step = scaleTasteStep(TASTE_WORD_DISLIKE, cur, 1, true);
-        bumpTasteEntry(prefs.words, key, 'dislike', 1, step, TASTE_WORD_RANGE);
+        step = scaleTasteStep(TASTE_WORD_DISLIKE, cur, 1, true);
+        bumpTasteEntry(prefs.words, key, 'dislike', fieldDelta, step, TASTE_WORD_RANGE);
     } else {
         const cur = prefs.learned[key] ? Number(prefs.learned[key].delta) || 0 : 0;
-        const step = scaleTasteStep(TASTE_LEARNED_DISLIKE, cur, 1, true);
+        step = scaleTasteStep(TASTE_LEARNED_DISLIKE, cur, 1, true);
         const have = ((prefs.learned[key] && prefs.learned[key].like) || 0) + ((prefs.learned[key] && prefs.learned[key].dislike) || 0);
-        const fieldDelta = have >= TASTE_LEARNED_MIN ? 1 : TASTE_LEARNED_MIN;
+        fieldDelta = have >= TASTE_LEARNED_MIN ? 1 : TASTE_LEARNED_MIN;
         bumpTasteEntry(prefs.learned, key, 'dislike', fieldDelta, step, TASTE_LEARNED_RANGE);
         trimLearnedMap(prefs.learned);
+        if (!prefs.learned[key]) return { key, on: false, lexicon: false };
     }
-    return { key, lexicon: inLex };
+    marks[key] = { step, fieldDelta, lexicon: inLex };
+    return { key, on: true, lexicon: inLex };
 }
 
 export function titleWordDisliked(word) {
     const key = String(word || '').toLowerCase();
     if (!key) return false;
-    const prefs = getTastePrefs();
-    const entry = tasteWordInLexicon(key)
-        ? prefs.words && prefs.words[key]
-        : prefs.learned && prefs.learned[key];
-    return !!(entry && (entry.dislike || 0) > 0);
+    const marks = getTastePrefs().titleMarks;
+    return !!(marks && marks[key]);
 }
 
 export function tasteDelta(map, key) {

@@ -48,7 +48,7 @@ export function defaultSettings(): SettingsValues {
 }
 
 export function emptyTastePrefs(): TastePrefs {
-  return { words: {}, cats: {}, value: {}, learned: {}, actions: {}, clicks: 0 };
+  return { words: {}, cats: {}, value: {}, learned: {}, actions: {}, titleMarks: {}, clicks: 0 };
 }
 
 export function settingsKnownKeys() {
@@ -204,6 +204,7 @@ export function getTastePrefs(): TastePrefs {
     value: saved.value && typeof saved.value === 'object' ? saved.value : {},
     learned: saved.learned && typeof saved.learned === 'object' ? saved.learned : {},
     actions: saved.actions && typeof saved.actions === 'object' ? saved.actions : {},
+    titleMarks: saved.titleMarks && typeof saved.titleMarks === 'object' ? saved.titleMarks : {},
     clicks: Number(saved.clicks) || 0,
   };
 }
