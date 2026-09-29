@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { menuValue, menuSet, activeListValues, readListOff, writeListOff, isPackedListItem } from '../storage';
-import { observeTree, forAddedElements, page, notify } from '../utils';
+import { observeTree, forAddedElements, page, notify, bindOnce } from '../utils';
 
 function zhihuBlock(userid: string, method: 'POST' | 'DELETE') {
   void fetch(`https://www.zhihu.com/api/v4/members/${userid}/actions/block`, {
@@ -64,12 +64,14 @@ export function blockUsersFeed(selector, className) {
         });
     };
     scan();
-    window.addEventListener('urlchange', () => setTimeout(scan, 1000));
-    observeTree(mutations => {
-        forAddedElements(mutations, target => {
-            if (target.className === className) {
-                hideBlockedCard(target, target.querySelector('.ContentItem.AnswerItem, .ContentItem.ArticleItem'));
-            }
+    bindOnce('block-users-feed:' + selector, () => {
+        window.addEventListener('urlchange', () => setTimeout(scan, 1000));
+        observeTree(mutations => {
+            forAddedElements(mutations, target => {
+                if (target.className === className) {
+                    hideBlockedCard(target, target.querySelector('.ContentItem.AnswerItem, .ContentItem.ArticleItem'));
+                }
+            });
         });
     });
 }
@@ -88,8 +90,8 @@ export function blockUsersQuestion() {
             }
         });
     };
-    observeTree(onAdd);
     document.querySelectorAll('.List-item, .Card.AnswerCard').forEach(hideItem);
+    bindOnce('block-users-question', () => observeTree(onAdd));
 }
 
 export function blockUsersSearch() {
@@ -101,29 +103,31 @@ export function blockUsersSearch() {
         });
     };
     setTimeout(scan, 2000);
-    window.addEventListener('urlchange', () => setTimeout(scan, 1000));
-    observeTree(mutations => {
-        if (!location.search.includes('type=content')) return;
-        forAddedElements(mutations, target => {
-            const nameEl = target.querySelector('.Card.SearchResult-Card[data-za-detail-view-path-module="AnswerItem"] .RichText.ztext.CopyrightRichText-richText b, .Card.SearchResult-Card[data-za-detail-view-path-module="PostItem"] .RichText.ztext.CopyrightRichText-richText b');
-            if (nameEl && userBlocked(nameEl.textContent)) target.hidden = true;
+    bindOnce('block-users-search', () => {
+        window.addEventListener('urlchange', () => setTimeout(scan, 1000));
+        observeTree(mutations => {
+            if (!location.search.includes('type=content')) return;
+            forAddedElements(mutations, target => {
+                const nameEl = target.querySelector('.Card.SearchResult-Card[data-za-detail-view-path-module="AnswerItem"] .RichText.ztext.CopyrightRichText-richText b, .Card.SearchResult-Card[data-za-detail-view-path-module="PostItem"] .RichText.ztext.CopyrightRichText-richText b');
+                if (nameEl && userBlocked(nameEl.textContent)) target.hidden = true;
+            });
         });
     });
 }
 
 export function blockUsersComment() {
-    observeTree(mutations => {
+    bindOnce('block-users-comment', () => observeTree(mutations => {
         forAddedElements(mutations, target => {
             const item = target.querySelector('img.Avatar[width="24"]');
             if (item && userBlocked(item.alt) && item.parentElement && item.parentElement.parentElement) {
                 item.parentElement.parentElement.style.display = 'none';
             }
         });
-    });
+    }));
 }
 
 export function blockUsersHoverButton() {
-    observeTree(mutations => {
+    bindOnce('block-users-hover', () => observeTree(mutations => {
         forAddedElements(mutations, target => {
             const cn = typeof target.className === 'string' ? target.className : '';
             const hit = cn.includes('Popover-content Popover-content--top HoverCard-popoverTarget') ||
@@ -141,7 +145,7 @@ export function blockUsersHoverButton() {
                 blockUsersAdd(this.dataset.name, this.dataset.userid, false);
             };
         });
-    });
+    }));
 }
 
 export function blockUserButtonHtml(name, userid, style, text) {

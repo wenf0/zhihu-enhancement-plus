@@ -120,6 +120,15 @@ export function observeTree(callback: MutationCallback) {
   return observer;
 }
 
+const boundOnce = new Set<string>();
+
+/** 同一 key 只注册一次监听。当页扫描仍由调用方每次自己做。 */
+export function bindOnce(key: string, install: () => void) {
+  if (boundOnce.has(key)) return;
+  boundOnce.add(key);
+  install();
+}
+
 export function onReadyNodes(selector: string, handle: (el: Element) => void, { timeout = 8000 } = {}) {
   const seen = new WeakSet<Element>();
   const visit = (node: Element) => {

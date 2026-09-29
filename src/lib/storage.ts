@@ -90,9 +90,10 @@ export async function setSettings(values: SettingsValues) {
   await browser.storage.local.set(values);
 }
 
-export function watchSettings(onChange: () => void) {
-  const listener = () => {
-    void loadSettings().then(onChange);
+export function watchSettings(onChange: (changes: Record<string, unknown>) => void) {
+  const listener = (changes: Record<string, unknown>, areaName: string) => {
+    if (areaName !== 'local') return;
+    void loadSettings().then(() => onChange(changes));
   };
   browser.storage.onChanged.addListener(listener);
   return () => browser.storage.onChanged.removeListener(listener);

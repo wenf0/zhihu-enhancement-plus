@@ -2,7 +2,7 @@
 import { runtime } from './state';
 import { NOISE_HIDE, NOISE_DEMOTE, NOISE_WEIGHTS } from '../noise/const';
 import { menuValue, readFilterMode } from '../storage';
-import { escapeHtml, injectStyle, observeTree, forAddedElements, notify } from '../utils';
+import { escapeHtml, injectStyle, observeTree, forAddedElements, notify, bindOnce } from '../utils';
 import { ensureJieba, jiebaReady, jiebaUnavailable, titleContentWords } from '../noise/jieba';
 import { compileNoiseIndex, scoreFeedNoise, scoreText, collectTasteSignals, noiseVerdict, noiseTint } from '../noise/score';
 import { getTastePrefs, saveTastePrefs, applyTasteSignals, tasteEnabled, titleWordTagsEnabled, dislikeTitleWord, titleWordDisliked, TASTE_LEARNED_MIN } from '../noise/taste';
@@ -376,7 +376,8 @@ export function bindTasteClicks() {
         compileNoiseIndex();
         const marked = dislikeTitleWord(btn.dataset.titleWord);
         if (!marked) return;
-        saveTastePrefs(getTastePrefs());
+        markLocalTasteWrite();
+        saveTastePrefs(getTastePrefs()).catch(() => consumeLocalTasteWrite());
         notify(`已记下不喜欢「${marked.key}」。`);
         refreshNoiseFeed();
     }, true);
@@ -416,7 +417,8 @@ export function applyCardTasteNow(card, titleCss, nextAction) {
         const actionKeys = Object.keys(prefs.actions);
         if (actionKeys.length > 400) delete prefs.actions[actionKeys[0]];
     }
-    saveTastePrefs(prefs);
+    markLocalTasteWrite();
+    saveTastePrefs(prefs).catch(() => consumeLocalTasteWrite());
     const lexHits = signals.noiseWords.length + signals.valueWords.length + signals.cats.length;
     const newHits = (signals.learned || []).length;
     const current = prefs.actions[key] || '';
@@ -441,6 +443,19 @@ export function resetNoiseCardVisual(card) {
     delete card.dataset.zhihuPlusTasteGen;
 }
 
+let localTasteWrites = 0;
+
+/** 内容脚本自己写了口味。存储回调里不要再整页重打一遍。 */
+export function markLocalTasteWrite() {
+    localTasteWrites += 1;
+}
+
+export function consumeLocalTasteWrite() {
+    if (localTasteWrites <= 0) return false;
+    localTasteWrites -= 1;
+    return true;
+}
+
 export function refreshNoiseFeed() {
     runtime.noiseTasteGen += 1;
     hiddenNoiseItems.length = 0;
@@ -451,12 +466,27 @@ export function refreshNoiseFeed() {
 
 export const hiddenNoiseItems = [];
 
+function hiddenCard(item) {
+    const card = item && item.cardRef ? item.cardRef.deref() : null;
+    return card && card.isConnected ? card : null;
+}
+
 export function resetNoiseTray() {
     hiddenNoiseItems.length = 0;
     const tray = document.getElementById('zhihu-plus-noise-tray');
     const panel = document.getElementById('zhihu-plus-noise-tray-panel');
     if (tray) tray.remove();
     if (panel) panel.remove();
+}
+
+let noiseTrayFrame = 0;
+
+function scheduleNoiseTray() {
+    if (noiseTrayFrame) return;
+    noiseTrayFrame = requestAnimationFrame(() => {
+        noiseTrayFrame = 0;
+        renderNoiseTray();
+    });
 }
 
 export function renderNoiseTray() {
@@ -487,7 +517,8 @@ export function fillNoiseTrayPanel(panel) {
     panel.querySelectorAll('[data-hidden]').forEach(btn => {
         btn.onclick = () => {
             const item = hiddenNoiseItems[Number(btn.dataset.hidden)];
-            if (item) showNoiseExplain(item.card, item.titleCss || '');
+            const card = item && hiddenCard(item);
+            if (card) showNoiseExplain(card, item.titleCss || '');
         };
     });
 }
@@ -527,10 +558,10 @@ export function applyNoiseToCard(card, titleCss) {
         card.hidden = true;
         card.style.display = 'none';
         hiddenNoiseItems.push({
-            card, titleCss, title, score: rounded,
+            cardRef: new WeakRef(card), titleCss, title, score: rounded,
             why: hideByTaste ? '不感兴趣' : ''
         });
-        renderNoiseTray();
+        scheduleNoiseTray();
         return;
     }
     if (demote) {
@@ -586,15 +617,17 @@ export function blockKeywordsFeed(selector, className) {
     };
     runtime.noiseRescan = scan;
     scan();
-    window.addEventListener('urlchange', () => {
-        resetNoiseTray();
-        setTimeout(scan, 1000);
-    });
-    observeTree(mutations => {
-        forAddedElements(mutations, target => {
-            if (target.className === className) {
-                applyNoiseToCard(target, 'h2.ContentItem-title meta[itemprop="name"], meta[itemprop="headline"]');
-            }
+    bindOnce('noise-feed:' + selector, () => {
+        window.addEventListener('urlchange', () => {
+            resetNoiseTray();
+            setTimeout(scan, 1000);
+        });
+        observeTree(mutations => {
+            forAddedElements(mutations, target => {
+                if (target.className === className) {
+                    applyNoiseToCard(target, 'h2.ContentItem-title meta[itemprop="name"], meta[itemprop="headline"]');
+                }
+            });
         });
     });
 }
@@ -608,17 +641,19 @@ export function blockKeywordsSearch() {
     };
     runtime.noiseRescan = scan;
     setTimeout(scan, 2000);
-    window.addEventListener('urlchange', () => {
-        resetNoiseTray();
-        setTimeout(scan, 1000);
-    });
-    observeTree(mutations => {
-        if (!location.search.includes('type=content')) return;
-        forAddedElements(mutations, target => {
-            if (target.tagName === 'DIV' && target.className === '') {
-                const tt = target.querySelector('div[class="Card SearchResult-Card"][data-za-detail-view-path-module="AnswerItem"], div[class="Card SearchResult-Card"][data-za-detail-view-path-module="PostItem"]');
-                if (tt) applyNoiseToCard(target.childNodes[0], 'a[data-za-detail-view-id]');
-            }
+    bindOnce('noise-search', () => {
+        window.addEventListener('urlchange', () => {
+            resetNoiseTray();
+            setTimeout(scan, 1000);
+        });
+        observeTree(mutations => {
+            if (!location.search.includes('type=content')) return;
+            forAddedElements(mutations, target => {
+                if (target.tagName === 'DIV' && target.className === '') {
+                    const tt = target.querySelector('div[class="Card SearchResult-Card"][data-za-detail-view-path-module="AnswerItem"], div[class="Card SearchResult-Card"][data-za-detail-view-path-module="PostItem"]');
+                    if (tt) applyNoiseToCard(target.childNodes[0], 'a[data-za-detail-view-id]');
+                }
+            });
         });
     });
 }
@@ -639,9 +674,11 @@ export function blockKeywordsComment() {
             content.style.opacity = '0.45';
         }
     };
-    observeTree(mutations => {
-        forAddedElements(mutations, target => {
-            target.querySelectorAll('.CommentItemV2-metaSibling').forEach(filterComment);
+    bindOnce('noise-comment', () => {
+        observeTree(mutations => {
+            forAddedElements(mutations, target => {
+                target.querySelectorAll('.CommentItemV2-metaSibling').forEach(filterComment);
+            });
         });
     });
 }

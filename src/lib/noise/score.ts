@@ -6,7 +6,7 @@ import { menuValue } from '../storage';
 import { tasteDelta, tasteScorePrefs, TASTE_LEARNED_MIN } from './taste';
 import {
     noiseHas, noiseTokenSet, jiebaTagTokens, canLearnJiebaToken, cutNoiseTokens, syncJiebaUserDict,
-    jiebaTokenCache, jiebaSetCache
+    jiebaTokenCache, jiebaSetCache, jiebaTagCache
 } from './jieba';
 
 export function compileNoiseIndex() {
@@ -72,6 +72,7 @@ export function compileNoiseIndex() {
     };
     jiebaTokenCache.clear();
     jiebaSetCache.clear();
+    jiebaTagCache.clear();
     syncJiebaUserDict();
     return runtime.noiseIndex;
 }

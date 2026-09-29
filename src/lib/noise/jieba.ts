@@ -16,6 +16,7 @@ export let jiebaUnavailable = false;
 export let jiebaPromise: Promise<boolean> | null = null;
 export const jiebaTokenCache = new Map<string, string[]>();
 export const jiebaSetCache = new Map<string, Set<string>>();
+export const jiebaTagCache = new Map<string, Array<{ word: string; tag: string }>>();
 export const jiebaDictSeen = new Set<string>();
 
 async function loadJiebaWasmBytes() {
@@ -35,6 +36,7 @@ export function ensureJieba() {
     jiebaReady = true;
     jiebaTokenCache.clear();
     jiebaSetCache.clear();
+    jiebaTagCache.clear();
     if (runtime.noiseIndex) syncJiebaUserDict();
     return true;
   })().catch(err => {
@@ -73,6 +75,7 @@ export function syncJiebaUserDict() {
   for (const word of runtime.learnedWords) add(word);
   jiebaTokenCache.clear();
   jiebaSetCache.clear();
+  jiebaTagCache.clear();
 }
 
 export function cutNoiseTokens(text: string) {
@@ -121,8 +124,12 @@ export function noiseTokenSet(text: string) {
 
 export function jiebaTagTokens(text: string) {
   if (!jiebaReady || typeof JiebaWasm.tag !== 'function') return [];
+  const raw = String(text || '');
+  const cached = jiebaTagCache.get(raw);
+  if (cached) return cached;
+  let tagged: Array<{ word: string; tag: string }> = [];
   try {
-    return JiebaWasm.tag(String(text || ''), true).map(item => {
+    tagged = JiebaWasm.tag(raw, true).map(item => {
       if (item && typeof item === 'object') {
         return { word: String(item.word || '').toLowerCase(), tag: String(item.tag || item.flag || '') };
       }
@@ -131,8 +138,11 @@ export function jiebaTagTokens(text: string) {
       return i > 0 ? { word: s.slice(0, i).toLowerCase(), tag: s.slice(i + 1) } : { word: s.toLowerCase(), tag: '' };
     }).filter(item => item.word);
   } catch {
-    return [];
+    tagged = [];
   }
+  if (jiebaTagCache.size > 400) jiebaTagCache.clear();
+  jiebaTagCache.set(raw, tagged);
+  return tagged;
 }
 
 export function isJiebaStopword(word: string) {

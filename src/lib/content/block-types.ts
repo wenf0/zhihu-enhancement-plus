@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { menuValue } from '../storage';
-import { injectStyle, observeTree, hideClosest, forAddedElements, eachMatch, qsa, qs, on, onReadyNodes, page } from '../utils';
+import { injectStyle, observeTree, hideClosest, forAddedElements, eachMatch, qsa, qs, on, onReadyNodes, page, bindOnce } from '../utils';
 
 /* -------------------------------------------------------------------------- */
 /* 屏蔽类别 / 盐选 / 热榜                                                     */
@@ -31,23 +31,25 @@ export function blockType(type) {
         qsa(name).forEach(blockTypeNode);
     }
 
-    observeTree(mutations => {
-        forAddedElements(mutations, target => {
-            if (target.className === 'Card SearchResult-Card' && target.dataset.zaDetailViewPathModule === undefined) {
-                if (menuValue('menu_blockTypeSearch') && location.pathname === '/search' && location.search.includes('type=content')) {
-                    target.hidden = true;
+    bindOnce('block-type:' + (type || 'feed'), () => {
+        observeTree(mutations => {
+            forAddedElements(mutations, target => {
+                if (target.className === 'Card SearchResult-Card' && target.dataset.zaDetailViewPathModule === undefined) {
+                    if (menuValue('menu_blockTypeSearch') && location.pathname === '/search' && location.search.includes('type=content')) {
+                        target.hidden = true;
+                    }
+                } else {
+                    eachMatch(target, name, blockTypeNode);
                 }
-            } else {
-                eachMatch(target, name, blockTypeNode);
+            });
+        });
+
+        on(window, 'urlchange', () => {
+            onReadyNodes(name, blockTypeNode);
+            if (menuValue('menu_blockTypeSearch') && location.pathname === '/search' && location.search.includes('type=content')) {
+                setTimeout(() => qsa('.RelevantQuery').forEach(r => { r.parentElement.parentElement.hidden = true; }), 1500);
             }
         });
-    });
-
-    on(window, 'urlchange', () => {
-        onReadyNodes(name, blockTypeNode);
-        if (menuValue('menu_blockTypeSearch') && location.pathname === '/search' && location.search.includes('type=content')) {
-            setTimeout(() => qsa('.RelevantQuery').forEach(r => { r.parentElement.parentElement.hidden = true; }), 1500);
-        }
     });
 }
 
@@ -97,19 +99,21 @@ export function blockTypeNode(titleA) {
 export function blockYanXuan() {
     if (!menuValue('menu_blockYanXuan')) return;
     const isYanXuan = item => item.querySelector('.KfeCollection-AnswerTopCard-Container, .KfeCollection-PurchaseBtn');
-    observeTree(mutations => {
-        forAddedElements(mutations, target => {
-            if (page().isAnswer) {
-                target.querySelectorAll('.List-item, .Card.AnswerCard').forEach(item => {
-                    if (isYanXuan(item)) item.hidden = true;
-                });
-            } else if (target.className === 'List-item' || target.className === 'Card AnswerCard') {
-                if (isYanXuan(target)) target.hidden = true;
-            }
-        });
-    });
     document.querySelectorAll('.List-item, .Card.AnswerCard').forEach(item => {
         if (isYanXuan(item)) item.hidden = true;
+    });
+    bindOnce('block-yanxuan', () => {
+        observeTree(mutations => {
+            forAddedElements(mutations, target => {
+                if (page().isAnswer) {
+                    target.querySelectorAll('.List-item, .Card.AnswerCard').forEach(item => {
+                        if (isYanXuan(item)) item.hidden = true;
+                    });
+                } else if (target.className === 'List-item' || target.className === 'Card AnswerCard') {
+                    if (isYanXuan(target)) target.hidden = true;
+                }
+            });
+        });
     });
 }
 
@@ -128,10 +132,12 @@ export function blockHotOther() {
             if (rank) rank.innerText = index + 1;
         });
     };
-    observeTree(mutations => {
-        forAddedElements(mutations, target => {
-            if (target.classList && target.classList.contains('HotItem')) block();
+    block();
+    bindOnce('block-hot-other', () => {
+        observeTree(mutations => {
+            forAddedElements(mutations, target => {
+                if (target.classList && target.classList.contains('HotItem')) block();
+            });
         });
     });
-    block();
 }
