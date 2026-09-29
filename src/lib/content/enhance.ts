@@ -787,21 +787,67 @@ function clampLongRich(rich) {
     rich.appendChild(more);
 }
 
+const shortExpandHeld = new WeakSet();
+
+/** 探测展开时先钉住卡片高度，避免先撑开再收回把滚动条弹来弹去。 */
+function holdRichHeight(rich) {
+    if (!(rich instanceof HTMLElement) || shortExpandHeld.has(rich)) return () => {};
+    const height = rich.getBoundingClientRect().height;
+    if (height <= 0) return () => {};
+    shortExpandHeld.add(rich);
+    const prevHeight = rich.style.height;
+    const prevOverflow = rich.style.overflow;
+    const prevBox = rich.style.boxSizing;
+    rich.style.boxSizing = 'border-box';
+    rich.style.height = `${Math.ceil(height)}px`;
+    rich.style.overflow = 'hidden';
+    let released = false;
+    return () => {
+        if (released) return;
+        released = true;
+        shortExpandHeld.delete(rich);
+        if (!rich.isConnected) return;
+        rich.style.height = prevHeight;
+        rich.style.overflow = prevOverflow;
+        rich.style.boxSizing = prevBox;
+    };
+}
+
+function restoreScroll(y) {
+    requestAnimationFrame(() => {
+        if (Math.abs(window.scrollY - y) > 1) window.scrollTo(0, y);
+    });
+}
+
+function releaseHeldRich(rich, release) {
+    if (rich.dataset[SHORT_EXPAND_MARK] === 'open') release();
+    else setTimeout(release, 400);
+}
+
 /** 收回长文：先点知乎自己的「收起」，点不动就自己夹住，别把长文摊在那。 */
 function retractExpandedRich(rich) {
+    const release = holdRichHeight(rich);
     const item = rich.closest('.ContentItem') || rich;
     const retract = findRetractButton(rich) || findRetractButton(item);
     rich.dataset[SHORT_EXPAND_MARK] = 'long';
     if (!retract) {
         clampLongRich(rich);
+        release();
         return;
     }
+    const y = window.scrollY;
     retract.click();
+    restoreScroll(y);
     setTimeout(() => {
-        if (!rich.isConnected || rich.dataset[SHORT_EXPAND_MARK] !== 'long') return;
-        if (rich.classList.contains('is-collapsed')) return;
-        const inner = rich.querySelector('.RichContent-inner') || rich;
-        if (!isExpandedShortEnough(inner)) clampLongRich(rich);
+        if (!rich.isConnected || rich.dataset[SHORT_EXPAND_MARK] !== 'long') {
+            release();
+            return;
+        }
+        if (!rich.classList.contains('is-collapsed')) {
+            const inner = rich.querySelector('.RichContent-inner') || rich;
+            if (!isExpandedShortEnough(inner)) clampLongRich(rich);
+        }
+        release();
     }, 300);
 }
 
@@ -943,15 +989,20 @@ function tryProbeExpandShort(rich) {
 
     rich.dataset[SHORT_EXPAND_MARK] = 'probe';
     const previewLen = rawTextLen(inner);
+    const release = holdRichHeight(rich);
+    const y = window.scrollY;
     more.click();
+    restoreScroll(y);
 
     waitExpandSettled(rich, previewLen, () => {
         // 展开压根没生效，留给下一轮扫描
         if (rich.classList.contains('is-collapsed') && findReadMoreButton(rich)) {
             rich.dataset[SHORT_EXPAND_MARK] = 'skip';
+            release();
             return;
         }
         settleShortResult(rich);
+        releaseHeldRich(rich, release);
     });
 }
 
@@ -987,8 +1038,14 @@ function tryAutoExpandShort(rich) {
     if (hidden > 0 && hidden <= maxHidden) {
         rich.dataset[SHORT_EXPAND_MARK] = 'open';
         const previewLen = rawTextLen(inner);
+        const release = holdRichHeight(rich);
+        const y = window.scrollY;
         more.click();
-        waitExpandSettled(rich, previewLen, () => recheckOpenShort(rich));
+        restoreScroll(y);
+        waitExpandSettled(rich, previewLen, () => {
+            recheckOpenShort(rich);
+            releaseHeldRich(rich, release);
+        });
         return;
     }
     if (hidden > maxHidden) {
