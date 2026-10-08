@@ -170,8 +170,10 @@ export function parseWeightedWords(input: string, fallback = 6) {
     const raw = part.trim();
     if (!raw) continue;
     const m = raw.match(/^(.+?)[:：]\s*(\d+(?:\.\d+)?)$/);
-    const word = (m ? m[1] : raw).replace(/\s+/g, '');
-    const weight = m ? Number(m[2]) : fallback;
+    const captured = m?.[1];
+    const word = (captured ?? raw).replace(/\s+/g, '');
+    const parsed = m?.[2];
+    const weight = parsed != null ? Number(parsed) : fallback;
     if (!word) continue;
     out[word] = Math.max(1, Math.min(20, weight));
   }

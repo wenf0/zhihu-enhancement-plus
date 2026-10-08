@@ -102,9 +102,13 @@ export function noiseTokenSet(text: string) {
   const set = new Set(tokens);
   const maxLen = ((runtime.noiseIndex as { maxTermLen?: number } | null)?.maxTermLen) || 16;
   for (let i = 0; i < tokens.length; i++) {
-    let acc = tokens[i];
+    const start = tokens[i];
+    if (!start) continue;
+    let acc = start;
     for (let j = i + 1; j < tokens.length; j++) {
-      acc += tokens[j];
+      const next = tokens[j];
+      if (!next) continue;
+      acc += next;
       if (acc.length > maxLen) break;
       set.add(acc);
     }

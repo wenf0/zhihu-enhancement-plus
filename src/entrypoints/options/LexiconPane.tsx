@@ -234,11 +234,12 @@ export function LexiconPane({
   const [importMsg, setImportMsg] = useState('');
 
   useEffect(() => {
-    if (!cats.length) {
+    const firstId = cats[0]?.id;
+    if (!firstId) {
       setCatId('');
       return;
     }
-    if (!cats.some(c => c.id === catId)) setCatId(cats[0].id);
+    if (!cats.some(c => c.id === catId)) setCatId(firstId);
   }, [cats, catId]);
 
   const cat = catId ? lexicon.cats[catId] : null;
@@ -473,6 +474,7 @@ export function LexiconPane({
                     const target = draft.cats[cat.id];
                     if (!target || !(from in target.words)) return;
                     const weight = target.words[from];
+                    if (weight == null) return;
                     delete target.words[from];
                     const low = to.toLowerCase();
                     const existing = Object.keys(target.words).find(k => k.toLowerCase() === low);
@@ -678,6 +680,7 @@ function GlobalWordMap({
         onRename={(from, to) => {
           const next = { ...words };
           const w = next[from];
+          if (w == null) return;
           delete next[from];
           const low = to.toLowerCase();
           const existing = Object.keys(next).find(k => k.toLowerCase() === low);

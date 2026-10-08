@@ -245,6 +245,11 @@ export function parseTasteImport(text: string, current: TastePrefs, mode: TasteI
         continue;
       }
       const cur = target[existingKey];
+      if (!cur) {
+        target[existingKey] = entry;
+        added += 1;
+        continue;
+      }
       target[existingKey] = {
         like: (cur.like || 0) + (entry.like || 0),
         dislike: (cur.dislike || 0) + (entry.dislike || 0),
