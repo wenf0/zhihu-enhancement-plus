@@ -8,7 +8,7 @@ export const DEFAULT_BLOCK_USERS = [
 
 export const MENU_ITEMS: MenuItem[] = [
   { key: 'menu_lowProfile', label: '低饱和模式', tip: '把链接、按钮、关注等改成灰调，页面更素、少抢眼。', def: true },
-  { key: 'menu_fullWidth', label: '隐藏右侧栏', tip: '去掉推荐关注、相关问题等侧栏，主栏居中加宽。', def: true },
+  { key: 'menu_fullWidth', label: '隐藏右侧栏', tip: '去掉创作中心、热榜、推荐关注等右侧栏，主栏加宽。左侧导航保留。', def: true },
   { key: 'menu_blankTitleFavicon', label: '清空标题和图标', tip: '浏览器标签页标题和图标变空白，减少切页干扰。开启后「净化标题消息」不再生效。', def: true },
   { key: 'menu_cleanTitles', label: '净化标题消息', tip: '锁住当前页标题，去掉「(1 条消息)」一类红点提醒。清空标题开启时此项无效。', def: false },
   { key: 'menu_cleanSearch', label: '净化搜索热门', tip: '去掉搜索框里的热搜占位词和下拉热榜，输入框保持空白。', def: false },
@@ -20,7 +20,7 @@ export const MENU_ITEMS: MenuItem[] = [
   { key: 'menu_questionRichTextMore', label: '展开问题描述', tip: '进入问题页时自动点开「显示全部」，完整展示题干。', def: true },
   { key: 'menu_autoExpandShort', label: '短内容自动展开', tip: '摘要被截断时点开全文，够短就留着，长文会收回。问题页开着「默认收起回答」时让路。', def: true },
   { key: 'menu_autoExpandShortChars', label: '短内容字数上限', tip: '全文超过这个字数就收回。', def: 450, kind: 'chars' },
-  { key: 'menu_publishTop', label: '置顶显示时间', tip: '把发布/编辑时间提到标题附近，不用滚到底才看到。', def: true },
+  { key: 'menu_publishTop', label: '置顶显示时间', tip: '把发布/编辑时间放到标题下面。新版信息流不再显示时间时，从页面数据里补上。', def: true },
   { key: 'menu_typeTips', label: '区分问题文章', tip: '信息流标题旁加「问题 / 文章 / 视频 / 想法」圆角标签。', def: true },
   { key: 'menu_toQuestion', label: '直达问题按钮', tip: '回答标题旁加圆角按钮，直接打开对应问题页，而不是该回答。', def: true },
 
@@ -59,7 +59,7 @@ export const MENU_ITEMS: MenuItem[] = [
       'menu_blockTypeLiveHot',
     ],
   },
-  { key: 'menu_blockTypeVideo', label: '视频', tip: '隐藏首页推荐、搜索结果、问题页里的视频卡片与视频回答；首页顶栏「视频」入口一并藏掉。', def: true, kind: 'hidden' },
+  { key: 'menu_blockTypeVideo', label: '视频', tip: '隐藏首页推荐、搜索结果、问题页里的视频卡片与视频回答。', def: true, kind: 'hidden' },
   { key: 'menu_blockTypeArticle', label: '文章', tip: '隐藏首页推荐和搜索结果里链到专栏文章（zhuanlan）的卡片。', def: true, kind: 'hidden' },
   { key: 'menu_blockTypePin', label: '想法', tip: '隐藏首页推荐信息流里的「想法」短动态，不影响回答与文章。', def: false, kind: 'hidden' },
   { key: 'menu_blockTypeTopic', label: '话题', tip: '在搜索「综合/内容」结果里隐藏话题卡片，减少跳进话题页的入口。', def: false, kind: 'hidden' },

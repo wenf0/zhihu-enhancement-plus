@@ -19,7 +19,8 @@ export function fullWidthLayout() {
         [data-za-detail-view-path-module="RightSideBar"],
         [data-za-detail-view-path-module="QuestionSideBar"],
         .HotSearchCard,
-        .GlobalSideBar {
+        .GlobalSideBar,
+        .GlobalSideBar-creator {
             display: none !important;
             width: 0 !important;
             min-width: 0 !important;
@@ -28,38 +29,23 @@ export function fullWidthLayout() {
             margin: 0 !important;
             padding: 0 !important;
             border: 0 !important;
+            flex: 0 0 0 !important;
         }
 
-        .Topstory-container,
-        .Question-main,
-        .Search-container,
-        .ContentLayout {
-            --right-sidebar-width: 0px !important;
-            --container-gap: 0px !important;
-            --container-main-column-width: var(--container-width, 1000px) !important;
-            width: 100% !important;
+        /* 新版首页：左导航保留。主栏吃掉右侧 320px，沿用知乎自己的左右留白，才能和顶栏搜索对齐。 */
+        .Topstory-mainColumn {
+            width: calc(var(--container-main-column-width, 704px) + var(--right-sidebar-width, 320px) + var(--container-main-column-padding-x, 0px) * 2) !important;
             max-width: none !important;
-            justify-content: center !important;
+            flex: 1 1 auto !important;
+            margin-left: 0 !important;
+            margin-right: 0 !important;
         }
 
-        .ListShortcut,
-        .Topstory-mainColumn,
-        .Topstory-mainColumnCard,
-        #TopstoryContent,
-        .Topstory-recommend,
         .Question-mainColumn,
         .SearchMain,
         .ContentLayout-mainColumn {
-            width: var(--container-width, 1000px) !important;
-            max-width: var(--container-width, 1000px) !important;
-            flex: 0 1 var(--container-width, 1000px) !important;
-            margin-left: auto !important;
-            margin-right: auto !important;
-        }
-
-        .Profile-main .ListShortcut {
             width: auto !important;
-            max-width: 100% !important;
+            max-width: none !important;
             flex: 1 1 auto !important;
             margin-left: 0 !important;
             margin-right: 0 !important;
@@ -118,7 +104,8 @@ export function lowProfileMode() {
         .ContentItem-action { color: #888 !important; }
         .ContentItem-action:hover { color: #999 !important; }
 
-        .TopstoryTabs-link.is-active { color: #666 !important; }
+        .TopstoryTabs-link.is-active,
+        .LeanAppHeaderBar a.is-active { color: #666 !important; }
 
         .Badge,
         span[class*="Badge"] {
@@ -524,12 +511,46 @@ export function questionAuthor() {
 }
 
 export function topTime(css, classs) {
+    if (menuValue('menu_publishTop')) {
+        injectStyle('zhihu-plus-feed-time', `
+            .zhihu-plus-feed-time {
+                color: #9196a1;
+                font-size: 13px;
+                line-height: 1.4;
+                margin: 2px 0 8px;
+            }
+        `);
+    } else {
+        removeStyle('zhihu-plus-feed-time');
+    }
     document.querySelectorAll(css).forEach(_this => {
         const t = _this.querySelector('.ContentItem-time');
-        if (!t || t.classList.contains('full') || !t.querySelector('span') || t.querySelector('span').textContent == null) return;
-        topTimeAllTime(t);
-        topTimePublishTop(t, _this, classs);
+        if (t && !t.classList.contains('full') && t.querySelector('span') && t.querySelector('span').textContent != null) {
+            topTimeAllTime(t);
+            topTimePublishTop(t, _this, classs);
+            return;
+        }
+        pinFeedTime(_this);
     });
+}
+
+/** 新版信息流不再渲染 .ContentItem-time，时间只在 schema meta 里。 */
+function pinFeedTime(card) {
+    if (!menuValue('menu_publishTop')) return;
+    if (card.querySelector('.zhihu-plus-feed-time, .ContentItem-time')) return;
+    const created = card.querySelector('meta[itemprop="dateCreated"]');
+    if (!created || !created.content) return;
+    const modified = card.querySelector('meta[itemprop="dateModified"]');
+    const createdText = getUTC8(new Date(created.content));
+    const edited = modified && modified.content && modified.content !== created.content;
+    const el = document.createElement('div');
+    el.className = 'zhihu-plus-feed-time';
+    el.textContent = edited
+        ? `编辑于 ${getUTC8(new Date(modified.content))} ，发布于 ${createdText}`
+        : `发布于 ${createdText}`;
+    const title = card.querySelector('h2.ContentItem-title');
+    if (title) title.insertAdjacentElement('afterend', el);
+    else card.insertAdjacentElement('afterbegin', el);
 }
 
 export function topTimePost() {
